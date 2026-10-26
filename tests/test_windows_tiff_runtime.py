@@ -2,6 +2,8 @@
 import ctypes as C
 from pathlib import Path
 import struct
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -62,9 +64,27 @@ class WindowsTiffTests(unittest.TestCase):
 
     # ==========================================
     # Function: Confirm restored JBIG-compressed TIFF actually renders through GTK.
-    # Method: Encode a synthetic bilevel strip with libtiff, then decode it through GdkPixbuf.
+    # Method: Wait for a native child to verify a real file before the parent removes its temporary directory.
     # ==========================================
     def test_gdk_decodes_jbig_compressed_tiff(self):
+        root = Path(__file__).resolve().parents[1]
+        script = ('import sys;from pathlib import Path;sys.path[:0]=sys.argv[1:3];'
+                  'from test_windows_tiff_runtime import WindowsTiffTests;'
+                  'WindowsTiffTests("test_gdk_decodes_jbig_compressed_tiff").check_jbig_file(Path(sys.argv[3]))')
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'synthetic-jbig.tiff'
+            result = subprocess.run([sys.executable, '-B', '-c', script, str(root), str(root / 'tests'), str(path)],
+                                    capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue(path.is_file())
+            path.unlink()
+            self.assertFalse(path.exists())
+
+    # ==========================================
+    # Function: Validate JBIG file encoding, decoding and exact bilevel pixels in an isolated process.
+    # Method: Close TIFF and GObject resources explicitly; process exit bounds native loader lifetimes.
+    # ==========================================
+    def check_jbig_file(self, path):
         native.prepare_windows()
         runtime = native.runtime_root()
         tiff = C.CDLL(str(runtime / 'bin/libtiff-6.dll'))
@@ -75,29 +95,44 @@ class WindowsTiffTests(unittest.TestCase):
         tiff.TIFFWriteEncodedStrip.argtypes = [C.c_void_p, C.c_uint32, C.c_void_p, C.c_ssize_t]
         tiff.TIFFWriteEncodedStrip.restype = C.c_ssize_t
         tiff.TIFFClose.argtypes = [C.c_void_p]
-        with tempfile.TemporaryDirectory() as folder:
-            path = Path(folder) / 'synthetic-jbig.tiff'
-            handle = tiff.TIFFOpen(str(path).encode('utf-8'), b'w')
-            self.assertTrue(handle)
-            try:
-                for tag, value in [(256, 16), (257, 8), (258, 1), (277, 1), (262, 1), (278, 8), (259, 34661)]:
-                    self.assertEqual(tiff.TIFFSetField(handle, tag, C.c_uint32(value)), 1)
-                pixels = C.create_string_buffer(b'\xaa\x55' * 8)
-                self.assertEqual(tiff.TIFFWriteEncodedStrip(handle, 0, pixels, 16), 16)
-            finally:
-                tiff.TIFFClose(handle)
-            pixbuf = native.load_library('pixbuf')
-            pixbuf.gdk_pixbuf_new_from_file.argtypes = [C.c_char_p, C.c_void_p]
-            pixbuf.gdk_pixbuf_new_from_file.restype = C.c_void_p
-            image = pixbuf.gdk_pixbuf_new_from_file(str(path).encode('utf-8'), None)
-            self.assertTrue(image)
-            try:
-                for name, expected in [('gdk_pixbuf_get_width', 16), ('gdk_pixbuf_get_height', 8)]:
-                    method = getattr(pixbuf, name)
-                    method.argtypes = [C.c_void_p]
-                    method.restype = C.c_int
-                    self.assertEqual(method(image), expected)
-            finally:
-                objects = native.load_library('object')
-                objects.g_object_unref.argtypes = [C.c_void_p]
-                objects.g_object_unref(image)
+        tiff.TIFFClose.restype = None
+        handle = tiff.TIFFOpen(str(path).encode('utf-8'), b'w')
+        self.assertTrue(handle)
+        try:
+            for tag, value in [(256, 16), (257, 8), (258, 1), (277, 1), (262, 1), (278, 8), (259, 34661)]:
+                self.assertEqual(tiff.TIFFSetField(handle, tag, C.c_uint32(value)), 1)
+            pixels = C.create_string_buffer(b'\xaa\x55' * 8)
+            self.assertEqual(tiff.TIFFWriteEncodedStrip(handle, 0, pixels, 16), 16)
+        finally:
+            tiff.TIFFClose(handle)
+        pixbuf = native.load_library('pixbuf')
+        pixbuf.gdk_pixbuf_new_from_file.argtypes = [C.c_char_p, C.c_void_p]
+        pixbuf.gdk_pixbuf_new_from_file.restype = C.c_void_p
+        image = pixbuf.gdk_pixbuf_new_from_file(str(path).encode('utf-8'), None)
+        self.assertTrue(image)
+        try:
+            for name, expected in [('gdk_pixbuf_get_width', 16), ('gdk_pixbuf_get_height', 8)]:
+                method = getattr(pixbuf, name)
+                method.argtypes = [C.c_void_p]
+                method.restype = C.c_int
+                self.assertEqual(method(image), expected)
+            for name in ('gdk_pixbuf_get_n_channels', 'gdk_pixbuf_get_rowstride'):
+                method = getattr(pixbuf, name)
+                method.argtypes = [C.c_void_p]
+                method.restype = C.c_int
+            pixbuf.gdk_pixbuf_get_pixels.argtypes = [C.c_void_p]
+            pixbuf.gdk_pixbuf_get_pixels.restype = C.POINTER(C.c_ubyte)
+            pixels = pixbuf.gdk_pixbuf_get_pixels(image)
+            channels = pixbuf.gdk_pixbuf_get_n_channels(image)
+            stride = pixbuf.gdk_pixbuf_get_rowstride(image)
+            self.assertIn(channels, (3, 4))
+            for y in range(8):
+                for x in range(16):
+                    value = 255 if (b'\xaa\x55'[x // 8] >> (7 - x % 8)) & 1 else 0
+                    offset = y * stride + x * channels
+                    self.assertEqual(list(pixels[offset:offset + 3]), [value] * 3)
+        finally:
+            objects = native.load_library('object')
+            objects.g_object_unref.argtypes = [C.c_void_p]
+            objects.g_object_unref.restype = None
+            objects.g_object_unref(image)

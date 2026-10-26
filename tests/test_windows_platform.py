@@ -137,7 +137,7 @@ class WindowsCredentialTests(unittest.TestCase):
 class WindowsIntegrationTests(unittest.TestCase):
     # ==========================================
     # Function: Limit mailto registration to user-owned capability keys and inert URI argv.
-    # Method: Check all real adapter writes against a fake registry module and synthetic EXE.
+    # Method: Compare canonical launcher paths, including Windows short-name aliases, against a fake registry.
     # ==========================================
     def test_user_registry_and_uri_separator(self):
         from maildesk.windows_integration import register_application,set_autostart,startup_enabled
@@ -145,7 +145,7 @@ class WindowsIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             launcher=Path(folder)/'中文 folder'/'TeleMail.exe';launcher.parent.mkdir();launcher.write_bytes(b'MZ')
             with patch.dict(sys.modules,{'winreg':registry}),patch.dict(os.environ,{'TELEMAIL_LAUNCHER':str(launcher)}):
-                self.assertEqual(register_application(),launcher)
+                self.assertEqual(register_application(),launcher.resolve())
                 self.assertTrue(all(call.args[0]==17 for call in registry.CreateKey.call_args_list))
                 written=[call.args[-1] for call in registry.SetValueEx.call_args_list]
                 self.assertTrue(any(str(value).endswith(' -- "%1"') for value in written))

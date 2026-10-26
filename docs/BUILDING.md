@@ -40,6 +40,8 @@ python3 tools/verify_mail_layout_desktop.py --output .runtime/linux-mail-check
 
 后端失败时，完整测试名称和 traceback 会输出到工作流日志，同时保留在输出目录的 `tests.txt`；Windows QA 即使失败也上传 `windows-qa-reports`，其中包含日志和已生成的报告。测试失败仍返回非零退出码并阻止发布。使用 Python 3.14+ 标准库运行 `python3 -B -m unittest tests.test_test_runner -v` 可验证成功和失败两条诊断路径。
 
+Windows 注册测试按规范路径比较，允许 `RUNNER~1` 等短路径别名。JBIG TIFF 验收在独立进程中实际编码、读取文件并检查尺寸和全部像素，父进程等待其退出后显式删除文件；不忽略清理错误，也不跳过 JBIG 功能。两项测试使用 Python 3.14.5 标准库、打包的 libtiff/JBIG-KIT 和 GdkPixbuf。使用 `./dist/TeleMail-Windows-amd64/runtime/python/python.exe tools/run_tests.py --bundle dist/TeleMail-Windows-amd64 --qa-openssl-dir <现有OpenSSL目录>` 运行完整 Windows 验收，脚本会设置私有运行库路径和临时资料目录。
+
 第二条要求真实图形桌面及浏览器运行库，使用临时演示资料并禁止 IMAP/SMTP。加密 PDF 的额外验证可使用 `--encrypted` 指定合成测试文件。Windows 使用包内 Python 运行相同脚本并指定 `--bundle`。
 
 第三条在 Linux 的真实 GTK/WebKit 窗口中验证邮件气泡排版、高度、宽度变化、缩放、图片更新、收起重开和脚本阻止。使用临时合成邮件，禁止真实邮箱调用；CI 在 Xvfb 中执行同一检查。
