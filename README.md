@@ -1,44 +1,75 @@
 # TeleMail
 
-本地桌面邮件客户端，当前版本 **0.55.0**，支持 Windows 11 x64 与 Linux x86-64。
+> [中文版](README-CN.md)
 
-支持 IMAP/SMTP、多账号、文件夹管理、邮件搜索、过滤器、通讯录、草稿、稍后发送和附件预览。PDF 使用随应用分发的 PDF.js 6.4.299，支持连续滚动、文字选择、翻页、缩放、搜索高亮和密码文件，无需上传文档。
+A desktop email client featuring multiple inbox layout modes and unified multi-account management. Supporting Windows 11 (x64) and Linux (x86-64), TeleMail processes all email data, account credentials, and attachment previews locally without relying on proprietary cloud services or telemetry uploads. Key features include IMAP/SMTP multi-account management, smart inbox categorization, custom filtering rules, conversation thread views, an address book, scheduled sending, and offline document preview powered by bundled PDF.js.
 
-## 安装与启动
+---
 
-- **Windows**：解压 `telemail-0.55.0-windows-amd64.zip`，双击 `TeleMail-Windows-amd64/TeleMail.exe`。保留整个目录。自带 Python/GTK，需要 Microsoft WebView2 Evergreen Runtime；不需要 WSL。
-- **Debian/Ubuntu**：安装 `telemail-desktop_0.55.0_amd64.deb`，从应用菜单启动。安装器处理系统依赖。
-- **Linux 可移动包**：解压 `telemail-0.55.0-linux-amd64.tar.gz`，运行其中的 `TeleMail`。需要系统 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1 及兼容 glibc。不是完全自带依赖的包。
+## Usage
 
-首次启动在设置中添加自己的邮箱，使用服务商支持的授权码、密码或自行注册的 OAuth 客户端。项目没有预置统一 Google/Microsoft OAuth 应用；公开源码不代表服务商已审核通过。两端共用核心功能，系统集成与网页渲染引擎存在差异，尚未完成全功能对等认证。
+### 1. Installation & Launch
 
-**使用前请检查“设置 → 储存空间”的自动整理设置：当前默认会把收件箱中超过 365 天、未置顶的邮件移到服务器垃圾箱；服务商可能随后永久清空垃圾箱。可关闭或修改保留天数。**
+Download the release package for your platform from GitHub Releases (current version: `0.55.0`), or run directly from source on Linux:
 
-稍后发送需要应用运行；关闭期间到期的任务在下次启动时处理。阅读回执取决于收件人客户端。扫描 PDF 不提供 OCR。
+* **Windows 11 (x64)**
+Extract `telemail-0.55.0-windows-amd64.zip` (keeping the complete directory structure intact) and double-click `TeleMail-Windows-amd64/TeleMail.exe`. The archive bundles the required Python and GTK runtimes—neither a local Python installation nor WSL is needed. Only the Microsoft Edge WebView2 Evergreen Runtime is required on the host system.
+* **Debian / Ubuntu (amd64)**
+Install `telemail-desktop_0.55.0_amd64.deb` (the system package manager will resolve dependencies automatically). Once installed, launch the app from your desktop application menu or run `telemail` in a terminal:
+```bash
+sudo apt install ./telemail-desktop_0.55.0_amd64.deb
 
-## 自动发布
+```
 
-提交代码并推送与应用版本一致的标签（例如 `v0.55.0`），GitHub Actions 会构建 Windows ZIP、Linux **DEB 和 tar.gz**，测试后自动创建 Release。应用源码包、第三方源码包和校验文件也自动生成，无需手工打包；详见[自动发行说明](docs/RELEASING.md)。
 
-## 开发与发布
+* **Linux Portable Archive (x86-64)**
+Extract `telemail-0.55.0-linux-amd64.tar.gz` and run the `TeleMail` executable inside (requires system installations of Python 3.12+, GTK 3.24+, Fontconfig, OpenSSL 3, WebKitGTK 4.1, and `glibc >= 2.34`):
+```bash
+tar -xzf telemail-0.55.0-linux-amd64.tar.gz
+./TeleMail-Linux-amd64/TeleMail
+# Optional: register a desktop shortcut for the current user
+./TeleMail-Linux-amd64/TeleMail --install-user
 
-- [构建和测试](docs/BUILDING.md)
-- [发行步骤及对应源码](docs/RELEASING.md)
-- [隐私说明](docs/PRIVACY.md)
-- [第三方组件与许可](docs/THIRD_PARTY.md)
-- [PDF 阅读器设计](docs/PDFJS_READER.md)
-- [更新记录](docs/CHANGELOG.md)
+```
 
-本仓库不包含用户邮件、账号配置、凭据、历史分析证据或旧发行包。`dist/` 是本地构建输出，受 Git 忽略；发行包和对应源码通过 GitHub Release 附件交付。
 
-## 许可
+* **Run from Source (Linux)**
+Once the Linux runtime dependencies listed above are satisfied, launch directly from the repository root:
+```bash
+./run.sh
+# Or enter demo mode using synthetic emails (does not connect to real mailboxes or send outgoing mail)
+./run.sh --demo
 
-本项目自有代码采用 **MIT**，见 [LICENSE](LICENSE)。第三方文件沿用原许可，不能统一改称 GPL；具体归属见 [NOTICE](NOTICE) 和第三方清单。
+```
 
-Windows 包保留 JBIG 压缩 TIFF 阅读及独立的 Antiword 工具，因此仍包含 GPL 组件。项目自有代码采用 MIT；Windows 组合分发还须遵守适用的 GPL 条件，不能把整个包标为纯 MIT。许可和对应源码由工作流自动附带，见[Windows 组合分发说明](docs/WINDOWS_LICENSE.md)。
 
-## 独立的数据与配置
 
-TeleMail 使用独立的配置、数据、缓存和下载目录，以及 `org.telemail.Desktop` 应用标识和 `TELEMAIL_*` 环境变量；不会查找或迁移 Maildesk 的账号、邮件、草稿和存储位置索引。启动新版后按需添加账号。MIT 许可证及第三方许可不变，原有版权署名保留。
+### 2. Account Configuration & Common Commands
 
-内部 Python 包名 `maildesk` 仅用于源码组织，不参与旧版数据兼容。
+* **Adding Accounts**: On first launch, add your email account via the setup wizard or navigate to **Settings → Accounts**. Built-in configuration templates are provided for Gmail, Outlook, Microsoft 365, and generic IMAP/SMTP servers. Authentication supports standard passwords, app-specific passwords, or self-registered OAuth 2.0 client IDs (this project does not ship with pre-embedded public Google/Microsoft OAuth client IDs).
+* **Command-Line Arguments**:
+```bash
+TeleMail --demo                              # Demo mode (uses an isolated demo directory and synthetic emails)
+TeleMail --config <file> --data <dir>        # Specify custom configuration file and local data directory
+TeleMail mailto:user@example.com             # Open an unsent draft window with the recipient pre-filled
+TeleMail --version                           # Display current version and platform information
+
+```
+
+
+
+### 3. Important Notes
+
+> **Important (Auto-Cleanup Policy)**: After connecting a real email account, please review the automatic cleanup policy under **Settings → Storage** first. By default, **unpinned inbox emails older than 365 days** are moved to the server Trash folder (which your email provider may subsequently purge permanently). To keep all inbox messages indefinitely, disable this option or adjust the retention period immediately after setup.
+
+* **Offline PDF Viewer**: PDF attachments are rendered offline via localhost loopback using the bundled PDF.js 6.4.299 engine. It supports continuous scrolling, zooming, text selection, full-text search highlighting, and password unlocking without uploading documents to external servers (OCR is not provided for scanned PDFs).
+* **Send Later & Read Receipts**: Scheduled emails require the application to remain running; tasks that come due while the application is closed will be processed upon the next launch. Read receipts depend on whether the recipient's email client supports and responds to receipt requests.
+* **Further Documentation**: See [Privacy & Data Policy](https://www.google.com/search?q=docs/PRIVACY.md), [Build & Testing Guide](https://www.google.com/search?q=docs/BUILDING.md), and [Developer Guide](https://www.google.com/search?q=Develop.md) for details.
+
+---
+
+## License
+
+* **First-Party Code**: TeleMail's original application code, native adaptation layers, and build scripts are licensed under the **[MIT License](https://www.google.com/search?q=LICENSE)**.
+* **Third-Party Components**: Bundled or referenced third-party components (including PDF.js, Noto Sans CJK SC fonts, CPython, MSYS2/GTK runtimes, Microsoft WebView2 Loader, etc.) retain their original licenses and copyright notices. See [NOTICE](https://www.google.com/search?q=NOTICE) and [Third-Party Components](https://www.google.com/search?q=docs/THIRD_PARTY.md) for full details.
+* **Windows Combined Binary Distribution**: The Windows release archive includes the standalone subprocess utility Antiword (`GPL-2.0-or-later`) and indirectly loads JBIG-KIT (`GPL-2.0-or-later`) via GdkPixbuf/libtiff. Consequently, the combined Windows binary distribution as a whole is provided under the terms of **GPLv3 or later (`GPL-3.0-or-later`)** accompanied by the corresponding source code, while TeleMail's own original code remains available under the MIT License. Please refer to [Windows Combined Distribution Licensing](https://www.google.com/search?q=docs/WINDOWS_LICENSE.md) for details.
