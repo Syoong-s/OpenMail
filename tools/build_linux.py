@@ -95,7 +95,7 @@ Section: mail
 Priority: optional
 Architecture: amd64
 Maintainer: TeleMail Project <maintainer@example.invalid>
-Depends: libc6 (>= 2.34), python3 (>= 3.12), libgtk-3-0 (>= 3.24) | libgtk-3-0t64 (>= 3.24), libfontconfig1, libssl3 | libssl3t64, libwebkit2gtk-4.1-0
+Depends: libc6 (>= 2.34), python3 (>= 3.12), libgtk-3-0 (>= 3.24) | libgtk-3-0t64 (>= 3.24), librsvg2-common, libfontconfig1, libssl3 | libssl3t64, libwebkit2gtk-4.1-0
 Description: Native Linux desktop mail client
  IMAP/SMTP email with native GTK windows, classification and local drafts.
 Installed-Size: {sum(p.stat().st_size for p in opt.rglob('*') if p.is_file()) // 1024}

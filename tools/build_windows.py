@@ -108,27 +108,63 @@ def compile_native(bundle):
     shutil.copy2(SDK / 'webview2/build/native/x64/WebView2Loader.dll', target)
 
 # ==========================================
+# Function: Read a native image-loader failure without hiding its cause.
+# Method: Match GLib's public error layout and release each owned diagnostic after decoding.
+# ==========================================
+class ImageError(C.Structure):
+    _fields_ = [('domain', C.c_uint), ('code', C.c_int), ('message', C.c_char_p)]
+
+# ==========================================
+# Function: Render the application icon using the build host's SVG loader.
+# Method: Decode and encode through GdkPixbuf, preserving GError details and loader setup guidance.
+# ==========================================
+def render_icon(source, destination):
+    source, destination = Path(source), Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    pixbuf = C.CDLL('libgdk_pixbuf-2.0.so.0')
+    error_pointer = C.POINTER(C.c_void_p)
+    pixbuf.gdk_pixbuf_new_from_file_at_scale.argtypes = [C.c_char_p, C.c_int, C.c_int, C.c_int, error_pointer]
+    pixbuf.gdk_pixbuf_new_from_file_at_scale.restype = C.c_void_p
+    pixbuf.gdk_pixbuf_savev.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_void_p, C.c_void_p, error_pointer]
+    pixbuf.gdk_pixbuf_savev.restype = C.c_int
+    objects = C.CDLL('libgobject-2.0.so.0')
+    objects.g_object_unref.argtypes, objects.g_object_unref.restype = [C.c_void_p], None
+    glib = C.CDLL('libglib-2.0.so.0')
+    glib.g_error_free.argtypes, glib.g_error_free.restype = [C.c_void_p], None
+
+    # ==========================================
+    # Function: Preserve the native decoder or encoder error in the build failure.
+    # Method: Decode UTF-8 diagnostics and free GLib storage before returning the exception.
+    # ==========================================
+    def failure(operation, error):
+        detail = 'native image library returned no diagnostic'
+        if error:
+            try:
+                detail = C.cast(error, C.POINTER(ImageError)).contents.message.decode('utf-8', errors='replace')
+            finally:
+                glib.g_error_free(error)
+        hint = ' SVG decoding requires host librsvg2-common and a working GdkPixbuf loader cache.' if operation == 'render' else ''
+        return RuntimeError(f'Cannot {operation} application icon {source}: {detail}.{hint}')
+
+    error = C.c_void_p()
+    image = pixbuf.gdk_pixbuf_new_from_file_at_scale(str(source).encode(), 128, 128, 1, C.byref(error))
+    if not image:
+        raise failure('render', error)
+    try:
+        error = C.c_void_p()
+        if not pixbuf.gdk_pixbuf_savev(image, str(destination).encode(), b'png', None, None, C.byref(error)):
+            raise failure('encode', error)
+    finally:
+        objects.g_object_unref(image)
+    return destination
+
+# ==========================================
 # Function: Embed the existing application icon and standard DPI/compatibility manifest.
-# Method: Render the repository SVG through host GdkPixbuf, then compile a native PE resource.
+# Method: Render the repository SVG with native diagnostics, then compile a native PE resource.
 # ==========================================
 def compile_resources():
     sysroot = ROOT / '.runtime/build-windows'
-    sysroot.mkdir(exist_ok=True)
-    pixbuf = C.CDLL('libgdk_pixbuf-2.0.so.0')
-    pixbuf.gdk_pixbuf_new_from_file_at_scale.argtypes = [C.c_char_p, C.c_int, C.c_int, C.c_int, C.c_void_p]
-    pixbuf.gdk_pixbuf_new_from_file_at_scale.restype = C.c_void_p
-    pixbuf.gdk_pixbuf_savev.argtypes = [C.c_void_p, C.c_char_p, C.c_char_p, C.c_void_p, C.c_void_p, C.c_void_p]
-    pixbuf.gdk_pixbuf_savev.restype = C.c_int
-    objects = C.CDLL('libgobject-2.0.so.0')
-    objects.g_object_unref.argtypes = [C.c_void_p]
-    image = pixbuf.gdk_pixbuf_new_from_file_at_scale(str(ROOT / 'maildesk/desktop_assets/icon.svg').encode(), 128, 128, 1, None)
-    if not image:
-        raise RuntimeError('Cannot render application icon')
-    try:
-        if not pixbuf.gdk_pixbuf_savev(image, str(sysroot / 'icon.png').encode(), b'png', None, None, None):
-            raise RuntimeError('Cannot encode application icon')
-    finally:
-        objects.g_object_unref(image)
+    render_icon(ROOT / 'maildesk/desktop_assets/icon.svg', sysroot / 'icon.png')
     png = (sysroot / 'icon.png').read_bytes()
     (sysroot / 'maildesk.ico').write_bytes(struct.pack('<HHH', 0, 1, 1) +
         struct.pack('<BBBBHHII', 128, 128, 0, 0, 1, 32, len(png), 22) + png)
@@ -216,13 +252,18 @@ def copy_runtime(bundle):
 
 # ==========================================
 # Function: Create a reproducible native application bundle plus per-file integrity evidence.
-# Method: Stage Python source and private DLLs beside a native PE executable; optional ZIP delivery.
+# Method: Check host SVG support separately or stage the native executable, private DLLs and optional ZIP.
 # ==========================================
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT / 'dist/TeleMail-Windows-amd64')
     parser.add_argument('--zip', action='store_true')
+    parser.add_argument('--check-icon', action='store_true', help='Verify host SVG/PNG support without the Windows SDK')
     args = parser.parse_args()
+    if args.check_icon:
+        icon = render_icon(ROOT / 'maildesk/desktop_assets/icon.svg', ROOT / '.runtime/build-windows/icon.png')
+        print('Host SVG/PNG icon rendering verified: ' + str(icon))
+        return
     bundle = args.output.resolve()
     bundle.mkdir(parents=True, exist_ok=True)
     for folder in ('app', 'docs'):

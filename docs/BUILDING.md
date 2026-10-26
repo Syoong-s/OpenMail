@@ -4,7 +4,7 @@
 
 ## Linux
 
-应用运行要求 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1。构建需要 Linux x86-64、GCC 兼容编译器、binutils、dpkg-deb。
+应用运行要求 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1 和 SVG 图像加载器（Debian/Ubuntu：`librsvg2-common`）。构建需要 Linux x86-64、GCC 兼容编译器、binutils、dpkg-deb。
 
 ```sh
 python3 tools/build_linux.py --cc gcc
@@ -15,13 +15,16 @@ glibc 的实际下限由所用构建主机决定，应在计划支持的最旧�
 
 ## Windows 交叉构建
 
-使用 Linux x86-64 或 WSL2，Python 3.14+（读取 zstd tar 包）、GNU make、主机 GTK/GdkPixbuf 和 glib-compile-schemas。不使用 Windows 编译器。脚本下载固定版本归档并解压到项目私有 SDK，不安装系统包、不运行包安装脚本。
+使用 Linux x86-64 或 WSL2，Python 3.14+（读取 zstd tar 包）、GNU make、主机 GTK/GdkPixbuf、SVG 加载器（Debian/Ubuntu：`librsvg2-common`）和 glib-compile-schemas。不使用 Windows 编译器。脚本下载固定版本归档并解压到项目私有 SDK，不安装系统包、不运行包安装脚本。
 
 ```sh
+python3 tools/build_windows.py --check-icon
 python3 tools/prepare_windows_runtime.py --manifest-only
 python3 tools/prepare_windows_runtime.py
 python3 tools/build_windows.py --zip
 ```
+
+`--check-icon` 无需 Windows SDK 和图形桌面，可先验证主机 SVG 解码/PNG 编码。缺少加载器时会显示原始 GdkPixbuf 错误；工作流在下载 SDK 前执行检查。Ubuntu 24.04 的 PR 检查还会隐藏加载器缓存，验证缺依赖时的诊断。
 
 固定 SDK：llvm-mingw 20261006 / LLVM 23.1.3，WebView2 SDK 1.0.4258.31，嵌入式 CPython 3.14.5。二进制归档哈希见 `third_party/windows/`；PDF.js 来源与资源哈希见 `maildesk/desktop_assets/pdfjs/vendor/SOURCE.json`。可复用现有、已校验的私有 SDK；不得将其个人绝对路径提交到仓库。
 
