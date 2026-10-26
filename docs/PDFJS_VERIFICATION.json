@@ -1,0 +1,114 @@
+{
+  "version": "0.55.0",
+  "pdf_engine": "PDF.js 6.4.299",
+  "upstream": {
+    "version": "6.4.299",
+    "source_url": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.4.299.tgz",
+    "integrity": "sha512-AVl138zALtfaAPvADulE0PZThbYzCBS79nL4pOSL/6Sm/4AH5A21BD9VHt97OlCuzJuCpmeZtAtkinisF4Vb1g==",
+    "sha256": "86269b40170eb41740ea05ad2102d71d33de4f122b34eb2f478be0ea7779c415"
+  },
+  "linux_native": {
+    "ok": true,
+    "checks": [
+      "pdfjs-real-worker-two-selectable-pages",
+      "native-next-and-pdfjs-cross-page-search-highlights",
+      "real-canvas-ink-and-selectable-highlighted-text-layer",
+      "native-pdf-zoom-confirmed-asynchronously",
+      "close-revokes-url-releases-document-and-listener",
+      "malformed-pdf-shows-load-error-without-native-crash",
+      "reopen-uses-fresh-capability-and-live-worker",
+      "encrypted-pdf-wrong-password-retry-local-decryption-and-cleared-input",
+      "three-additional-native-close-reopen-worker-cycles"
+    ],
+    "canvas": {
+      "text": "Search target on second page",
+      "ink": 3080,
+      "highlights": 1
+    },
+    "provider_calls": 0
+  },
+  "windows_native": {
+    "ok": true,
+    "checks": [
+      "pdfjs-real-worker-two-selectable-pages",
+      "native-next-and-pdfjs-cross-page-search-highlights",
+      "real-canvas-ink-and-selectable-highlighted-text-layer",
+      "native-pdf-zoom-confirmed-asynchronously",
+      "close-revokes-url-releases-document-and-listener",
+      "malformed-pdf-shows-load-error-without-native-crash",
+      "reopen-uses-fresh-capability-and-live-worker",
+      "encrypted-pdf-wrong-password-retry-local-decryption-and-cleared-input",
+      "three-additional-native-close-reopen-worker-cycles"
+    ],
+    "canvas": {
+      "text": "Search target on second page",
+      "ink": 2125,
+      "highlights": 1
+    },
+    "provider_calls": 0
+  },
+  "known_qa_limitations": [
+    "WSL WebKit may log GLib/GIO name-release warnings during renderer shutdown; application exits successfully.",
+    "Native Windows staged UNC fonts used identical installed-font bytes for QA; no host install replaced.",
+    "Screenshots are not part of correctness evidence or release payload."
+  ],
+  "code_modified": true,
+  "live_mailbox_access": false,
+  "historical_pre_release_tests": {
+    "linux_backend": {
+      "ok": true,
+      "run": 291,
+      "skipped": 2,
+      "failures": 0,
+      "errors": 0,
+      "excluded_baseline_suites": [
+        "test_conversation_bubbles.py",
+        "test_conversation_layout.py",
+        "test_general_appearance.py"
+      ],
+      "baseline_reproduced_failures": 2,
+      "baseline_reproduced_errors": 13
+    },
+    "windows_backend": {
+      "ok": true,
+      "run": 291,
+      "skipped": 1,
+      "failures": 0,
+      "errors": 0,
+      "excluded_baseline_suites": [
+        "test_conversation_bubbles.py",
+        "test_conversation_layout.py",
+        "test_general_appearance.py"
+      ],
+      "qa_openssl": "existing pinned private SDK; process PATH only"
+    },
+    "known_existing_failures": {
+      "full_suite_run": 320,
+      "failures": 2,
+      "errors": 13,
+      "reproduced_on_pre_migration_code": true,
+      "note": "Legacy conversation mocks lack accounts; old attachment-cache location assertions."
+    }
+  },
+  "linux_backend": {
+    "ok": true,
+    "platform": "linux",
+    "python": "3.14.4",
+    "run": 320,
+    "skipped": 2,
+    "failures": 0,
+    "errors": 0,
+    "excluded_suites": []
+  },
+  "windows_backend": {
+    "ok": true,
+    "platform": "win32",
+    "python": "3.14.5",
+    "run": 320,
+    "skipped": 2,
+    "failures": 0,
+    "errors": 0,
+    "excluded_suites": []
+  },
+  "release_test_fixture_changes": "Updated outdated account/profile/native facades, history gate lifecycle and explicit temporary attachment cache; no product code change."
+}

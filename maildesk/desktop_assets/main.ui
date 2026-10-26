@@ -1,0 +1,1633 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk+" version="3.24" />
+  <object class="GtkPopover" id="mail_menu">
+    <property name="name">mail_menu</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <property name="margin">8</property>
+        <child>
+          <object class="GtkButton" id="copy">
+            <property name="name">copy</property>
+            <property name="label">复制到文件夹</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="reminder">
+            <property name="name">reminder</property>
+            <property name="label">跟进提醒</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="aside">
+            <property name="name">aside</property>
+            <property name="label">暂存 / 放回收件箱</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="labels">
+            <property name="name">labels</property>
+            <property name="label">编辑标签</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="sender_policy">
+            <property name="name">sender_policy</property>
+            <property name="label">发件人筛选</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="unsubscribe">
+            <property name="name">unsubscribe</property>
+            <property name="label">退订</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="spam">
+            <property name="name">spam</property>
+            <property name="label">标为垃圾邮件</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="delete_forever">
+            <property name="name">delete_forever</property>
+            <property name="label">永久删除</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="export">
+            <property name="name">export</property>
+            <property name="label">导出 EML</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="copy_markdown">
+            <property name="name">copy_markdown</property>
+            <property name="label">复制为 Markdown</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="print">
+            <property name="name">print</property>
+            <property name="label">打印 / 保存 PDF</property>
+            <style>
+              <class name="popover-action" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">8</property>
+            <child>
+              <object class="GtkComboBoxText" id="message_category">
+                <property name="name">message_category</property>
+                <items>
+                  <item id="personal">个人</item>
+                  <item id="verification">验证码</item>
+                  <item id="notification">通知</item>
+                  <item id="newsletter">订阅</item>
+                </items>
+              </object>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="learn">
+                <property name="name">learn</property>
+                <property name="label">记住发件人</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="apply_category">
+                <property name="name">apply_category</property>
+                <property name="label">应用</property>
+                <style>
+                  <class name="quiet" />
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="reason">
+            <property name="name">reason</property>
+            <property name="label" />
+            <property name="xalign">0</property>
+            <property name="wrap">True</property>
+            <style>
+              <class name="muted" />
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="views_menu">
+    <property name="name">views_menu</property>
+    <child>
+      <object class="GtkBox" id="inbox_view_menu">
+        <property name="name">inbox_view_menu</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <property name="margin">16</property>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">8</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">选择您的收件箱视图</property>
+                <property name="xalign">0</property>
+                <property name="hexpand">True</property>
+                <style>
+                  <class name="inbox-chooser-heading" />
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="view_settings">
+                <property name="name">view_settings</property>
+                <property name="label">视图设置…</property>
+                <style>
+                  <class name="popover-action" />
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="inbox_view_choices">
+            <property name="orientation">horizontal</property>
+            <property name="spacing">10</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="inbox_view_actions">
+            <property name="name">inbox_view_actions</property>
+            <property name="spacing">4</property>
+            <property name="halign">end</property>
+            <child>
+              <object class="GtkButton" id="reclassify">
+                <property name="name">reclassify</property>
+                <property name="label">重新归类</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="save_search">
+                <property name="name">save_search</property>
+                <property name="label">保存搜索</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="attachments_menu">
+    <property name="name">attachments_menu</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="hscrollbar-policy">never</property>
+        <property name="propagate-natural-height">True</property>
+        <property name="max-content-height">240</property>
+        <property name="width-request">340</property>
+        <child>
+          <object class="GtkFlowBox" id="attachments">
+            <property name="halign">fill</property>
+            <property name="row-spacing">8</property>
+            <property name="column-spacing">8</property>
+            <property name="min-children-per-line">1</property>
+            <property name="max-children-per-line">64</property>
+            <property name="selection-mode">none</property>
+            <property name="name">attachments</property>
+            <property name="margin">6</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="thread_menu">
+    <property name="name">thread_menu</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="hscrollbar-policy">never</property>
+        <property name="propagate-natural-height">True</property>
+        <property name="max-content-height">240</property>
+        <property name="width-request">340</property>
+        <child>
+          <object class="GtkBox" id="thread">
+            <property name="name">thread</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">2</property>
+            <property name="margin">6</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkApplicationWindow" id="window">
+    <property name="name">window</property>
+    <property name="title">TeleMail</property>
+    <property name="resizable">True</property>
+    <property name="default-width">1350</property>
+    <property name="default-height">820</property>
+    <property name="window-position">center</property>
+    <child type="titlebar">
+      <object class="GtkHeaderBar" id="header">
+        <property name="name">header</property>
+        <property name="show-close-button">True</property>
+        <property name="title" />
+        <property name="subtitle" />
+        <child type="title">
+          <object class="GtkLabel" id="caption_spacer">
+            <property name="label" />
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkBox" id="root">
+        <property name="name">root</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel" id="banner">
+            <property name="name">banner</property>
+            <property name="label">TeleMail</property>
+            <property name="xalign">0</property>
+            <property name="no-show-all">True</property>
+            <property name="visible">False</property>
+            <style>
+              <class name="banner" />
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkOverlay" id="workspace_overlay">
+            <property name="name">workspace_overlay</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkBox" id="workspace">
+                <property name="orientation">horizontal</property>
+                <property name="vexpand">True</property>
+                <property name="name">workspace</property>
+                <child>
+                  <object class="GtkBox" id="rail">
+                    <property name="name">rail</property>
+                    <property name="orientation">vertical</property>
+                    <property name="width-request">52</property>
+                    <property name="spacing">9</property>
+                    <child>
+                      <object class="GtkLabel" id="brand">
+                        <property name="name">brand</property>
+                        <property name="label">✦</property>
+                        <property name="xalign">0.5</property>
+                        <style>
+                          <class name="brand" />
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScrolledWindow" id="pinned_navigation_scroll">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="vscrollbar-policy">automatic</property>
+                        <property name="min-content-height">0</property>
+                        <property name="max-content-height">320</property>
+                        <property name="propagate-natural-height">True</property>
+                        <property name="no-show-all">True</property>
+                        <property name="visible">False</property>
+                        <child>
+                          <object class="GtkBox" id="pinned_navigation">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">7</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">horizontal</property>
+                        <property name="vexpand">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="rail_settings_slot">
+                        <property name="orientation">vertical</property>
+                        <property name="no-show-all">True</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkPaned" id="document_split">
+                    <property name="name">document_split</property>
+                    <property name="vexpand">True</property>
+                    <property name="hexpand">True</property>
+                    <property name="wide-handle">True</property>
+                    <property name="orientation">horizontal</property>
+                    <child>
+                      <object class="GtkPaned" id="mail_split">
+                        <property name="name">mail_split</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="position">340</property>
+                        <property name="wide-handle">True</property>
+                        <property name="vexpand">True</property>
+                        <child>
+                          <object class="GtkBox" id="listpane">
+                            <property name="name">listpane</property>
+                            <property name="orientation">vertical</property>
+                            <property name="width-request">220</property>
+                            <child>
+                              <object class="GtkBox" id="list_header">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">4</property>
+                                <property name="name">list_header</property>
+                                <style>
+                                  <class name="list-header" />
+                                </style>
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">horizontal</property>
+                                    <property name="spacing">6</property>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="orientation">vertical</property>
+                                        <property name="spacing">3</property>
+                                        <child>
+                                          <object class="GtkBox">
+                                            <property name="orientation">horizontal</property>
+                                            <property name="spacing">4</property>
+                                            <child>
+                                              <object class="GtkMenuButton" id="view_toggle">
+                                                <property name="name">view_toggle</property>
+                                                <property name="popover">views_menu</property>
+                                                <child>
+                                                  <object class="GtkBox" id="view_toggle_content">
+                                                    <property name="spacing">4</property>
+                                                    <property name="orientation">horizontal</property>
+                                                    <child>
+                                                      <object class="GtkLabel" id="view_title">
+                                                        <property name="name">view_title</property>
+                                                        <property name="label">收件箱</property>
+                                                        <property name="xalign">0</property>
+                                                        <style>
+                                                          <class name="view-title" />
+                                                        </style>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="view_subtitle">
+                                            <property name="name">view_subtitle</property>
+                                            <property name="label">聚焦列表</property>
+                                            <property name="xalign">0</property>
+                                            <property name="no-show-all">True</property>
+                                            <property name="visible">False</property>
+                                            <style>
+                                              <class name="muted" />
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkSpinner" id="spinner">
+                                        <property name="name">spinner</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="sync">
+                                        <property name="name">sync</property>
+                                        <property name="label">↻</property>
+                                        <property name="tooltip-text">同步</property>
+                                        <style>
+                                          <class name="icon" />
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="search_toggle">
+                                        <property name="name">search_toggle</property>
+                                        <property name="label">⌕</property>
+                                        <property name="tooltip-text">搜索</property>
+                                        <style>
+                                          <class name="icon" />
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="compose">
+                                        <property name="name">compose</property>
+                                        <property name="label">✎</property>
+                                        <property name="tooltip-text">写邮件</property>
+                                        <style>
+                                          <class name="icon" />
+                                        </style>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkRevealer" id="search_revealer">
+                                    <property name="name">search_revealer</property>
+                                    <property name="transition-type">slide-down</property>
+                                    <property name="transition-duration">180</property>
+                                    <child>
+                                      <object class="GtkBox" id="search_controls">
+                                        <property name="name">search_controls</property>
+                                        <property name="spacing">5</property>
+                                        <property name="valign">center</property>
+                                        <child>
+                                          <object class="GtkSearchEntry" id="search">
+                                            <property name="name">search</property>
+                                            <property name="placeholder-text">搜索邮件 · from: / has:attachment</property>
+                                            <property name="hexpand">True</property>
+                                            <property name="valign">center</property>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">True</property>
+                                            <property name="fill">True</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="search_close">
+                                            <property name="name">search_close</property>
+                                            <property name="label">×</property>
+                                            <property name="tooltip-text">关闭搜索（Esc）</property>
+                                            <property name="valign">center</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="focus_back">
+                                    <property name="name">focus_back</property>
+                                    <property name="label">‹ 返回聚焦列表</property>
+                                    <property name="no-show-all">True</property>
+                                    <property name="visible">False</property>
+                                    <property name="halign">start</property>
+                                    <style>
+                                      <class name="quiet" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="gatekeeper_inbox">
+                                    <property name="name">gatekeeper_inbox</property>
+                                    <property name="label">新发件人 · 审阅</property>
+                                    <property name="no-show-all">True</property>
+                                    <property name="visible">False</property>
+                                    <style>
+                                      <class name="quiet" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkBox" id="list_status">
+                                    <property name="orientation">horizontal</property>
+                                    <property name="spacing">4</property>
+                                    <property name="name">list_status</property>
+                                    <child>
+                                      <object class="GtkLabel" id="count">
+                                        <property name="name">count</property>
+                                        <property name="label">0 封邮件</property>
+                                        <property name="xalign">0</property>
+                                        <style>
+                                          <class name="muted" />
+                                        </style>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkButton" id="selection">
+                                        <property name="name">selection</property>
+                                        <property name="label">选择</property>
+                                        <style>
+                                          <class name="quiet" />
+                                        </style>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkComboBoxText" id="account_filter">
+                                        <property name="name">account_filter</property>
+                                        <items />
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkRevealer" id="bulk_revealer">
+                                    <property name="name">bulk_revealer</property>
+                                    <property name="transition-type">slide-down</property>
+                                    <property name="transition-duration">180</property>
+                                    <child>
+                                      <object class="GtkBox">
+                                        <property name="orientation">horizontal</property>
+                                        <property name="spacing">2</property>
+                                        <property name="name">bulk_controls</property>
+                                        <property name="valign">center</property>
+                                        <child>
+                                          <object class="GtkButton" id="bulk_seen">
+                                            <property name="name">bulk_seen</property>
+                                            <property name="label">已读</property>
+                                            <style>
+                                              <class name="quiet" />
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="bulk_move">
+                                            <property name="name">bulk_move</property>
+                                            <property name="label">移动</property>
+                                            <style>
+                                              <class name="quiet" />
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="bulk_archive">
+                                            <property name="name">bulk_archive</property>
+                                            <property name="label">归档</property>
+                                            <style>
+                                              <class name="quiet" />
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="bulk_trash">
+                                            <property name="name">bulk_trash</property>
+                                            <property name="label">删除</property>
+                                            <style>
+                                              <class name="quiet" />
+                                            </style>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkButton" id="bulk_done">
+                                            <property name="name">bulk_done</property>
+                                            <property name="label">完成</property>
+                                            <style>
+                                              <class name="quiet" />
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <property name="vexpand">True</property>
+                                <child>
+                                  <object class="GtkListBox" id="messages">
+                                    <property name="name">messages</property>
+                                    <property name="selection-mode">single</property>
+                                    <property name="activate-on-single-click">True</property>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="more">
+                                <property name="name">more</property>
+                                <property name="label">加载更多</property>
+                                <style>
+                                  <class name="quiet" />
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="resize">False</property>
+                            <property name="shrink">False</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="reader">
+                            <property name="width-request">260</property>
+                            <property name="name">reader</property>
+                            <property name="orientation">vertical</property>
+                            <property name="hexpand">True</property>
+                            <child>
+                              <object class="GtkOverlay" id="reader_overlay">
+                                <property name="hexpand">True</property>
+                                <property name="vexpand">True</property>
+                                <child>
+                                  <object class="GtkStack" id="reader_stack">
+                                    <property name="name">reader_stack</property>
+                                    <property name="transition-type">crossfade</property>
+                                    <property name="transition-duration">150</property>
+                                    <property name="homogeneous">False</property>
+                                    <property name="vexpand">True</property>
+                                    <child>
+                                      <object class="GtkBox" id="mail_surface">
+                                        <property name="name">mail_surface</property>
+                                        <property name="orientation">vertical</property>
+                                        <property name="spacing">0</property>
+                                        <property name="hexpand">True</property>
+                                        <child>
+                                          <object class="GtkBox" id="reader_toolbar">
+                                            <property name="name">reader_toolbar</property>
+                                            <property name="orientation">horizontal</property>
+                                            <property name="spacing">3</property>
+                                            <property name="no-show-all">True</property>
+                                            <property name="visible">False</property>
+                                            <child>
+                                              <object class="GtkButton" id="done">
+                                                <property name="name">done</property>
+                                                <property name="label">✓</property>
+                                                <property name="tooltip-text">完成 / 重新打开</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="reader_close">
+                                                <property name="tooltip-text">关闭邮件</property>
+                                                <property name="label">×</property>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="archive">
+                                                <property name="name">archive</property>
+                                                <property name="label">⌄</property>
+                                                <property name="tooltip-text">归档 / 移回收件箱</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="trash">
+                                                <property name="name">trash</property>
+                                                <property name="label">♜</property>
+                                                <property name="tooltip-text">移到废纸篓</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="priority">
+                                                <property name="name">priority</property>
+                                                <property name="label">ϟ</property>
+                                                <property name="tooltip-text">优先</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="seen">
+                                                <property name="name">seen</property>
+                                                <property name="label">○</property>
+                                                <property name="tooltip-text">已读 / 未读</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="pin">
+                                                <property name="name">pin</property>
+                                                <property name="label">♧</property>
+                                                <property name="tooltip-text">置顶</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="move">
+                                                <property name="name">move</property>
+                                                <property name="label">➜</property>
+                                                <property name="tooltip-text">移动到文件夹</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="snooze">
+                                                <property name="name">snooze</property>
+                                                <property name="label">◷</property>
+                                                <property name="tooltip-text">稍后</property>
+                                                <style>
+                                                  <class name="icon" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkMenuButton" id="more_actions">
+                                                <property name="name">more_actions</property>
+                                                <property name="label">•••</property>
+                                                <property name="popover">mail_menu</property>
+                                                <property name="tooltip-text">更多操作</property>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkBox">
+                                                <property name="orientation">horizontal</property>
+                                                <property name="hexpand">True</property>
+                                              </object>
+                                              <packing>
+                                                <property name="expand">True</property>
+                                                <property name="fill">True</property>
+                                              </packing>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child>
+                                          <object class="GtkBox" id="reader_content">
+                                            <property name="name">reader_content</property>
+                                            <property name="orientation">vertical</property>
+                                            <property name="spacing">15</property>
+                                            <style>
+                                              <class name="reader-content" />
+                                            </style>
+                                            <child>
+                                              <object class="GtkLabel" id="subject">
+                                                <property name="name">subject</property>
+                                                <property name="label" />
+                                                <property name="xalign">0</property>
+                                                <property name="wrap">True</property>
+                                                <property name="selectable">True</property>
+                                                <property name="no-show-all">True</property>
+                                                <property name="visible">False</property>
+                                                <style>
+                                                  <class name="subject" />
+                                                </style>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkBox" id="mail_card">
+                                                <property name="name">mail_card</property>
+                                                <property name="orientation">vertical</property>
+                                                <property name="spacing">10</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="no-show-all">True</property>
+                                                <property name="visible">False</property>
+                                                <child>
+                                                  <object class="GtkBox">
+                                                    <property name="orientation">horizontal</property>
+                                                    <property name="spacing">14</property>
+                                                    <child>
+                                                      <object class="GtkLabel" id="sender_avatar">
+                                                        <property name="name">sender_avatar</property>
+                                                        <property name="label">邮</property>
+                                                        <property name="xalign">0.5</property>
+                                                        <style>
+                                                          <class name="sender-avatar" />
+                                                        </style>
+                                                      </object>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkLabel" id="sender">
+                                                        <property name="name">sender</property>
+                                                        <property name="label">选择邮件开始阅读</property>
+                                                        <property name="xalign">0</property>
+                                                        <property name="wrap">True</property>
+                                                        <property name="selectable">True</property>
+                                                        <property name="hexpand">True</property>
+                                                        <style>
+                                                          <class name="sender" />
+                                                        </style>
+                                                      </object>
+                                                      <packing>
+                                                        <property name="expand">True</property>
+                                                        <property name="fill">True</property>
+                                                      </packing>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkBox" id="sender_review">
+                                                    <property name="name">sender_review</property>
+                                                    <property name="orientation">horizontal</property>
+                                                    <property name="spacing">8</property>
+                                                    <property name="no-show-all">True</property>
+                                                    <property name="visible">False</property>
+                                                    <child>
+                                                      <object class="GtkLabel" id="sender_review_note">
+                                                        <property name="name">sender_review_note</property>
+                                                        <property name="label">新发件人</property>
+                                                        <property name="xalign">0</property>
+                                                        <style>
+                                                          <class name="muted" />
+                                                        </style>
+                                                      </object>
+                                                      <packing>
+                                                        <property name="expand">True</property>
+                                                        <property name="fill">True</property>
+                                                      </packing>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkButton" id="accept_sender">
+                                                        <property name="name">accept_sender</property>
+                                                        <property name="label">接受</property>
+                                                        <style>
+                                                          <class name="quiet" />
+                                                        </style>
+                                                      </object>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkButton" id="block_sender">
+                                                        <property name="name">block_sender</property>
+                                                        <property name="label">屏蔽</property>
+                                                        <style>
+                                                          <class name="quiet" />
+                                                        </style>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkLabel" id="message_tags">
+                                                    <property name="name">message_tags</property>
+                                                    <property name="label" />
+                                                    <property name="xalign">0</property>
+                                                    <property name="wrap">True</property>
+                                                    <property name="no-show-all">True</property>
+                                                    <property name="visible">False</property>
+                                                    <style>
+                                                      <class name="tag-line" />
+                                                    </style>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkBox" id="body_host">
+                                                    <property name="name">body_host</property>
+                                                    <property name="orientation">vertical</property>
+                                                    <property name="vexpand">True</property>
+                                                    <child>
+                                                      <object class="GtkScrolledWindow">
+                                                        <property name="hscrollbar-policy">never</property>
+                                                        <property name="vexpand">True</property>
+                                                        <child>
+                                                          <object class="GtkTextView" id="body">
+                                                            <property name="name">body</property>
+                                                            <property name="editable">False</property>
+                                                            <property name="cursor-visible">False</property>
+                                                            <property name="wrap-mode">word-char</property>
+                                                            <property name="left-margin">0</property>
+                                                            <property name="right-margin">8</property>
+                                                            <property name="pixels-above-lines">4</property>
+                                                            <property name="pixels-below-lines">5</property>
+                                                          </object>
+                                                        </child>
+                                                      </object>
+                                                      <packing>
+                                                        <property name="expand">True</property>
+                                                        <property name="fill">True</property>
+                                                      </packing>
+                                                    </child>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="expand">True</property>
+                                                    <property name="fill">True</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkBox" id="mail_footer">
+                                                    <property name="name">mail_footer</property>
+                                                    <property name="orientation">horizontal</property>
+                                                    <property name="spacing">8</property>
+                                                    <property name="no-show-all">True</property>
+                                                    <property name="visible">False</property>
+                                                    <child>
+                                                      <object class="GtkMenuButton" id="attachments_toggle">
+                                                        <property name="name">attachments_toggle</property>
+                                                        <property name="label">附件</property>
+                                                        <property name="popover">attachments_menu</property>
+                                                        <property name="no-show-all">True</property>
+                                                        <property name="visible">False</property>
+                                                        <style>
+                                                          <class name="attachment-summary" />
+                                                        </style>
+                                                      </object>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkMenuButton" id="thread_toggle">
+                                                        <property name="name">thread_toggle</property>
+                                                        <property name="label">对话</property>
+                                                        <property name="popover">thread_menu</property>
+                                                        <property name="no-show-all">True</property>
+                                                        <property name="visible">False</property>
+                                                        <style>
+                                                          <class name="attachment-summary" />
+                                                        </style>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkScrolledWindow" id="conversation_scroll">
+                                                <property name="overlay-scrolling">False</property>
+                                                <property name="hscrollbar-policy">automatic</property>
+                                                <property name="vexpand">True</property>
+                                                <child>
+                                                  <object class="GtkBox" id="conversation_host">
+                                                    <property name="name">conversation_host</property>
+                                                    <property name="orientation">vertical</property>
+                                                    <property name="spacing">16</property>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                              <packing>
+                                                <property name="expand">True</property>
+                                                <property name="fill">True</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkBox" id="reader_actions">
+                                                <property name="name">reader_actions</property>
+                                                <property name="orientation">horizontal</property>
+                                                <property name="spacing">10</property>
+                                                <child>
+                                                  <object class="GtkButton" id="reply">
+                                                    <property name="name">reply</property>
+                                                    <property name="label">回复</property>
+                                                    <property name="no-show-all">True</property>
+                                                    <property name="visible">False</property>
+                                                    <style>
+                                                      <class name="suggested-action" />
+                                                    </style>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="reply_all">
+                                                    <property name="name">reply_all</property>
+                                                    <property name="label">全部回复</property>
+                                                    <property name="no-show-all">True</property>
+                                                    <property name="visible">False</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="forward">
+                                                    <property name="name">forward</property>
+                                                    <property name="label">转发</property>
+                                                    <property name="no-show-all">True</property>
+                                                    <property name="visible">False</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="edit_draft">
+                                                    <property name="name">edit_draft</property>
+                                                    <property name="label">编辑草稿</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="cancel_job">
+                                                    <property name="name">cancel_job</property>
+                                                    <property name="label">取消计划 / 撤销发送</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="reschedule_job">
+                                                    <property name="name">reschedule_job</property>
+                                                    <property name="label">修改时间</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="send_job_now">
+                                                    <property name="name">send_job_now</property>
+                                                    <property name="label">现在发送</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="delete_draft">
+                                                    <property name="label">删除草稿</property>
+                                                    <property name="tooltip-text">删除当前未发送草稿</property>
+                                                    <property name="no-show-all">True</property>
+                                                    <property name="visible">False</property>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                            </child>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">True</property>
+                                            <property name="fill">True</property>
+                                          </packing>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="name">mail</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkBox" id="composer_host">
+                                        <property name="name">composer_host</property>
+                                        <property name="orientation">vertical</property>
+                                        <property name="vexpand">True</property>
+                                      </object>
+                                      <packing>
+                                        <property name="name">composer</property>
+                                      </packing>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="resize">True</property>
+                            <property name="shrink">False</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="resize">True</property>
+                        <property name="shrink">False</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="document_host">
+                        <property name="width-request">280</property>
+                        <property name="visible">False</property>
+                        <property name="no-show-all">True</property>
+                        <property name="name">document_host</property>
+                        <property name="orientation">vertical</property>
+                        <property name="vexpand">True</property>
+                      </object>
+                      <packing>
+                        <property name="resize">False</property>
+                        <property name="shrink">False</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+            <child type="overlay">
+              <object class="GtkEventBox" id="navigation_backdrop">
+                <property name="visible-window">False</property>
+                <property name="no-show-all">True</property>
+                <property name="visible">False</property>
+                <property name="halign">fill</property>
+                <property name="valign">fill</property>
+              </object>
+            </child>
+            <child type="overlay">
+              <object class="GtkRevealer" id="folders_menu">
+                <property name="name">folders_menu</property>
+                <property name="reveal-child">False</property>
+                <property name="no-show-all">True</property>
+                <property name="visible">False</property>
+                <property name="halign">start</property>
+                <property name="valign">fill</property>
+                <property name="margin-top">10</property>
+                <property name="margin-bottom">10</property>
+                <property name="margin-start">66</property>
+                <property name="transition-type">slide-right</property>
+                <property name="transition-duration">160</property>
+                <child>
+                  <object class="GtkBox" id="sidebar">
+                    <property name="name">sidebar</property>
+                    <property name="orientation">vertical</property>
+                    <property name="width-request">240</property>
+                    <property name="vexpand">True</property>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="vexpand">True</property>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">10</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">文件夹</property>
+                                <property name="xalign">0</property>
+                                <style>
+                                  <class name="workspace-title" />
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkRevealer" id="folder_revealer">
+                                <property name="name">folder_revealer</property>
+                                <property name="reveal-child">True</property>
+                                <property name="transition-type">slide-down</property>
+                                <property name="transition-duration">220</property>
+                                <child>
+                                  <object class="GtkBox" id="folder_tree">
+                                    <property name="name">folder_tree</property>
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">2</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="orientation">horizontal</property>
+                                <style>
+                                  <class name="section-heading" />
+                                </style>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="label">智能文件夹</property>
+                                    <property name="xalign">0</property>
+                                    <style>
+                                      <class name="section-title" />
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">True</property>
+                                    <property name="fill">True</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="smart_add">
+                                    <property name="name">smart_add</property>
+                                    <property name="label">＋</property>
+                                    <style>
+                                      <class name="small-icon" />
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkBox" id="smart_tree">
+                                <property name="name">smart_tree</property>
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">2</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                      </packing>
+                    </child>
+                    <style>
+                      <class name="floating-navigation" />
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child type="overlay">
+              <object class="GtkRevealer" id="navigation_menu">
+                <property name="name">navigation_menu</property>
+                <property name="reveal-child">False</property>
+                <property name="no-show-all">True</property>
+                <property name="visible">False</property>
+                <property name="halign">start</property>
+                <property name="valign">fill</property>
+                <property name="margin-top">10</property>
+                <property name="margin-bottom">10</property>
+                <property name="margin-start">66</property>
+                <property name="transition-type">slide-right</property>
+                <property name="transition-duration">160</property>
+                <child>
+                  <object class="GtkBox" id="navigation_surface">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">2</property>
+                    <property name="margin">0</property>
+                    <property name="name">navigation_surface</property>
+                    <property name="width-request">240</property>
+                    <property name="vexpand">True</property>
+                    <style>
+                      <class name="floating-navigation" />
+                    </style>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">更多邮箱</property>
+                        <property name="xalign">0</property>
+                        <style>
+                          <class name="workspace-title" />
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="vexpand">True</property>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">3</property>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">2</property>
+                                <child>
+                                  <object class="GtkButton" id="nav_inbox">
+                                    <property name="name">nav_inbox</property>
+                                    <property name="label">智能收件箱</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_unread">
+                                    <property name="name">nav_unread</property>
+                                    <property name="label">未读</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_priority">
+                                    <property name="name">nav_priority</property>
+                                    <property name="label">优先</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_pinned">
+                                    <property name="name">nav_pinned</property>
+                                    <property name="label">置顶</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_aside">
+                                    <property name="name">nav_aside</property>
+                                    <property name="label">暂存</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_snoozed">
+                                    <property name="name">nav_snoozed</property>
+                                    <property name="label">稍后</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_sent">
+                                    <property name="name">nav_sent</property>
+                                    <property name="label">已发送</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_drafts">
+                                    <property name="name">nav_drafts</property>
+                                    <property name="label">草稿 / 发件箱</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_archive">
+                                    <property name="name">nav_archive</property>
+                                    <property name="label">归档</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_reminders">
+                                    <property name="name">nav_reminders</property>
+                                    <property name="label">提醒</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_done">
+                                    <property name="name">nav_done</property>
+                                    <property name="label">已完成</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_trash">
+                                    <property name="name">nav_trash</property>
+                                    <property name="label">废纸篓</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_spam">
+                                    <property name="name">nav_spam</property>
+                                    <property name="label">垃圾邮件</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_all">
+                                    <property name="name">nav_all</property>
+                                    <property name="label">所有邮件</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_new_senders">
+                                    <property name="name">nav_new_senders</property>
+                                    <property name="label">新发件人</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nav_blocked">
+                                    <property name="name">nav_blocked</property>
+                                    <property name="label">已屏蔽</property>
+                                    <style>
+                                      <class name="nav" />
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="import">
+                                <property name="name">import</property>
+                                <property name="label">导入 EML</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="open_document">
+                                <property name="name">open_document</property>
+                                <property name="label">打开文件…</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                      </packing>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkRevealer" id="toast_revealer">
+            <property name="name">toast_revealer</property>
+            <property name="reveal-child">False</property>
+            <property name="transition-type">slide-up</property>
+            <property name="transition-duration">220</property>
+            <child>
+              <object class="GtkBox" id="toast">
+                <property name="name">toast</property>
+                <property name="orientation">horizontal</property>
+                <property name="spacing">16</property>
+                <property name="margin">12</property>
+                <child>
+                  <object class="GtkLabel" id="status">
+                    <property name="name">status</property>
+                    <property name="label">就绪</property>
+                    <property name="xalign">0</property>
+                    <property name="wrap">True</property>
+                    <property name="hexpand">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="toast_close">
+                    <property name="name">toast_close</property>
+                    <property name="label">关闭</property>
+                    <style>
+                      <class name="quiet" />
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkButton" id="contacts">
+    <property name="name">contacts</property>
+    <property name="label">◎</property>
+    <property name="tooltip-text">通讯录</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+    <style>
+      <class name="rail-button" />
+    </style>
+  </object>
+  <object class="GtkButton" id="settings">
+    <property name="name">settings</property>
+    <property name="label">●</property>
+    <property name="tooltip-text">账号</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+    <style>
+      <class name="rail-button" />
+    </style>
+  </object>
+  <object class="GtkLabel" id="avatar">
+    <property name="name">avatar</property>
+    <property name="label">我</property>
+    <property name="xalign">0.5</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+    <style>
+      <class name="avatar" />
+    </style>
+  </object>
+  <object class="GtkButton" id="demo">
+    <property name="name">demo</property>
+    <property name="label">演示邮箱</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+  </object>
+  <object class="GtkButton" id="install">
+    <property name="name">install</property>
+    <property name="label">安装应用</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+  </object>
+  <object class="GtkButton" id="view_add">
+    <property name="name">view_add</property>
+    <property name="label">＋ 增加收件箱视图</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+    <style>
+      <class name="popover-action" />
+    </style>
+  </object>
+  <object class="GtkButton" id="folders_manage">
+    <property name="name">folders_manage</property>
+    <property name="label">＋</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+    <style>
+      <class name="small-icon" />
+    </style>
+  </object>
+  <object class="GtkComboBoxText" id="category_filter">
+    <property name="name">category_filter</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+    <items>
+      <item id="all">全部</item>
+      <item id="personal">个人</item>
+      <item id="verification">验证码</item>
+                  <item id="notification">通知</item>
+      <item id="newsletter">订阅</item>
+    </items>
+  </object>
+  <object class="GtkComboBoxText" id="inbox_mode">
+    <property name="name">inbox_mode</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+    <items />
+  </object>
+  <object class="GtkButton" id="rail_pinned">
+    <property name="name">rail_pinned</property>
+    <property name="label">♧</property>
+    <property name="tooltip-text">已置顶</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+  </object>
+  <object class="GtkButton" id="rail_sent">
+    <property name="name">rail_sent</property>
+    <property name="label">➤</property>
+    <property name="tooltip-text">已发送</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+  </object>
+  <object class="GtkButton" id="rail_trash">
+    <property name="name">rail_trash</property>
+    <property name="label">♜</property>
+    <property name="tooltip-text">废纸篓</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+  </object>
+  <object class="GtkButton" id="rail_done">
+    <property name="name">rail_done</property>
+    <property name="label">✓</property>
+    <property name="tooltip-text">已完成</property>
+    <property name="no-show-all">True</property>
+    <property name="visible">False</property>
+  </object>
+  <object class="GtkButton" id="rail_inbox">
+    <property name="name">rail_inbox</property>
+    <property name="label">▣</property>
+    <property name="tooltip-text">收件箱</property>
+    <style>
+      <class name="rail-active" />
+    </style>
+  </object>
+  <object class="GtkToggleButton" id="folder_toggle">
+    <property name="name">folder_toggle</property>
+    <property name="label">▱</property>
+    <property name="tooltip-text">文件夹与邮箱</property>
+  </object>
+  <object class="GtkToggleButton" id="navigation_toggle">
+    <property name="name">navigation_toggle</property>
+    <property name="label">☰</property>
+    <property name="tooltip-text">更多邮箱</property>
+  </object>
+  <object class="GtkButton" id="preferences">
+    <property name="name">preferences</property>
+    <property name="label">⚙</property>
+    <property name="tooltip-text">设置</property>
+    <style>
+      <class name="rail-button" />
+    </style>
+  </object>
+</interface>

@@ -1,0 +1,11 @@
+/* TeleMail's own local PDF.js viewer surface; upstream viewer styles remain separate. */
+:root { color-scheme: light dark; --viewer-container-height: 100vh; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; font: 14px sans-serif; background: #393b40; }
+#viewport { position: absolute; inset: 0; overflow: auto; outline: none; }
+.pdfViewer { padding-block: 8px; }
+.pdfViewer .page { margin: 0 auto 8px; border: 0; box-shadow: 0 1px 5px #0008; }
+#status { position: absolute; inset: 0; display: grid; place-content: center; margin: 0; color: #eee; pointer-events: none; }
+#status[hidden], #passwordForm[hidden] { display: none; }
+#passwordForm { position: absolute; inset: 0; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 12px; background: #26282bf5; color: white; padding: 20px; }
+input, button { font: inherit; padding: 8px; }
+#passwordError { flex-basis: 100%; text-align: center; }

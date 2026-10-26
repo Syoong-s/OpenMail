@@ -1,0 +1,18 @@
+{
+  "files": [
+    {
+      "crate": "difflib-0.4.0.crate",
+      "path": "third_party/supplemental-licenses/difflib-0.4.0.txt",
+      "url": "https://raw.githubusercontent.com/DimaKudosh/difflib/master/LICENSE",
+      "sha256": "6725d1437fc6c77301f2ff0e7d52914cf4f9509213e1078dc77d9356dbe6eac5",
+      "scope": "Supplemental upstream license snapshot; crate itself declares MIT but omits license file."
+    },
+    {
+      "crate": "malloc_buf-0.0.6.crate",
+      "path": "third_party/supplemental-licenses/malloc_buf-0.0.6.txt",
+      "url": "https://raw.githubusercontent.com/SSheldon/malloc_buf/master/LICENSE",
+      "sha256": "aced7b57e474a63edb5a724954222bf7659c01ceef0e648a03af799582991db7",
+      "scope": "Supplemental upstream license snapshot; crate itself declares MIT but omits license file."
+    }
+  ]
+}

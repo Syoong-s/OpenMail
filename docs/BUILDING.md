@@ -1,0 +1,46 @@
+# 构建和测试
+
+所有命令从仓库根目录运行。构建缓存位于 `.runtime/`，产物位于 `dist/`。不要在真实邮箱配置下运行开发验收。
+
+## Linux
+
+应用运行要求 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1。构建需要 Linux x86-64、GCC 兼容编译器、binutils、dpkg-deb。
+
+```sh
+python3 tools/build_linux.py --cc gcc
+./dist/TeleMail-Linux-amd64/TeleMail
+```
+
+glibc 的实际下限由所用构建主机决定，应在计划支持的最旧发行版构建并验收。本次测试为 Ubuntu 26.04/WSLg，不能据此保证所有发行版兼容。
+
+## Windows 交叉构建
+
+使用 Linux x86-64 或 WSL2，Python 3.14+（读取 zstd tar 包）、GNU make、主机 GTK/GdkPixbuf 和 glib-compile-schemas。不使用 Windows 编译器。脚本下载固定版本归档并解压到项目私有 SDK，不安装系统包、不运行包安装脚本。
+
+```sh
+python3 tools/prepare_windows_runtime.py --manifest-only
+python3 tools/prepare_windows_runtime.py
+python3 tools/build_windows.py --zip
+```
+
+固定 SDK：llvm-mingw 20261006 / LLVM 23.1.3，WebView2 SDK 1.0.4258.31，嵌入式 CPython 3.14.5。二进制归档哈希见 `third_party/windows/`；PDF.js 来源与资源哈希见 `maildesk/desktop_assets/pdfjs/vendor/SOURCE.json`。可复用现有、已校验的私有 SDK；不得将其个人绝对路径提交到仓库。
+
+## 测试
+
+```sh
+python3 tools/run_tests.py
+python3 tools/verify_pdfjs_desktop.py --output .runtime/pdfjs-check
+python3 tools/verify_mail_layout_desktop.py --output .runtime/linux-mail-check
+```
+
+第一条把资料目录重定向到临时位置；Windows 使用 `--bundle` 指定运行库，如 TLS 测试需要，可用 `--qa-openssl-dir` 指向已有 OpenSSL 命令行目录（仅测试进程 PATH）。
+
+第二条要求真实图形桌面及浏览器运行库，使用临时演示资料并禁止 IMAP/SMTP。加密 PDF 的额外验证可使用 `--encrypted` 指定合成测试文件。Windows 使用包内 Python 运行相同脚本并指定 `--bundle`。
+
+第三条在 Linux 的真实 GTK/WebKit 窗口中验证邮件气泡排版、高度、宽度变化、缩放、图片更新、收起重开和脚本阻止。使用临时合成邮件，禁止真实邮箱调用；CI 在 Xvfb 中执行同一检查。
+
+本地编译/解释器：GCC 15.2.0，Linux Python 3.14.4，Windows 包内 Python 3.14.5。窗口管理器、托盘、通知、字体和 WebKit/WebView2 行为需在目标系统验收。
+
+## MIT 发行边界
+
+项目自有代码为 MIT。Windows 使用原固定版本 libtiff/JBIG-KIT，保留 JBIG 压缩 TIFF。自有代码为 MIT，包含 GPL 组件的 Windows 组合分发按 WINDOWS_LICENSE.md 提供相应条件、许可与源码；Antiword 作为独立 GPL 工具保留原许可与源码。GitHub 自动发行无需维护者手工构建源码包，流程见 RELEASING.md。

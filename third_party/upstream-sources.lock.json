@@ -1,0 +1,16 @@
+{
+  "sources": [
+    {
+      "filename": "Python-3.14.5.tar.xz",
+      "url": "https://www.python.org/ftp/python/3.14.5/Python-3.14.5.tar.xz",
+      "sha256": "7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6",
+      "bytes": 23903332
+    },
+    {
+      "filename": "pdfjs-v6.4.299.tar.gz",
+      "url": "https://codeload.github.com/mozilla/pdf.js/tar.gz/refs/tags/v6.4.299",
+      "sha256": "a28f2f3e54979d2b1af417943dbdcc1ea2dcde1dc57da57db3b874f5f600922e",
+      "bytes": 104825721
+    }
+  ]
+}

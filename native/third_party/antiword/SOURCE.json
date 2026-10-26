@@ -1,0 +1,10 @@
+{
+  "project": "Antiword",
+  "upstream": "https://github.com/grobian/antiword",
+  "commit": "82515aad16ceedc1061ae3777acb99c90d3d3e08",
+  "source_url": "https://codeload.github.com/grobian/antiword/tar.gz/82515aad16ceedc1061ae3777acb99c90d3d3e08",
+  "sha256": "a1344411e90ee300a01f9b5a9ab0968c5099c86ea727db2ac8d819f92e4da7ad",
+  "bytes": 321761,
+  "license": "GPL-2.0-or-later",
+  "usage": "Separate on-demand native text extraction executable; no Word or cloud dependency"
+}

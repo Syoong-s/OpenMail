@@ -1,0 +1,465 @@
+{
+  "snapshot_method": "versioned MSYS2 source archives containing upstream source, patches and PKGBUILD; initial SHA256 measured at retrieval",
+  "sources": {
+    "mingw-w64-adwaita-icon-theme-51.0-1.src.tar.zst": {
+      "filename": "mingw-w64-adwaita-icon-theme-51.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-adwaita-icon-theme-51.0-1.src.tar.zst",
+      "sha256": "6feb7d00ddfe390968d7903fbafa38dfc9a85528c00b85110c83d1e0a4d4dfbf",
+      "bytes": 4514234,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-adwaita-icon-theme/PKGBUILD"
+      ]
+    },
+    "mingw-w64-adwaita-icon-theme-legacy-46.2-1.src.tar.zst": {
+      "filename": "mingw-w64-adwaita-icon-theme-legacy-46.2-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-adwaita-icon-theme-legacy-46.2-1.src.tar.zst",
+      "sha256": "6e740f5dfaf315db4d7c5871ee1be29aace96eae7bfd5634c02fdac381e80b1b",
+      "bytes": 2058430,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-adwaita-icon-theme-legacy/PKGBUILD"
+      ]
+    },
+    "mingw-w64-at-spi2-core-2.62.0.1-1.src.tar.zst": {
+      "filename": "mingw-w64-at-spi2-core-2.62.0.1-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-at-spi2-core-2.62.0.1-1.src.tar.zst",
+      "sha256": "e74fd2a2c22feff9f0e4b3839a6b758787f24bd29385fdb3ecbf39283a8c534f",
+      "bytes": 601321,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-at-spi2-core/PKGBUILD"
+      ]
+    },
+    "mingw-w64-brotli-1.2.0-1.src.tar.zst": {
+      "filename": "mingw-w64-brotli-1.2.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-brotli-1.2.0-1.src.tar.zst",
+      "sha256": "2f0f93875aac21990d20f1eaf0ad8b970eb6f186c663c77ae47aaaf9e5711fcf",
+      "bytes": 644113,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-brotli/PKGBUILD"
+      ]
+    },
+    "mingw-w64-bzip2-1.0.8-4.src.tar.zst": {
+      "filename": "mingw-w64-bzip2-1.0.8-4.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-bzip2-1.0.8-4.src.tar.zst",
+      "sha256": "fd9360917314d1cbccb3cb15ed8450d1e56b8a9f733b606504aba52c52159e54",
+      "bytes": 818825,
+      "files": 6,
+      "recipes": [
+        "mingw-w64-bzip2/PKGBUILD"
+      ]
+    },
+    "mingw-w64-cairo-1.18.6-2.src.tar.zst": {
+      "filename": "mingw-w64-cairo-1.18.6-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-cairo-1.18.6-2.src.tar.zst",
+      "sha256": "ff7124c2155b1169fe102a1dcba1cd7a21f69dace3adf88f1dd8f85ef7ad1e19",
+      "bytes": 32721088,
+      "files": 5,
+      "recipes": [
+        "mingw-w64-cairo/PKGBUILD"
+      ]
+    },
+    "mingw-w64-expat-2.9.0-1.src.tar.zst": {
+      "filename": "mingw-w64-expat-2.9.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-expat-2.9.0-1.src.tar.zst",
+      "sha256": "014a4b1949f65f053a9774712994db89fea290516f1c1849bbbbf7316ee1606b",
+      "bytes": 536681,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-expat/PKGBUILD"
+      ]
+    },
+    "mingw-w64-fontconfig-2.18.3-1.src.tar.zst": {
+      "filename": "mingw-w64-fontconfig-2.18.3-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-fontconfig-2.18.3-1.src.tar.zst",
+      "sha256": "7df65dbf84397f4f71c6aa0bd39fac93f839d6b87f04a935773b69828740230d",
+      "bytes": 659688,
+      "files": 7,
+      "recipes": [
+        "mingw-w64-fontconfig/PKGBUILD"
+      ]
+    },
+    "mingw-w64-freetype-2.15.0-1.src.tar.zst": {
+      "filename": "mingw-w64-freetype-2.15.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-freetype-2.15.0-1.src.tar.zst",
+      "sha256": "2f09c60b72bd249642d055aa5a34edf2577392e592415f3f4730dd37990b47ad",
+      "bytes": 2720468,
+      "files": 6,
+      "recipes": [
+        "mingw-w64-freetype/PKGBUILD"
+      ]
+    },
+    "mingw-w64-fribidi-1.0.17-1.src.tar.zst": {
+      "filename": "mingw-w64-fribidi-1.0.17-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-fribidi-1.0.17-1.src.tar.zst",
+      "sha256": "0f192cf5009fe18e2ac752273de509094cf161106fbedd69f112186e75253850",
+      "bytes": 1204778,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-fribidi/PKGBUILD"
+      ]
+    },
+    "mingw-w64-gcc-16.2.0-6.src.tar.zst": {
+      "filename": "mingw-w64-gcc-16.2.0-6.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-gcc-16.2.0-6.src.tar.zst",
+      "sha256": "a901d8afb78438abcff9ed020cd9aa9431db76de1992171c2454c3c07ad289e8",
+      "bytes": 107229138,
+      "files": 22,
+      "recipes": [
+        "mingw-w64-gcc/PKGBUILD"
+      ]
+    },
+    "mingw-w64-gdk-pixbuf2-2.44.8-1.src.tar.zst": {
+      "filename": "mingw-w64-gdk-pixbuf2-2.44.8-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-gdk-pixbuf2-2.44.8-1.src.tar.zst",
+      "sha256": "fb6637834e846c35879df9c137f8fc8da2174377657d88c64eb4676a7342e9ab",
+      "bytes": 6041939,
+      "files": 8,
+      "recipes": [
+        "mingw-w64-gdk-pixbuf2/PKGBUILD"
+      ]
+    },
+    "mingw-w64-gettext-1.0-1.src.tar.zst": {
+      "filename": "mingw-w64-gettext-1.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-gettext-1.0-1.src.tar.zst",
+      "sha256": "cca0d0c8f60353faccc5ad40405240014e4a7ccc8b1c6ca9f4626aef3097d26e",
+      "bytes": 10267655,
+      "files": 10,
+      "recipes": [
+        "mingw-w64-gettext/PKGBUILD"
+      ]
+    },
+    "mingw-w64-glib2-2.90.1-1.src.tar.zst": {
+      "filename": "mingw-w64-glib2-2.90.1-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-glib2-2.90.1-1.src.tar.zst",
+      "sha256": "ac3bc00e4079e6b51dd0a1fb9ccc420fff033b4e9095e4487dbf6cf01312cee6",
+      "bytes": 5875958,
+      "files": 9,
+      "recipes": [
+        "mingw-w64-glib2/PKGBUILD"
+      ]
+    },
+    "mingw-w64-gnutls-3.8.13-3.src.tar.zst": {
+      "filename": "mingw-w64-gnutls-3.8.13-3.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-gnutls-3.8.13-3.src.tar.zst",
+      "sha256": "7889cd73810d909642c0f122b40cfe0eaec5b0d2985804f145cd90c6a51c0435",
+      "bytes": 7280076,
+      "files": 8,
+      "recipes": [
+        "mingw-w64-gnutls/PKGBUILD"
+      ]
+    },
+    "mingw-w64-graphite2-1.3.15-1.src.tar.zst": {
+      "filename": "mingw-w64-graphite2-1.3.15-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-graphite2-1.3.15-1.src.tar.zst",
+      "sha256": "eb76ce274c68ea6bad0883144c21e44a803ec94fed9dc0f6584feb0a8415a1d6",
+      "bytes": 13317053,
+      "files": 8,
+      "recipes": [
+        "mingw-w64-graphite2/PKGBUILD"
+      ]
+    },
+    "mingw-w64-gtk3-3.24.52-1.src.tar.zst": {
+      "filename": "mingw-w64-gtk3-3.24.52-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-gtk3-3.24.52-1.src.tar.zst",
+      "sha256": "b87574f9f86e5afd18dca456e951062f8ade1d2d6b7cd1c0489738b892a24b09",
+      "bytes": 13583458,
+      "files": 9,
+      "recipes": [
+        "mingw-w64-gtk3/PKGBUILD"
+      ]
+    },
+    "mingw-w64-harfbuzz-14.6.0-1.src.tar.zst": {
+      "filename": "mingw-w64-harfbuzz-14.6.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-harfbuzz-14.6.0-1.src.tar.zst",
+      "sha256": "6c02c446b27412717a760eca77ac6ed997b294fdc390a5e5f46760ebda8a7c64",
+      "bytes": 20299472,
+      "files": 5,
+      "recipes": [
+        "mingw-w64-harfbuzz/PKGBUILD"
+      ]
+    },
+    "mingw-w64-hicolor-icon-theme-0.18-1.src.tar.zst": {
+      "filename": "mingw-w64-hicolor-icon-theme-0.18-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-hicolor-icon-theme-0.18-1.src.tar.zst",
+      "sha256": "b7987e4b5420248966a8e57e7d1523624d7483cd945550a40f2bb1a8a7572718",
+      "bytes": 30809,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-hicolor-icon-theme/PKGBUILD"
+      ]
+    },
+    "mingw-w64-jbigkit-2.1-6.src.tar.zst": {
+      "filename": "mingw-w64-jbigkit-2.1-6.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-jbigkit-2.1-6.src.tar.zst",
+      "sha256": "64757867df26308c14d22b184aaecb43742c25ee8d24f18da51e3d1e09be8ac2",
+      "bytes": 443470,
+      "files": 8,
+      "recipes": [
+        "mingw-w64-jbigkit/PKGBUILD"
+      ]
+    },
+    "mingw-w64-json-glib-1.10.8-2.src.tar.zst": {
+      "filename": "mingw-w64-json-glib-1.10.8-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-json-glib-1.10.8-2.src.tar.zst",
+      "sha256": "8a067b173556a743bbfc08a38f50a5ab4de3306742e66734cdd50088dd10641b",
+      "bytes": 1295713,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-json-glib/PKGBUILD"
+      ]
+    },
+    "mingw-w64-lerc-4.1.1-1.src.tar.zst": {
+      "filename": "mingw-w64-lerc-4.1.1-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-lerc-4.1.1-1.src.tar.zst",
+      "sha256": "697824f8dba0b297949b294d7f850a21dfa817802cf91f3a73b6192a7c234f46",
+      "bytes": 4056783,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-lerc/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libdatrie-0.2.14-1.src.tar.zst": {
+      "filename": "mingw-w64-libdatrie-0.2.14-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libdatrie-0.2.14-1.src.tar.zst",
+      "sha256": "da58ca439051a8cfb1d7f15cdd82af104e1ea1eeefdb090e608d2305a747df7d",
+      "bytes": 327473,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-libdatrie/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libdeflate-1.26-1.src.tar.zst": {
+      "filename": "mingw-w64-libdeflate-1.26-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libdeflate-1.26-1.src.tar.zst",
+      "sha256": "8f08ba1c541d7cdffde7113e0796fa3ed5ae494702c57d86b736f82167805ea6",
+      "bytes": 200156,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-libdeflate/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libepoxy-1.5.10-7.src.tar.zst": {
+      "filename": "mingw-w64-libepoxy-1.5.10-7.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libepoxy-1.5.10-7.src.tar.zst",
+      "sha256": "b3d06dba3c24d3396a4b0c8b853855b5c0acd3872bb8fa8333d0ce07685197f6",
+      "bytes": 334205,
+      "files": 7,
+      "recipes": [
+        "mingw-w64-libepoxy/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libffi-3.8.0-1.src.tar.zst": {
+      "filename": "mingw-w64-libffi-3.8.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libffi-3.8.0-1.src.tar.zst",
+      "sha256": "641ea78ce0333839eab5262656f03fdcfd8496d7388bd7b27e4f0638aeed9adf",
+      "bytes": 1582238,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-libffi/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libiconv-1.19-1.src.tar.zst": {
+      "filename": "mingw-w64-libiconv-1.19-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libiconv-1.19-1.src.tar.zst",
+      "sha256": "74428280c17094da5b702c29b2e1a0abae59556ea5dfdd65705cc8ccc1e000fb",
+      "bytes": 5131029,
+      "files": 8,
+      "recipes": [
+        "mingw-w64-libiconv/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libidn2-2.3.8-4.src.tar.zst": {
+      "filename": "mingw-w64-libidn2-2.3.8-4.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libidn2-2.3.8-4.src.tar.zst",
+      "sha256": "cd83e8514fbeb6a4499299b88691b9b9ecc3114cca1e2be4f6c54aab6ae9ddd0",
+      "bytes": 2147337,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-libidn2/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libjpeg-turbo-3.2.0-1.src.tar.zst": {
+      "filename": "mingw-w64-libjpeg-turbo-3.2.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libjpeg-turbo-3.2.0-1.src.tar.zst",
+      "sha256": "98bfbef730e79ca74c88842eb27730db11429dbae4d95e0f5d7859e316026a74",
+      "bytes": 2536411,
+      "files": 6,
+      "recipes": [
+        "mingw-w64-libjpeg-turbo/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libpng-1.6.59-1.src.tar.zst": {
+      "filename": "mingw-w64-libpng-1.6.59-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libpng-1.6.59-1.src.tar.zst",
+      "sha256": "2b836f8565a3889ed9bb86f9724074ae274f109e2bcd882dd1f080ea4da8a41a",
+      "bytes": 1611403,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-libpng/PKGBUILD"
+      ]
+    },
+    "mingw-w64-librsvg-2.63.3-1.src.tar.zst": {
+      "filename": "mingw-w64-librsvg-2.63.3-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-librsvg-2.63.3-1.src.tar.zst",
+      "sha256": "0296943d369549aeac59670c25a62c3cb2b21a507f0722623db52b1b319f61d5",
+      "bytes": 6772840,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-librsvg/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libthai-0.1.30-1.src.tar.zst": {
+      "filename": "mingw-w64-libthai-0.1.30-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libthai-0.1.30-1.src.tar.zst",
+      "sha256": "e4f8d840fca132eb47aed311fc2c36dc59604b9ecd0aa310161b9d1e2cee4d03",
+      "bytes": 438909,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-libthai/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libtiff-4.7.2-2.src.tar.zst": {
+      "filename": "mingw-w64-libtiff-4.7.2-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libtiff-4.7.2-2.src.tar.zst",
+      "sha256": "a4d55d313764640aaa2ba7b4b377af855877d31fe6fa040d63dc3647cc45622d",
+      "bytes": 4077318,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-libtiff/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libtre-0.9.0-2.src.tar.zst": {
+      "filename": "mingw-w64-libtre-0.9.0-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libtre-0.9.0-2.src.tar.zst",
+      "sha256": "57ee4f3b992e4ebe9b43fc8b5a0a66000ee40defc1089b727799330778344301",
+      "bytes": 840641,
+      "files": 26,
+      "recipes": [
+        "mingw-w64-libtre/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libwebp-1.6.0-1.src.tar.zst": {
+      "filename": "mingw-w64-libwebp-1.6.0-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libwebp-1.6.0-1.src.tar.zst",
+      "sha256": "c8c63f98e018a7595d22e8a3e65b7caf83345fed666866a6e67d153b16f48141",
+      "bytes": 2589761,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-libwebp/PKGBUILD"
+      ]
+    },
+    "mingw-w64-libxml2-2.15.4-2.src.tar.zst": {
+      "filename": "mingw-w64-libxml2-2.15.4-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-libxml2-2.15.4-2.src.tar.zst",
+      "sha256": "685476a67ddf542e8d8cb9dd60290711dcfbb5175bff069c129a683b8907588d",
+      "bytes": 3805907,
+      "files": 9,
+      "recipes": [
+        "mingw-w64-libxml2/PKGBUILD"
+      ]
+    },
+    "mingw-w64-openssl-3.6.5-1.src.tar.zst": {
+      "filename": "mingw-w64-openssl-3.6.5-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-openssl-3.6.5-1.src.tar.zst",
+      "sha256": "997157ec74a6a722d7c8848605b1389a31a103d4b9f2aa6a40e179373a139cd1",
+      "bytes": 54979777,
+      "files": 8,
+      "recipes": [
+        "mingw-w64-openssl/PKGBUILD"
+      ]
+    },
+    "mingw-w64-p11-kit-0.26.5-1.src.tar.zst": {
+      "filename": "mingw-w64-p11-kit-0.26.5-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-p11-kit-0.26.5-1.src.tar.zst",
+      "sha256": "1665c40c6237bbb9be868ecfc00ab65f9038047e4c608126de575ae4ecb5ca12",
+      "bytes": 1094024,
+      "files": 13,
+      "recipes": [
+        "mingw-w64-p11-kit/PKGBUILD"
+      ]
+    },
+    "mingw-w64-pango-1.58.2-1.src.tar.zst": {
+      "filename": "mingw-w64-pango-1.58.2-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-pango-1.58.2-1.src.tar.zst",
+      "sha256": "df981b2c47d9344f3a4869645a8f2392916dac3e470634778453410ec813e390",
+      "bytes": 1920389,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-pango/PKGBUILD"
+      ]
+    },
+    "mingw-w64-pcre2-10.49-1.src.tar.zst": {
+      "filename": "mingw-w64-pcre2-10.49-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-pcre2-10.49-1.src.tar.zst",
+      "sha256": "b02f0d5070b7d7f6db5c8ba9b009f28c1a07b9b52aaf7964dc0c8b098e4088d1",
+      "bytes": 2183818,
+      "files": 5,
+      "recipes": [
+        "mingw-w64-pcre2/PKGBUILD"
+      ]
+    },
+    "mingw-w64-pixman-0.46.4-3.src.tar.zst": {
+      "filename": "mingw-w64-pixman-0.46.4-3.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-pixman-0.46.4-3.src.tar.zst",
+      "sha256": "2661cb135a6448f6d594e4642a643b2dec6fa0d773ac046aa786987a719160ed",
+      "bytes": 662111,
+      "files": 3,
+      "recipes": [
+        "mingw-w64-pixman/PKGBUILD"
+      ]
+    },
+    "mingw-w64-shared-mime-info-2.5.1-1.src.tar.zst": {
+      "filename": "mingw-w64-shared-mime-info-2.5.1-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-shared-mime-info-2.5.1-1.src.tar.zst",
+      "sha256": "e9d26fd151ac4c792d9b34d33528f3e5381c678724a87443ac10059e39ec33eb",
+      "bytes": 8005023,
+      "files": 8,
+      "recipes": [
+        "mingw-w64-shared-mime-info/PKGBUILD"
+      ]
+    },
+    "mingw-w64-winpthreads-14.0.0.r495.g63ebe6cdb-2.src.tar.zst": {
+      "filename": "mingw-w64-winpthreads-14.0.0.r495.g63ebe6cdb-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-winpthreads-14.0.0.r495.g63ebe6cdb-2.src.tar.zst",
+      "sha256": "876d54338dae4e3b2ca84c4fe20bddc9274dfd827374c092ffb201e948fd9d3d",
+      "bytes": 55146369,
+      "files": 24,
+      "recipes": [
+        "mingw-w64-winpthreads/PKGBUILD"
+      ]
+    },
+    "mingw-w64-xz-5.8.4-1.src.tar.zst": {
+      "filename": "mingw-w64-xz-5.8.4-1.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-xz-5.8.4-1.src.tar.zst",
+      "sha256": "b8acbc56b2bfe08df7bffff423f3bf07ee85dbec4e07416017ab04c8afb9d13e",
+      "bytes": 1569458,
+      "files": 4,
+      "recipes": [
+        "mingw-w64-xz/PKGBUILD"
+      ]
+    },
+    "mingw-w64-zlib-1.3.2-2.src.tar.zst": {
+      "filename": "mingw-w64-zlib-1.3.2-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-zlib-1.3.2-2.src.tar.zst",
+      "sha256": "eef69dea52357e01b272d6fd6dc4d7c0773f71260cb7bcde6047c8c383518db3",
+      "bytes": 1326375,
+      "files": 10,
+      "recipes": [
+        "mingw-w64-zlib/PKGBUILD"
+      ]
+    },
+    "mingw-w64-zstd-1.5.7-2.src.tar.zst": {
+      "filename": "mingw-w64-zstd-1.5.7-2.src.tar.zst",
+      "url": "https://mirror.msys2.org/mingw/sources/mingw-w64-zstd-1.5.7-2.src.tar.zst",
+      "sha256": "306797282df799e95d550e6d0bb4b0a7b848027b8e13893a24236e060837c217",
+      "bytes": 2402010,
+      "files": 5,
+      "recipes": [
+        "mingw-w64-zstd/PKGBUILD"
+      ]
+    }
+  }
+}

@@ -1,0 +1,779 @@
+/* Native dark workspace, measured against the user's Spark reference. */
+@define-color accent #aab9f2;
+window, dialog { background: #181a1d; color: #e8e9eb; font-family: "Noto Sans CJK SC", sans-serif; font-size: 12px; }
+headerbar { background: #161719; border: 0; box-shadow: none; min-height: 24px; padding: 2px 10px; }
+headerbar .title { font-size: 11px; color: #a3a6aa; }
+button { background: #2b2d32; color: #d5d7da; border: 1px solid #3b3e45; border-radius: 6px; padding: 7px 12px; min-height: 0; box-shadow: none; text-shadow: none; transition: background-color 160ms ease, color 160ms ease; }
+button:hover { background: #3b3e42; color: #ffffff; }
+button:active { background: #343842; }
+button:disabled { color: #62666c; border-color: transparent; }
+button.suggested-action { background: #536bb8; color: #ffffff; border-color: #536bb8; }
+button.suggested-action:hover { background: #647bc6; }
+#rail { background: #131416; padding: 12px 13px; }
+#rail button { border: 0; background: transparent; color: #94989f; padding: 10px 5px; font-size: 21px; border-radius: 8px; min-width: 28px; }
+#rail button:hover { background: #26292d; color: #e0e3e7; }
+#rail .rail-active { background: #343842; color: #bcc9f8; }
+.brand { color: #b2c1f4; font-size: 25px; padding: 0 0 12px; }
+.avatar { background: #51492c; border-radius: 16px; min-width: 32px; min-height: 32px; color: #d9c98f; }
+#sidebar { background: #202226; padding: 12px; }
+.workspace-title { font-size: 17px; font-weight: bold; padding: 4px 7px; }
+.nav, .folder-row, .footer-action { background: transparent; border: 0; padding: 6px 10px; }
+.nav.active, .folder-row.active { background: #343842; color: #c0cdf9; }
+.folder-muted { opacity: .5; }
+.folder-purple { color: #af98e0; } .folder-blue { color: #6db4ed; } .folder-green { color: #72c0a6; } .folder-orange { color: #e4b379; } .folder-red { color: #de8a99; }
+.section-heading { margin: 10px 4px 4px; }
+.section-title { font-size: 11px; color: #989ca3; }
+.small-icon { background: transparent; border: 0; padding: 1px 7px; }
+expander { color: #a7abb2; }
+#listpane, list { background: #202226; }
+.list-header { padding: 15px 20px 9px; border-bottom: 1px solid #36383b; }
+.view-title { font-size: 18px; font-weight: bold; color: #eeeff1; }
+#view_toggle { border: 0; background: transparent; padding: 0 4px; }
+.muted { color: #8c9198; font-size: 11px; }
+.quiet { background: transparent; border: 0; padding: 3px 6px; font-size: 11px; color: #989ea6; }
+searchentry, entry { background: #202225; color: #e2e5e8; border: 1px solid #43464c; border-radius: 6px; padding: 6px 9px; box-shadow: none; }
+entry:focus { border-color: #aab9f2; }
+combobox button { background: #2b2d32; padding: 6px 8px; }
+list row { padding: 12px 18px; border-bottom: 1px solid #2b2d32; transition: background-color 160ms ease; }
+list row:hover { background: #2b2e34; }
+list row:selected { background: #343842; color: #eef5fc; }
+.mail-sender { color: #d8dce1; font-size: 11px; }
+.mail-subject { color: #e6e9ed; font-size: 12px; font-weight: bold; }
+.mail-preview { color: #91969d; font-size: 11px; }
+.mail-avatar { background: #39424d; color: #c7d7e8; border-radius: 16px; min-width: 32px; min-height: 32px; font-size: 13px; font-weight: bold; }
+.section-label { background: #242629; color: #adb2ba; font-size: 11px; font-weight: bold; padding: 7px 17px; }
+.section-label button { border: 0; background: transparent; color: #b2b8c0; padding: 3px 0; }
+#reader { background: #181a1d; }
+#reader_toolbar { padding: 12px 22px; border-bottom: 1px solid #2f3235; }
+.icon, #more_actions { border: 0; background: transparent; padding: 6px; font-size: 18px; color: #9ba0a7; }
+.icon:hover, #more_actions:hover { background: #2b2e34; color: #e7ecf2; }
+.reader-content { padding: 22px 28px 20px; }
+.subject { color: #f1f2f3; font-size: 22px; font-weight: bold; }
+#mail_card { background: #202226; border: 1px solid #3c3f43; border-radius: 12px; padding: 20px 24px; }
+.sender { color: #c9cdd3; font-size: 11px; }
+.sender-avatar { background: #3c4652; color: #bed3eb; border-radius: 20px; min-width: 40px; min-height: 40px; font-size: 17px; }
+.tag-line { color: #62b5f6; font-size: 11px; }
+textview, textview text { background: #202226; color: #e1e4e8; font-size: 13px; }
+checkbutton { color: #a3a9b0; font-size: 11px; }
+#attachments button { background: #2b2e34; border-color: #41454a; padding: 12px; }
+#reader_actions button { border: 0; background: #303438; }
+#toast { background: #343842; color: #dceeff; border: 1px solid #29517a; border-radius: 8px; padding: 7px 16px; }
+#toast button { color: #9bcfff; }
+popover { background: #24262b; color: #e1e4e9; border: 1px solid #44484e; border-radius: 10px; }
+.popover-action { border: 0; background: transparent; padding: 6px 14px; }
+spinner { color: #aab9f2; }
+/* The light preference remains available; dark is the application default. */
+window.light, .light #reader { background: #f4f5f7; color: #252a32; }
+.light #listpane, .light list, .light #mail_card, .light textview, .light textview text { background: #ffffff; color: #30363d; }
+.light .subject, .light .view-title, .light .mail-subject, .light .mail-sender { color: #252a32; }
+.light list row:selected { background: #d9ebfb; }
+.light .section-label { background: #eef1f5; color: #616b78; }
+
+paned > separator { background: #1b1d20; min-width: 1px; min-height: 1px; border: 0; }
+decoration { border: 0; box-shadow: none; }
+#rail button image { min-width: 20px; min-height: 20px; }
+
+.reduced-motion button, .reduced-motion list row { transition-duration: 0ms; }
+
+.card-heading { margin: 12px 12px 0; background: #2b2e34; border-radius: 9px 9px 0 0; border: 1px solid #42474e; border-bottom: 0; }
+list row.card-row { background: #2b2e34; margin: 0 12px; border-left: 1px solid #42474e; border-right: 1px solid #42474e; }
+list row.card-row:selected { background: #343842; }
+list row.card-last { border-bottom: 1px solid #42474e; border-radius: 0 0 9px 9px; margin-bottom: 0; }
+list row.collapsed-row { padding: 0; min-height: 0; border: 0; }
+/* Compact rail and mail rows: preserve readable type while reducing whitespace. */
+#rail { padding: 9px 6px; }
+#rail button { padding: 6px 5px; min-width: 22px; font-size: 16px; border-radius: 7px; }
+#rail button image { min-width: 16px; min-height: 16px; }
+.brand { font-size: 21px; padding: 0 0 7px; }
+.avatar { min-width: 26px; min-height: 26px; border-radius: 13px; font-size: 11px; }
+list row { padding: 4px 15px; }
+.mail-avatar { min-width: 26px; min-height: 26px; border-radius: 15px; font-size: 12px; }
+.section-label { padding: 4px 15px; }
+.list-header { padding: 12px 16px 7px; }
+.document-panel { background: #202226; }
+.document-panel button { padding: 5px 8px; }
+.document-panel entry { padding: 5px 7px; }
+
+/* Reading takes the space; attachments and conversation entries expand on demand. */
+#mail_footer { margin-top: 2px; }
+.attachment-summary { padding: 3px 9px; min-height: 22px; background: #2b2e34; font-size: 11px; }
+#attachments button, #thread button { padding: 5px 9px; min-height: 18px; font-size: 11px; }
+
+#settings_sidebar { background: #202225; border-right: 1px solid #383c42; }
+#settings_sidebar row { padding: 10px 15px; border: 0; font-size: 13px; }
+#settings_sidebar row:selected { background: #343842; color: #eef5fc; }
+.account-card { padding: 14px; background: #2b2e34; border: 1px solid #42474e; border-radius: 9px; }
+.account-card button { padding: 4px 8px; font-size: 11px; }
+.light #settings_sidebar { background: #eef1f5; }
+.light .account-card { background: #f4f5f7; }
+
+#settings_sidebar label { color: #d5d7da; }
+#settings_sidebar row:selected label { color: #eef5fc; }
+.light #settings_sidebar label { color: #30363d; }
+
+/* Independent line icons, card rows and navigation reflect Spark's settings hierarchy. */
+.settings-navigation { background: transparent; border: 0; padding: 8px 11px; border-radius: 7px; }
+.settings-navigation:hover { background: #30343a; }
+.settings-navigation.active { background: #343842; color: #eef5fc; }
+.settings-heading { font-size: 19px; font-weight: bold; color: #eef1f5; }
+.settings-option { background: #272a2e; border: 1px solid #353a40; border-radius: 8px; padding: 12px; }
+.settings-option label { font-size: 12px; }
+.settings-option entry, .settings-option combobox button { padding: 5px 8px; }
+.settings-link { padding: 12px 14px; border: 1px solid #353a40; border-radius: 8px; background: #272a2e; }
+.light .settings-heading { color: #30363d; }
+.light .settings-option, .light .settings-link { background: #f7f8fa; border-color: #d8dce1; }
+#sender_review { padding: 5px 8px; border-radius: 6px; background: #2c3039; }
+
+/* Native date selection follows the same dark surfaces as the settings cards. */
+calendar { background-image: none; background-color: #272a2e; color: #e2e5e8; border: 1px solid #3b3e45; border-radius: 8px; padding: 10px; }
+calendar.header { background-color: #2b2e34; color: #e2e5e8; border: 0; }
+calendar.button { color: #aeb8c4; }
+calendar.highlight { color: #94a1b2; }
+calendar:indeterminate { color: #626c79; }
+calendar:selected { background-color: #aab9f2; color: #ffffff; border-radius: 4px; }
+.light calendar { background-color: #ffffff; color: #30363d; border-color: #d8dce1; }
+.light calendar.header { background-color: #eef1f5; color: #30363d; }
+/* Native focused sender compositions and continuous message cards. */
+.focus-summary { margin: 6px 8px; padding: 8px 10px; border: 1px solid #3a4047; border-radius: 11px; background: #292d32; }
+.focus-summary button { padding: 2px; background: transparent; border: 0; font-weight: 600; }
+.summary-avatar { min-width: 24px; min-height: 24px; border-radius: 14px; font-size: 10px; }
+.row-quick-action { min-width: 13px; min-height: 11px; padding: 1px 2px; border: 0; background: transparent; border-radius: 4px; }
+.row-quick-action:hover { background: #41607e; }
+.conversation-card { padding: 15px 18px; border: 1px solid #3f4655; border-radius: 14px; background: #222428; }
+.conversation-card > box > button { background: transparent; border: 0; padding: 4px 6px; }
+.light .conversation-card { background: #ffffff; border-color: #a2c4e2; }
+.light .focus-summary { background: #f3f6fa; border-color: #d2dbe4; }
+.focus-summary label, .conversation-card label { color: #c8cdd5; }
+.light .focus-summary label, .light .conversation-card label { color: #30363d; }
+
+/* Purpose-built native composition; original icons and compact single-line actions. */
+.modern-composer { background: #26292d; border: 1px solid #41464c; border-radius: 12px; margin: 12px; padding: 0; }
+.composer-heading { padding: 10px 12px 0; }
+.modern-composer entry { background: transparent; border: 0; border-radius: 0; padding: 5px 0; min-height: 20px; color: #dce2eb; }
+.modern-composer entry:focus { border: 0; box-shadow: none; }
+.composer-subject { font-weight: bold; font-size: 14px; }
+.composer-recipient { padding: 0 16px; }
+.composer-muted { color: #a4adb8; font-size: 11px; }
+.composer-body, .composer-body text { background: #26292d; color: #e8edf5; font-size: 14px; }
+.composer-footer { border-top: 1px solid #41464c; padding: 8px 10px; margin: 0 12px; }
+.modern-composer button.composer-icon { background: transparent; border: 0; padding: 4px; min-width: 18px; min-height: 20px; color: #aab4c0; border-radius: 5px; }
+.modern-composer button.composer-icon:hover { background: #353c45; color: #ecf4ff; }
+.modern-composer button.composer-send { background: #536bb8; padding: 5px 7px; }
+.modern-composer button.composer-account { background: transparent; border: 0; padding: 4px 3px; font-size: 11px; color: #a8b2c0; }
+.composer-note { color: #8d98a8; font-size: 10px; padding: 0 16px 4px; }
+.composer-attachments { padding: 3px 16px; color: #78b5e9; font-size: 11px; }
+.light .modern-composer { background: #ffffff; border-color: #d5dce5; }
+.light .modern-composer entry { color: #202c3d; }
+.light .composer-body, .light .composer-body text { background: #ffffff; color: #202c3d; }
+.light .composer-footer { border-color: #e1e5eb; }
+.light .composer-muted, .light .composer-note { color: #64748b; }
+.light .modern-composer button.composer-icon:hover { background: #eaf1f8; }
+.light .modern-composer button.composer-account { color: #52647a; }
+
+/* A whole category summary is a single, keyboard-accessible hit target. */
+.focus-summary { padding: 0; }
+.focus-summary > button { padding: 10px 12px; min-height: 56px; border-radius: 10px; }
+.focus-summary > button:hover { background: #353d47; }
+.light .focus-summary > button:hover { background: #e8eef5; }
+.mail-icon-action { background: transparent; border: 1px solid transparent; border-radius: 7px; padding: 7px 9px; min-width: 19px; min-height: 19px; }
+.mail-icon-action:hover { background: #343943; border-color: #50657c; }
+.inline-draft-card { padding: 7px 10px; background: #282d36; border: 1px solid #455b74; border-radius: 9px; }
+.inline-draft-card > button { background: transparent; border: 0; padding: 4px; }
+.draft-card-title { color: #8cc4f6; font-weight: 600; font-size: 12px; }
+.floating-reply { background: transparent; margin: 8px; }
+.floating-reply .modern-composer { margin: 0; border-color: #65798f; box-shadow: 0 10px 28px rgba(0,0,0,.45); }
+.folder-manager-sidebar { padding: 5px 10px 5px 0; border-right: 1px solid #414851; }
+.folder-manager-details { padding: 5px 0 5px 10px; }
+.folder-manager-row { background: transparent; border: 0; padding: 7px 8px; min-height: 20px; }
+.folder-manager-row:hover { background: #303640; }
+.modern-folder-manager entry, .modern-folder-manager combobox button { padding: 7px 9px; border-radius: 7px; }
+.light .mail-icon-action:hover { background: #e5eef8; border-color: #c2d1e0; }
+.light .inline-draft-card { background: #eef5fb; border-color: #adc7df; }
+.light .draft-card-title { color: #286a9f; }
+.light .folder-manager-sidebar { border-color: #d4dce5; }
+.light .folder-manager-row:hover { background: #e9f0f8; }
+.focus-summary { margin: 0; }
+
+/* Conversation controls remain above the message scroller and show both endpoints. */
+.conversation-navigation { padding: 4px 2px 8px; border-bottom: 1px solid #414851; }
+.conversation-navigation label { color: #9baabe; font-size: 11px; }
+.conversation-navigation button { padding: 6px 8px; }
+.conversation-navigation button:disabled { opacity: .38; }
+.conversation-snippet { color: #99a7b8; font-size: 12px; padding: 0 2px 5px; }
+.conversation-reply .modern-composer { margin: 5px 0 0; border-color: #697896; border-radius: 12px; background: #24272d; }
+.conversation-reply .composer-body, .conversation-reply .composer-body text { background: #24272d; }
+.light .conversation-navigation { border-color: #d6e0e9; }
+.light .conversation-navigation label, .light .conversation-snippet { color: #64748b; }
+.light .conversation-reply .modern-composer, .light .conversation-reply .composer-body, .light .conversation-reply .composer-body text { background: #f6faff; }
+.light .conversation-reply .modern-composer { border-color: #8db4d4; }
+
+/* Continuous conversations: each mail and its quoted history own their disclosure. */
+.conversation-card { padding: 8px 12px; border: 1px solid #3b4148; border-radius: 12px; background: #222428; }
+.conversation-card .conversation-sender { font-weight: bold; padding: 4px 2px; }
+.conversation-card .conversation-date { color: #98a4b3; font-size: 10px; }
+.conversation-card .mail-icon-action { padding: 4px; border-radius: 7px; min-width: 20px; }
+.conversation-card .attachment-chip { padding: 4px 8px; font-size: 11px; border-radius: 7px; }
+.quoted-history-card { margin: 3px 0 3px 10px; padding: 7px 9px; border-left: 2px solid #49657e; border-top: 1px solid #383c45; border-bottom: 1px solid #383c45; border-right: 1px solid #383c45; border-radius: 9px; background: #222428; }
+.quoted-history-card > box > button { border: 0; background: transparent; padding: 4px; color: #aabbd0; font-size: 11px; }
+.account-scope-pill { border: 1px solid #3c4652; border-radius: 16px; background: #2a3037; padding: 6px 10px; font-size: 11px; }
+.account-scope-pill:hover { background: #363b45; border-color: #566d85; }
+.account-scope-heading { color: #96a5b7; font-size: 10px; padding: 3px 7px 6px; }
+.account-scope-row { border: 0; background: transparent; padding: 8px 10px; border-radius: 8px; }
+.account-scope-row:hover { background: #363b45; }
+.account-scope-title { color: #e1e8ef; font-size: 12px; }
+.account-scope-subtitle { color: #91a1b3; font-size: 10px; }
+.light .quoted-history-card { background: #f5f8fb; border-color: #c7d4e0; }
+.light .quoted-history-card > box > button { color: #4e647d; }
+.light .account-scope-pill { background: #f5f8fb; border-color: #cad7e4; color: #33475c; }
+.light .account-scope-row:hover { background: #e3edf7; }
+.light .account-scope-title { color: #2f4358; }
+.light .account-scope-subtitle, .light .conversation-date { color: #687c91; }
+
+.conversation-card .summary-avatar { min-width: 28px; min-height: 28px; font-size: 12px; }
+.conversation-card .conversation-snippet { padding: 0 2px 2px; font-size: 11px; }
+
+.light popover.account-scope-popover { background: #ffffff; border-color: #c6d3e1; color: #2f4358; }
+
+/* Quiet workspace: shared surfaces, consistent focus, compact native actions. */
+window, dialog { font-family: "Segoe UI", "Noto Sans CJK SC", sans-serif; }
+button { border-radius: 8px; padding: 6px 10px; background-image: none; }
+button:focus { outline: 2px solid alpha(@accent,.55); outline-offset: 1px; }
+button.compact-action { border: 1px solid transparent; background: transparent; min-width: 18px; min-height: 18px; padding: 6px; border-radius: 8px; }
+button.compact-action:hover { background: #303238; border-color: #3c3f46; }
+button.compact-action:disabled { opacity: .4; }
+#rail { padding: 10px 6px; border-right: 1px solid #292b30; }
+#rail button { padding: 7px 6px; border-radius: 9px; }
+#rail .rail-active { background: #303238; }
+#sidebar { padding: 12px 8px; border-right: 1px solid #303238; }
+.nav, .folder-row { border-radius: 8px; padding: 7px 10px; }
+.nav:hover, .folder-row:hover { background: #2b2d32; }
+.nav.active, .folder-row.active { background: #34363d; color: #e6e8ed; }
+.section-title, .account-scope-heading { font-weight: 600; color: #9298a2; }
+.list-header { padding: 14px 16px 10px; }
+.view-title { font-size: 19px; }
+list row:selected { border-left: 2px solid @accent; }
+list row { border-left: 2px solid transparent; }
+.reader-content { padding: 18px 22px 16px; }
+#reader_toolbar { padding: 10px 18px; }
+.subject { font-size: 21px; }
+.conversation-card, .quoted-history-card { margin: 0; padding: 10px 12px; border: 1px solid #35383e; border-radius: 12px; background: #222428; }
+.conversation-card .conversation-date, .quoted-history-card .conversation-date { color: #9298a2; font-size: 11px; }
+.quoted-history-card > box > button { font-size: 12px; }
+.quoted-history-card:hover { border-color: #454a54; }
+.settings-navigation { padding: 10px 12px; border-radius: 9px; }
+.settings-navigation.active { background: #34363d; color: #f0f1f4; }
+#settings_sidebar { background: #18191c; padding: 8px 4px; border-color: #303238; }
+.settings-heading { font-size: 22px; }
+.settings-description { color: #9298a2; font-size: 12px; margin-bottom: 8px; }
+.settings-option { background: #222428; border: 1px solid #303238; border-radius: 10px; padding: 13px 14px; }
+.settings-option entry, .settings-option combobox button { background: #1a1c1f; border-color: #383b42; }
+.settings-link { background: transparent; border: 1px solid #34373e; border-radius: 10px; padding: 12px 14px; }
+.settings-link:hover { background: #2b2d32; border-color: #494e58; }
+.account-card { background: #222428; border-color: #34373e; border-radius: 12px; padding: 16px; }
+switch { background-image: none; background-color: #444851; border: 1px solid #505560; border-radius: 13px; min-width: 36px; min-height: 20px; }
+switch:checked { background-color: @accent; border-color: @accent; }
+switch slider { background-image: none; background-color: #f2f3f5; border: 0; border-radius: 11px; min-width: 18px; min-height: 18px; margin: 1px; box-shadow: none; }
+scrollbar { background: transparent; }
+scrollbar slider { min-width: 5px; min-height: 5px; background: #454951; border-radius: 8px; border: 2px solid transparent; }
+scrollbar slider:hover { background: #666d79; }
+notebook header { background: #18191c; border-color: #303238; }
+notebook tab { padding: 9px 14px; border-radius: 8px 8px 0 0; }
+notebook tab:checked { background: #303238; }
+.modern-composer { background: #222428; border-color: #3a3e46; border-radius: 12px; }
+.composer-body, .composer-body text, .conversation-reply .composer-body, .conversation-reply .composer-body text { background: #222428; }
+.conversation-reply .modern-composer { background: #222428; border-color: #697896; }
+.composer-footer { border-color: #34373e; padding: 10px 2px; }
+.modern-composer button.composer-send { background: #aab9f2; color: #15171c; border-radius: 8px; padding: 6px 9px; }
+.account-scope-pill { border-radius: 9px; background: #26282d; border-color: #3a3d44; padding: 6px 9px; }
+.document-panel { background: #222428; }
+.light button { background: #f5f6f8; color: #30343b; border-color: #d9dce2; }
+.light button:hover { background: #e7e9ee; }
+.light button.suggested-action { background: #4c63b4; color: #ffffff; border-color: #4c63b4; }
+.light button.compact-action { background: transparent; border-color: transparent; }
+.light button.compact-action:hover { background: #e3e6ed; border-color: #d3d8e2; }
+.light #rail, .light #sidebar, .light #settings_sidebar, .light notebook header { background: #eef0f4; border-color: #d9dde5; }
+.light #rail button, .light .nav, .light .folder-row, .light .settings-navigation { background: transparent; color: #515c6c; }
+.light #rail .rail-active, .light .nav.active, .light .folder-row.active, .light .settings-navigation.active { background: #dfe4ee; color: #303c54; }
+.light .settings-navigation:hover, .light .nav:hover, .light .folder-row:hover { background: #e5e8ef; }
+.light .conversation-card, .light .quoted-history-card, .light .settings-option, .light .account-card { background: #ffffff; border-color: #d9dee6; }
+.light .settings-heading { color: #252a33; }
+.light .settings-description { color: #677386; }
+.light .settings-link { background: #ffffff; border-color: #d9dee6; color: #364152; }
+.light .settings-link:hover { background: #eef1f6; }
+.light entry, .light searchentry, .light combobox button, .light .settings-option entry, .light .settings-option combobox button { background: #f5f6f8; color: #30343b; border-color: #d5dbe5; }
+.light .muted, .light checkbutton { color: #677386; }
+.light .document-panel { background: #ffffff; color: #30343b; }
+.light scrollbar slider { background: #aab2c0; }
+.light .account-scope-pill { background: #ffffff; color: #364152; border-color: #d5dbe5; }
+.reduced-motion button, .reduced-motion list row, .reduced-motion switch { transition-duration: 0ms; }
+.history-badge { color: #aab4c9; background: #303540; border-radius: 5px; font-size: 10px; padding: 3px 6px; }
+.light .history-badge { color: #596b88; background: #edf0f6; }
+.light headerbar { background: #eef0f4; border-bottom: 1px solid #d9dde5; }
+.light .list-header, .light #reader_toolbar { border-color: #dde1e8; }
+.light list row { border-bottom-color: #e5e8ee; }
+.light paned > separator { background: #dde1e8; }
+.light #toast { background: #e9edf8; border-color: #cbd3e7; color: #334366; }
+.light #toast button { color: #526485; }
+.light .section-label button { color: #64728a; background: transparent; }
+
+/* Full-height floating workspace navigation, adjacent to the persistent rail. */
+#sidebar.floating-navigation, #navigation_surface.floating-navigation { background: #24262b; border: 1px solid #41454d; border-radius: 12px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.floating-navigation .workspace-title { padding: 8px 6px 12px; font-size: 16px; }
+.floating-navigation .nav, .floating-navigation .folder-row { padding: 6px; border-radius: 7px; font-size: 12px; }
+.floating-navigation .nav:hover, .floating-navigation .folder-row:hover { background: #34373f; }
+.floating-navigation .nav.active, .floating-navigation .folder-row.active { background: #3b404c; color: #eef1f7; }
+.folder-account { padding: 5px 0; }
+button.folder-account-title { background: transparent; border: 0; padding: 6px 3px; border-radius: 7px; font-size: 12px; }
+button.folder-account-title:hover { background: #30343c; }
+.folder-inline-tools button.compact-action { padding: 3px; min-width: 16px; min-height: 16px; border-radius: 6px; }
+.folder-inline-tools button.compact-action:hover { background: #414650; }
+#rail button:checked { background: #343841; }
+#list_header { padding: 7px 12px 6px; }
+#list_header .view-title { font-size: 16px; }
+#list_header button, #reader_toolbar button { min-height: 16px; min-width: 16px; padding: 4px; border-radius: 7px; font-size: 12px; }
+#list_header button image, #reader_toolbar button image { min-width: 16px; min-height: 16px; }
+#list_header #view_toggle { padding: 2px; min-width: 12px; }
+#list_status { padding: 0; }
+#list_status .account-scope-pill { padding: 3px 6px; border-radius: 7px; font-size: 10px; }
+#list_header .muted { font-size: 10px; }
+#reader_toolbar { padding: 6px 12px; }
+#focus_back { padding: 3px 5px; background: transparent; border: 0; }
+.inbox-view-choice { background: transparent; border: 0; padding: 8px 11px; border-radius: 8px; font-size: 12px; }
+.inbox-view-choice:hover { background: #353941; }
+.inbox-view-choice.active { background: #3b414e; color: #eef1f7; }
+.light #sidebar.floating-navigation, .light #navigation_surface.floating-navigation { background: #f9fafc; border-color: #cdd4df; box-shadow: 0 8px 24px rgba(35,45,65,.17); }
+.light .floating-navigation .nav, .light .floating-navigation .folder-row, .light button.folder-account-title { background: transparent; }
+.light .floating-navigation .nav:hover, .light .floating-navigation .folder-row:hover, .light button.folder-account-title:hover { background: #e8edf4; }
+.light .floating-navigation .nav.active, .light .floating-navigation .folder-row.active, .light .inbox-view-choice.active { background: #e0e7f3; color: #354867; }
+.light .folder-inline-tools button.compact-action:hover, .light .inbox-view-choice:hover { background: #e4e9f1; }
+.light .inbox-view-choice { background: transparent; color: #3e4c60; }
+.light #rail button:checked { background: #dfe5ef; }
+
+/* Compact transient list controls keep their click targets independent of row expansion. */
+#list_header #bulk_revealer button.compact-action { min-width: 14px; min-height: 14px; padding: 2px 4px; border-radius: 5px; }
+#list_header #bulk_revealer button image { min-width: 14px; min-height: 14px; }
+#search_controls { padding: 2px 0; }
+#search_controls entry { min-height: 18px; padding: 2px 8px; font-size: 12px; margin: 0; }
+#list_header #search_close { min-width: 16px; min-height: 16px; padding: 2px; margin: 0; }
+#list_header #search_close image { min-width: 16px; min-height: 16px; }
+#views_menu { border-radius: 16px; background: #30343c; border-color: #454b55; }
+#inbox_view_menu .inbox-chooser-heading { color: #dce2ec; font-size: 13px; }
+#inbox_view_menu button.compact-action { min-width: 16px; min-height: 16px; padding: 4px; border-radius: 7px; }
+#inbox_view_menu button.inbox-view-choice { background: transparent; border: 2px solid transparent; border-radius: 11px; padding: 12px 6px; }
+#inbox_view_menu button.inbox-view-choice:hover { background: #3b414c; border-color: #5d6a7d; }
+#inbox_view_menu button.inbox-view-choice.active { background: #364457; border-color: #489bff; }
+#inbox_view_menu .inbox-mode-title { color: #edf1f8; font-size: 13px; font-weight: 600; }
+#inbox_view_menu .inbox-mode-caption { color: #b1bac9; font-size: 10px; }
+#inbox_view_actions { padding-top: 2px; }
+.light #views_menu { background: #f5f7fb; border-color: #cfd7e4; }
+.light #inbox_view_menu .inbox-chooser-heading, .light #inbox_view_menu .inbox-mode-title { color: #303c50; }
+.light #inbox_view_menu .inbox-mode-caption { color: #69788e; }
+.light #inbox_view_menu button.inbox-view-choice:hover { background: #e8edf5; border-color: #c6d2e2; }
+.light #inbox_view_menu button.inbox-view-choice.active { background: #e4edfc; border-color: #489bff; }
+
+/* Bordered return/navigation controls with compact same-panel folder editing. */
+#list_header #focus_back { border: 1px solid #535b68; border-radius: 7px; padding: 3px 7px; background: #282d35; }
+#list_header #view_toggle { border: 1px solid #535b68; border-radius: 8px; padding: 3px 7px; background: #282d35; }
+#list_header #focus_back:hover, #list_header #view_toggle:hover { border-color: #8b9bb4; background: #343c48; }
+.floating-navigation button.folder-disclosure { padding: 2px 0; border: 0; min-width: 12px; min-height: 12px; background: transparent; }
+.floating-navigation button.folder-disclosure image { min-width: 12px; min-height: 12px; }
+.floating-navigation .folder-inline-tools button.compact-action { padding: 2px; min-width: 14px; min-height: 14px; border-radius: 5px; }
+.floating-navigation .folder-row { padding: 5px 2px; }
+.floating-navigation entry.inline-folder-entry { min-width: 48px; min-height: 18px; padding: 4px 5px; margin: 2px 0; border-color: #5798ed; border-radius: 5px; font-size: 12px; }
+.pinnable-nav-row button.nav-pin-action { padding: 3px; min-width: 14px; min-height: 14px; background: transparent; opacity: 0; border-color: transparent; }
+.pinnable-nav-row:hover button.nav-pin-action, .pinnable-nav-row button.nav-pin-action:focus { opacity: 1; }
+.pinnable-nav-row button.nav-pin-action.pinned { opacity: .65; color: #99bfff; }
+.light #list_header #focus_back, .light #list_header #view_toggle { border-color: #b9c5d7; background: #edf2f9; }
+.light #list_header #focus_back:hover, .light #list_header #view_toggle:hover { border-color: #869dbf; background: #e1eaf7; }
+
+/* Shared in-app surfaces replace native speech-bubble popovers and editor title bars. */
+.surface-flyout { background: #292a2d; color: #e3e4e7; border: 1px solid #404247; border-radius: 12px; padding: 5px; box-shadow: 0 10px 28px rgba(0,0,0,.4); }
+.surface-editor { background: #292929; color: #e4e4e4; border: 1px solid #414141; border-radius: 20px; box-shadow: 0 15px 42px rgba(0,0,0,.45); }
+.surface-editor-header { padding: 15px 19px 7px; }
+.surface-editor-title { font-size: 16px; font-weight: 600; }
+.surface-editor-footer { padding: 12px 20px 18px; }
+.surface-editor-footer button { border-radius: 18px; padding: 7px 17px; background: #3a3a3a; border-color: transparent; }
+.surface-editor-footer button.suggested-action { background: #626262; color: #f4f4f4; }
+.surface-dimmer { background: rgba(0,0,0,.38); }
+.surface-flyout scrolledwindow, .surface-flyout viewport, .surface-editor scrolledwindow, .surface-editor viewport { background: transparent; }
+.light .surface-flyout, .light .surface-editor { background: #f9f9fa; color: #303239; border-color: #d0d3d8; }
+.light .surface-editor-footer button { background: #e1e3e7; color: #303239; }
+.light .surface-editor-footer button.suggested-action { background: #59616c; color: #fff; }
+.choice-chip { background: #383838; border: 1px solid #494949; border-radius: 9px; padding: 5px 9px; font-size: 12px; min-height: 16px; }
+.choice-chip:hover, .choice-chip:checked { background: #444; border-color: #656565; }
+.choice-option { background: transparent; border: 0; border-radius: 8px; padding: 9px 12px; }
+.choice-option:hover, .choice-option:focus { background: #404040; }
+.choice-description { color: #a6a6aa; font-size: 11px; }
+.light .choice-chip { background: #eceef1; color: #30343b; border-color: #d6d9de; }
+.light .choice-option:hover, .light .choice-option:focus { background: #e7e9ed; }
+.light .choice-description { color: #73777d; }
+
+/* One rounded row owns its label and embedded trailing tools. */
+.folder-item-row, .mailbox-item-row, .folder-account-row { border-radius: 8px; padding: 1px 3px; }
+.folder-item-row.hover, .mailbox-item-row.hover, .folder-account-row:hover { background: #34373d; }
+.folder-item-row.active, .mailbox-item-row.active { background: #3c424d; }
+.floating-navigation .folder-item-row button.folder-row, .floating-navigation .mailbox-item-row button.nav, .folder-account-row button.folder-account-title { background: transparent; border-color: transparent; }
+.floating-navigation .folder-item-row button.folder-row:hover, .floating-navigation .folder-item-row button.folder-row.active, .floating-navigation .mailbox-item-row button.nav:hover, .floating-navigation .mailbox-item-row button.nav.active, .folder-account-row button.folder-account-title:hover { background: transparent; }
+.folder-item-row .folder-inline-tools button, .mailbox-item-row button.nav-pin-action { background: transparent; border: 0; min-width: 14px; min-height: 14px; padding: 3px; opacity: 1; border-radius: 5px; }
+.folder-item-row .folder-inline-tools button:hover, .mailbox-item-row button.nav-pin-action:hover { background: #494e58; }
+.mailbox-item-row button.nav-pin-action.pinned { opacity: 1; color: #b2c5e8; }
+.light .folder-item-row.hover, .light .mailbox-item-row.hover, .light .folder-account-row:hover { background: #e8ebf0; }
+.light .folder-item-row.active, .light .mailbox-item-row.active { background: #dde5f1; }
+.surface-flyout#views_menu { background: #292a2d; border-radius: 12px; border-color: #404247; }
+.surface-editor .editor-field-label { color: #d8d8dc; font-size: 12px; }
+.surface-editor .editor-field entry { border-radius: 12px; padding: 9px 11px; background: #2b2b2b; border-color: #454545; }
+.surface-editor .editor-choice-row { border: 1px solid #454545; border-radius: 14px; padding: 12px 14px; }
+.surface-editor .editor-choice-row .choice-chip { border: 0; background: transparent; }
+.surface-editor .editor-body { border: 1px solid #454545; border-radius: 14px; padding: 9px; }
+.surface-editor .editor-body textview, .surface-editor .editor-body textview text { background: #292929; }
+.light .surface-flyout#views_menu { background: #f9f9fa; border-color: #d0d3d8; }
+.light .surface-editor .editor-field-label { color: #333840; }
+.light .surface-editor .editor-field entry { background: #fff; border-color: #d4d7dc; }
+.light .surface-editor .editor-choice-row, .light .surface-editor .editor-body { border-color: #d4d7dc; }
+.light .surface-editor .editor-body textview, .light .surface-editor .editor-body textview text { background: #f9f9fa; }
+button.account-color-circle { padding: 2px 3px; min-width: 14px; min-height: 14px; border: 0; background: transparent; border-radius: 20px; }
+button.account-color-circle label { font-size: 18px; }
+button.account-color-circle:hover, button.account-color-circle:checked { background: #45484d; }
+.light button.account-color-circle:hover, .light button.account-color-circle:checked { background: #e1e5ec; }
+#rail button.drop-before { box-shadow: inset 0 2px #aab9d9; }
+#rail button.drop-after { box-shadow: inset 0 -2px #aab9d9; }
+
+/* Settings is one flat workspace, with native editors presented as shared rounded cards. */
+.surface-editor #settings_sidebar { background: #242424; border: 0; padding: 6px; }
+.settings-sidebar-title { font-size: 18px; font-weight: 600; padding: 6px 10px 15px; }
+.surface-editor .settings-navigation { background: transparent; border: 0; border-radius: 8px; padding: 8px 10px; font-size: 12px; }
+.surface-editor .settings-navigation:hover { background: #353535; }
+.surface-editor .settings-navigation.active { background: #414141; color: #f0f0f0; }
+.surface-editor .settings-heading { font-size: 21px; padding: 0 0 5px; }
+.surface-editor .settings-description { padding: 0 0 14px; color: #a2a2a8; font-size: 12px; }
+.surface-editor .settings-option { background: transparent; border: 0; border-bottom: 1px solid #3c3c3c; border-radius: 0; margin: 0; padding: 12px 0; }
+.surface-editor .settings-option label { font-size: 12px; }
+.surface-editor .settings-option entry { border-radius: 8px; background: #303030; border-color: #4b4b4b; padding: 5px 8px; }
+.surface-editor .settings-link { background: transparent; border: 0; border-bottom: 1px solid #3c3c3c; border-radius: 0; padding: 13px 0; font-size: 12px; }
+.surface-editor .settings-link:hover { background: #323232; }
+.surface-editor .account-card { background: transparent; border: 0; border-bottom: 1px solid #3c3c3c; border-radius: 0; padding: 12px 0; }
+.light .surface-editor #settings_sidebar { background: #eef0f3; }
+.light .surface-editor .settings-option, .light .surface-editor .settings-link, .light .surface-editor .account-card { border-color: #daddE3; }
+.light .surface-editor .settings-navigation:hover, .light .surface-editor .settings-link:hover { background: #e8ebef; }
+.light .surface-editor .settings-navigation.active { background: #dce2eb; color: #323842; }
+.light .surface-editor .settings-description { color: #747981; }
+.light .surface-editor .settings-option entry { background: #fff; border-color: #d3d8df; }
+
+/* Palette controls and background transparency keep foreground text readable. */
+button.color-chip, button.color-swatch { padding: 3px 5px; min-width: 18px; min-height: 18px; background: transparent; border: 1px solid transparent; border-radius: 7px; }
+button.color-chip label { font-size: 12px; }
+button.color-swatch label { font-size: 19px; }
+button.color-chip:hover, button.color-swatch:hover { background: #494b52; border-color: #686b76; }
+.surface-editor scale { padding: 8px; }
+.surface-editor scale trough { min-height: 4px; border-radius: 3px; background: #45474d; }
+.surface-editor scale highlight { background: #a9b9ef; border-radius: 3px; }
+.surface-editor scale slider { background: #dedfe4; border-radius: 50%; min-width: 13px; min-height: 13px; }
+.navigation-resize-edge { background: transparent; border-radius: 5px; margin: 8px 0; }
+.navigation-resize-edge:hover { background: #939dbd; }
+#mail_split > separator, #document_split > separator { min-width: 7px; background: #25272b; border-radius: 4px; margin: 6px 1px; }
+#mail_split > separator:hover, #document_split > separator:hover { background: #7a84a2; }
+#document_host { border-left: 1px solid #383c44; }
+.document-panel #heading, .document-panel #toolbar { border-bottom: 1px solid #353942; }
+.attachment-card { padding: 9px 10px; min-width: 0; border: 1px solid #424650; background: #2b2e35; border-radius: 11px; }
+.attachment-card:hover { background: #363b46; border-color: #7887ac; }
+.attachment-card .attachment-name { font-size: 12px; font-weight: 500; }
+.attachment-detail { font-size: 10px; color: #a3aab8; }
+.attachment-badge { background: #363b46; border-radius: 8px; padding: 5px; }
+flowbox > flowboxchild { padding: 0; border: 0; background: transparent; }
+.light .attachment-card { background: #f3f5f9; border-color: #d2d8e4; color: #343d4b; }
+.light .attachment-card:hover { background: #e7edf7; border-color: #9aaaca; }
+.light .attachment-detail { color: #747f91; }
+.light .attachment-badge { background: #e7ebf2; }
+window.desktop-notifications { background: #202226; padding: 0; }
+.notification-card { background: #2d3036; border: 1px solid #505663; border-left: 3px solid #a9b9ef; border-radius: 13px; padding: 14px 16px; }
+.notification-brand { font-size: 11px; font-weight: 600; color: #b7c3dd; }
+.notification-title { font-size: 14px; font-weight: 600; color: #f0f1f5; }
+.notification-body { font-size: 12px; color: #c7ccd6; }
+.notification-card button.compact-action { background: transparent; border: 0; padding: 3px; }
+.notification-open { background: #3e4656; border: 0; border-radius: 15px; padding: 5px 12px; font-size: 11px; }
+.document-panel button.compact-action { padding: 4px; min-width: 14px; min-height: 14px; }
+.document-panel entry { padding: 5px 8px; }
+.document-panel #title { font-size: 12px; font-weight: 500; }
+.surface-editor .settings-option button.color-chip label { font-size: 12px; }
+.surface-editor .settings-option button.color-chip { border-color: #636a78; border-radius: 9px; min-width: 24px; padding: 3px 6px; }
+
+/* Rounded native workspace and compact file workspace. Native edge hit targets remain six pixels. */
+window#window { border-radius: 12px; }
+window#window decoration { border: 1px solid #41444b; border-radius: 12px; }
+window#window headerbar { border-radius: 12px 12px 0 0; }
+window#window.maximized, window#window.maximized decoration, window#window.maximized headerbar { border-radius: 0; }
+.navigation-resize-edge { min-width: 10px; background: #34373d; margin: 10px 0; border-radius: 6px; }
+.navigation-resize-edge:hover { background: #7686ad; }
+.document-panel { padding: 0; }
+.document-tab { padding: 6px 8px; border-bottom: 1px solid #383c44; min-height: 28px; }
+.document-tab #title { font-size: 12px; font-weight: 500; }
+.document-canvas { margin: 10px 10px 2px; border: 1px solid #3b404a; border-radius: 11px; background: #1b1d21; }
+.document-controls { margin: 6px 10px 10px; padding: 3px 6px; background: #292d34; border: 1px solid #3d424c; border-radius: 10px; }
+.document-controls label { font-size: 10px; color: #aeb6c5; padding: 0 4px; }
+.document-search { margin: 6px 10px 0; }
+.document-search entry { min-height: 18px; padding: 4px 7px; font-size: 11px; }
+.light .document-canvas { background: #e8ecf2; border-color: #ced4df; }
+.light .document-tab { border-color: #d5dae3; }
+.light .document-controls { background: #f5f6f8; border-color: #d2d8e1; }
+.light .document-controls label { color: #626c7d; }
+
+/* Flat split boundaries and a solid client frame, without GTK's invisible resize gutter. */
+window#window, window#window.csd, window#window.solid-csd { margin: 0; padding: 0; }
+window#window decoration, window#window.csd decoration, window#window.solid-csd decoration { margin: 0; padding: 0; border: 1px solid #41444b; box-shadow: none; }
+#header button.titlebutton { border: 0; box-shadow: none; background: transparent; background-image: none; border-radius: 6px; padding: 5px 8px; }
+#header button.titlebutton:hover { background: rgba(150,155,170,.15); }
+#header button.titlebutton.close:hover { background: #bd424c; }
+#mail_split > separator, #document_split > separator { min-width: 1px; min-height: 1px; padding: 0; margin: 0; border: 0; border-radius: 0; background: #383b42; background-image: none; }
+#mail_split > separator:hover, #document_split > separator:hover { background: #7c8db6; }
+#document_host { border: 0; }
+.navigation-resize-edge { background: transparent; border-radius: 0; border-left: 1px solid #3c4048; margin: 8px 0; }
+.navigation-resize-edge:hover { background: rgba(140,150,175,.12); }
+/* File tabs share one chrome surface; inactive engines are released by the workspace. */
+.file-workspace { background: #1c1e22; }
+.file-tabs { padding: 5px 7px 0; border-bottom: 1px solid #35383f; }
+.file-tab { border: 1px solid transparent; border-radius: 8px; padding: 0 2px; margin: 0 3px 5px 0; background: transparent; }
+.file-tab.active { background: #2a2d33; border-color: #4b505b; }
+.file-tab button { border: 0; background: transparent; padding: 5px 7px; min-height: 17px; }
+.file-tab button.compact-action { padding: 3px; min-width: 13px; min-height: 13px; }
+.file-tab label { font-size: 11px; }
+.file-tab .file-tab-close { opacity: .6; }
+.file-tab:hover .file-tab-close { opacity: 1; }
+.file-pathbar { padding: 6px 9px; }
+.file-breadcrumb { font-size: 11px; background: #292c32; border-radius: 14px; padding: 5px 10px; color: #c0c7d3; }
+.file-pathbar button.compact-action, .file-tabs button.compact-action { padding: 4px; min-width: 15px; min-height: 15px; }
+.document-canvas { margin: 0; border: 0; border-radius: 0; background: #1c1e22; }
+.document-controls { margin: 6px 9px; padding: 2px 5px; border: 0; border-radius: 8px; background: #272a30; }
+.light .file-workspace, .light .document-canvas { background: #fafbfc; }
+.light .file-tabs { border-color: #d8dde5; }
+.light .file-tab.active, .light .file-breadcrumb { background: #e9edf3; border-color: #cbd2dd; color: #394352; }
+
+/* Content padding lives inside the viewport so the scrollbar reaches the pane boundary. */
+.reader-content { padding: 0; }
+#subject { margin: 16px 20px 10px; }
+#conversation_host { padding: 16px 0 18px; }
+#conversation_scroll { margin: 0; padding: 0; border: 0; }
+scrollbar, scrollbar contents, scrollbar trough { background: transparent; border: 0; border-radius: 0; margin: 0; padding: 0; }
+scrollbar.vertical { min-width: 10px; }
+scrollbar.horizontal { min-height: 10px; }
+scrollbar slider { background: #5b5b5b; border: 0; padding: 0; border-radius: 8px; box-shadow: none; }
+scrollbar.vertical slider { min-width: 6px; min-height: 24px; margin: 0 2px; }
+scrollbar.horizontal slider { min-height: 6px; min-width: 24px; margin: 2px 0; }
+scrollbar slider:hover, scrollbar slider:active { background: #8c8c8c; }
+scrollbar button { min-width: 0; min-height: 0; margin: 0; padding: 0; border: 0; background: transparent; }
+
+.folder-account-title, .floating-navigation .folder-row { min-width: 0; }
+
+/* Visible color previews and a native HSV palette keep the hex editor discoverable. */
+button.color-chip { padding: 4px 7px; border-color: #55585f; }
+scale.color-hue { padding: 5px 0; }
+scale.color-hue trough { min-height: 10px; background-image: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000); border-radius: 5px; }
+scale.color-hue highlight { background: transparent; }
+scale.color-hue slider { min-width: 9px; min-height: 15px; border: 1px solid #555555; background: #ffffff; }
+
+/* Compact editable values share the slider adjustment and never cover its thumb. */
+entry.range-number, .surface-editor .settings-option entry.range-number { min-width: 48px; border: 1px solid #4b4b4b; border-radius: 7px; background: #303030; padding: 5px 7px; }
+.light entry.range-number, .light .surface-editor .settings-option entry.range-number { background: #ffffff; border-color: #cbd0d8; }
+
+/* Narrow navigation gives the remaining width to complete trailing tools. */
+.navigation-resize-edge { min-width: 6px; }
+#sidebar.floating-navigation.navigation-compact, #navigation_surface.floating-navigation.navigation-compact { padding: 6px 4px; }
+.navigation-compact .folder-item-row, .navigation-compact .folder-account-row, .navigation-compact .mailbox-item-row { padding-left: 1px; padding-right: 1px; }
+.navigation-compact button.folder-account-title { padding-left: 1px; padding-right: 1px; }
+.navigation-compact .workspace-title { font-size: 13px; padding-left: 2px; padding-right: 2px; }
+
+/* Message history joins sibling cards, never an enclosing outline. */
+.history-connector { background: #565b65; min-width: 1px; min-height: 16px; }
+.light .history-connector { background: #bbc3d0; }
+/* Focus remains visible as a tint; theme provider repeats this at higher priority. */
+button, button:hover, button:focus, button:active, button:checked { border-style: none; border-width: 0; outline-style: none; outline-width: 0; box-shadow: none; background-image: none; }
+button:focus { background-color: rgba(160,180,220,.16); }
+
+/* Independent contact mail chat; bubble foreground uses explicit message-text. */
+.chat-header { padding: 14px 18px; border-bottom: 1px solid alpha(@theme_fg_color,0.10); font-weight: 600; }
+.chat-bubble { padding: 12px 15px; border-radius: 15px; border-width: 1px; border-style: solid; }
+.chat-meta { font-size: 11px; font-weight: 600; }
+.chat-context { font-size: 10px; opacity: 0.7; }
+.chat-body { font-size: 14px; }
+.chat-composer { padding: 8px 0 14px; background: transparent; }
+.chat-compose-bubble { padding: 9px 12px 7px; border: 1px solid #4a4f58; border-radius: 20px; background: #292d34; }
+.chat-composer.chat-compose-collapsed { padding: 2px 0 3px; }
+.chat-compose-collapsed .chat-compose-bubble { padding: 4px 10px 3px; }
+.chat-compose-collapsed .chat-compose-toolbar { padding-top: 0; }
+.chat-compose-top { min-height: 27px; }
+.chat-compose-summary { font-size: 11px; opacity: .78; }
+.chat-compose-note { font-size: 10px; opacity: .68; }
+.chat-compose-scroll, .chat-compose-scroll viewport { border: 0; background: transparent; }
+.chat-compose-body, .chat-compose-body text { background: transparent; border: 0; color: #e8e9eb; font-size: 13px; }
+.chat-compose-toolbar { padding-top: 2px; }
+.chat-compose-account button { padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+.chat-compose-bubble button.chat-compose-action { padding: 4px; min-width: 24px; min-height: 24px; border-radius: 12px; background: transparent; }
+.chat-compose-bubble button.chat-compose-action:hover { background: alpha(@theme_fg_color,.11); }
+.chat-compose-bubble button.chat-compose-send { background: #637bca; border-radius: 15px; }
+.chat-compose-bubble button.chat-compose-send:hover { background: #7890d8; }
+.chat-compose-bubble button.chat-compose-send:disabled { background: alpha(@theme_fg_color,.11); opacity: .48; }
+.light .chat-compose-bubble { background: #ffffff; border-color: #cdd5e2; }
+.light .chat-compose-body, .light .chat-compose-body text { background: transparent; color: #30363d; }
+
+/* Windows033: composed reply surface, person header and continuous directory. */
+.chat-header { padding: 16px 20px 14px; font-weight: normal; }
+.person-header-avatar { min-width: 42px; min-height: 42px; border-radius: 21px; font-size: 19px; font-weight: 600; }
+.person-header-name { font-size: 16px; font-weight: 600; }
+.person-header-aliases { font-size: 11px; font-weight: normal; }
+.chat-composer { padding: 12px 0 16px; }
+.chat-compose-bubble { padding: 16px 17px 11px; border-radius: 23px; box-shadow: 0 5px 16px rgba(0,0,0,.13); }
+.chat-composer.chat-compose-collapsed { padding: 6px 0 10px; }
+.chat-compose-collapsed .chat-compose-bubble { padding: 12px 16px 9px; }
+.chat-compose-collapsed .chat-compose-toolbar { padding-top: 0; }
+.chat-compose-top { min-height: 28px; padding-bottom: 5px; }
+.chat-compose-body, .chat-compose-body text { font-size: 14px; }
+.chat-compose-placeholder { font-size: 14px; }
+.chat-compose-summary { font-size: 11px; }
+.chat-compose-note { font-size: 10px; }
+.chat-compose-toolbar { padding-top: 4px; }
+.chat-compose-mode { font-size: 10px; border-radius: 8px; padding: 3px 7px; }
+.chat-compose-bubble button.chat-compose-action { padding: 5px; min-height: 23px; min-width: 23px; border-radius: 17px; }
+.chat-compose-bubble button.chat-compose-send { min-height: 26px; min-width: 26px; border-radius: 18px; padding: 5px; }
+.contacts-directory { padding: 4px 2px; }
+.directory-count { font-size: 11px; }
+.directory-section { padding: 12px 12px 3px; font-size: 11px; font-weight: 600; }
+.directory-row { padding: 0 2px; }
+button.directory-person { padding: 10px 12px; border-radius: 14px; min-width: 0; }
+.directory-avatar { min-width: 38px; min-height: 38px; border-radius: 19px; font-size: 16px; font-weight: 600; }
+.directory-name { font-size: 14px; font-weight: 600; }
+.directory-email { font-size: 11px; }
+.directory-badge { font-size: 10px; padding: 3px 6px; border-radius: 7px; }
+.directory-index { padding: 0 1px; }
+.directory-index button { min-height: 0; min-width: 20px; padding: 0 3px; font-size: 9px; border-radius: 5px; }
+.directory-bulk { padding: 8px 10px; border-radius: 11px; }
+.directory-bulk label { font-size: 11px; }
+.contact-drawer entry { min-width: 0; }
+.contact-drawer textview, .contact-drawer textview text { padding: 4px; border-radius: 8px; }
+
+/* Compact directory controls and complete adaptive alphabet; keep the list as the flexible area. */
+.directory-toolbar entry, .directory-toolbar button { min-height: 24px; padding: 3px 8px; }
+.directory-index button { min-height: 14px; min-width: 19px; padding: 0 3px; border: 0; margin: 0; }
+.directory-index button label { min-height: 0; padding: 0; margin: 0; font-size: 9px; }
+.directory-bulk { padding: 3px 8px; }
+.directory-bulk button { min-height: 22px; padding: 2px 7px; }
+.chat-composer { padding: 7px 0 9px; }
+.chat-compose-bubble { padding: 9px 12px 7px; border-radius: 19px; }
+.chat-composer.chat-compose-collapsed { padding: 3px 0 5px; }
+.chat-compose-collapsed .chat-compose-bubble { padding: 8px 13px; }
+.chat-compose-top { min-height: 0; padding-bottom: 0; }
+.chat-compose-account button { min-height: 22px; padding: 2px 6px; }
+.chat-compose-toolbar { padding-top: 0; }
+.chat-compose-mode { padding: 2px 5px; }
+.chat-compose-bubble button.chat-compose-action { min-height: 20px; min-width: 20px; padding: 2px; }
+.chat-compose-bubble button.chat-compose-send { min-height: 22px; min-width: 22px; padding: 3px; }
+.chat-compose-placeholder { opacity: .62; }
+
+/* Windows035: compact person header, adaptive reply body and saved-contact menus. */
+.chat-header { padding: 5px 14px 5px; }
+.person-header-avatar { min-width: 30px; min-height: 30px; border-radius: 15px; font-size: 14px; }
+.person-header-name { font-size: 14px; }
+.person-header-aliases { font-size: 10px; }
+.chat-header button { min-height: 24px; padding: 3px; }
+.chat-compose-toolbar .sender-choice { min-height: 22px; padding: 2px 6px; border-radius: 9px; }
+.sender-choice label { font-size: 11px; }
+.sender-menu .choice-option { padding: 8px 9px; border-radius: 10px; }
+.picker-heading { font-size: 11px; padding: 5px 7px 7px; }
+.picker-avatar { min-width: 28px; min-height: 28px; border-radius: 14px; font-size: 12px; }
+.recipient-picker-button { min-width: 22px; min-height: 22px; padding: 3px; border-radius: 8px; }
+.recipient-picker .choice-option { padding: 7px 8px; border-radius: 9px; }
+.recipient-picker .choice-option label { font-size: 12px; }
+.recipient-picker .choice-description { font-size: 10px; }
+.recipient-picker entry { min-height: 25px; padding: 3px 8px; }
+.picker-empty { padding: 18px 8px; font-size: 12px; }
+
+/* Windows036: continuous grouped chooser and quiet single-column alphabet. */
+.picker-section { font-size: 10px; padding: 8px 6px 3px; font-weight: 600; }
+.directory-index { padding: 0; }
+.directory-index button { min-height: 0; min-width: 15px; padding: 0 2px; margin: 0; border: 0; border-radius: 5px; }
+.directory-index button label { min-height: 0; padding: 0; margin: 0; }
+.reply-history-toggle { min-width: 22px; min-height: 17px; padding: 0 5px; border-radius: 6px; font-size: 13px; }
+.reply-history-card { padding: 4px; }
+
+/* Windows037: readable directional attached-history actions and reserved unread gutter. */
+button.reply-history-toggle { min-width: 96px; min-height: 24px; padding: 4px 9px; border-radius: 9px; font-size: 11px; }
+button.reply-history-remove { min-width: 24px; min-height: 24px; padding: 4px; border-radius: 9px; }
+.chat-unread-marker { min-width: 8px; padding: 0; margin: 0; }
+
+/* Windows038: compact left gutters and contact actions. */
+button.reply-history-toggle { min-width: 0; padding: 4px 5px; }
+button.chat-unread-marker { min-width: 8px; min-height: 24px; padding: 0; margin: 0; border: 0; border-radius: 4px; font-size: 9px; }
+.chat-contact-section { font-size: 10px; padding: 6px 12px 3px; }
+
+/* Windows040: overlay the return-to-bottom circle without changing timeline allocation. */
+#contact_chat button.chat-bottom-button { min-width: 20px; min-height: 20px; padding: 8px; border-radius: 18px; border: 0; }
+
+/* Windows047: compact native message/contact rows and neutral bulk actions. */
+#messages row.mail-item-row { padding: 4px 6px 4px 2px; border-left-width: 0; }
+#messages row.contact-item-row { padding: 4px 6px 4px 4px; border-left-width: 0; }
+#messages row .row-action-column { padding: 0; margin: 0; }
+#messages row button.row-quick-action { padding: 0; margin: 0; min-width: 13px; min-height: 16px; border: 0; opacity: 0; transition: none; }
+#messages row:hover button.row-quick-action, #messages row button.row-quick-action:focus, #messages row button.unread-action { opacity: 1; }
+#messages .avatar-history-bubble, #messages button.avatar-unread-bubble { min-width: 14px; min-height: 14px; padding: 1px 3px; margin: 0; border-radius: 9px; border: 0; font-size: 9px; font-weight: 600; }
+#messages button.avatar-unread-bubble.chat-unread-marker { min-width: 14px; min-height: 14px; padding: 1px 3px; border-radius: 9px; }
+.directory-bulk { padding: 2px 0; border-radius: 0; background: transparent; }
+.directory-bulk button { padding: 2px 4px; min-width: 18px; min-height: 20px; }
+.directory-bulk label { font-size: 10px; }
+
+/* Filter headers remain compact until their independent disclosure button is activated. */
+.filter-card { background: #292a2e; border: 1px solid #3c3e46; border-radius: 9px; }
+.filter-card-header { padding: 5px 9px; min-height: 34px; }
+.filter-card-header switch { min-width: 28px; min-height: 16px; padding: 0; margin: 0; }
+.filter-card-header switch slider { min-width: 14px; min-height: 14px; margin: 1px; padding: 0; }
+.filter-card-disclosure { background: transparent; border: 0; box-shadow: none; padding: 5px 3px; min-height: 21px; }
+.filter-card-disclosure:hover { background: transparent; border: 0; }
+.filter-card-disclosure:focus { outline: 1px solid #859ad7; outline-offset: -2px; }
+.filter-card-name { font-size: 11.5px; font-weight: 700; color: #f1f2f6; }
+.filter-card-chevron { min-width: 14px; min-height: 14px; padding: 0 2px; }
+.filter-paused .filter-card-name { color: #a0a4af; }
+.filter-expanded { border-color: #64769d; }
+.filter-card-actions button.compact-action { min-width: 15px; min-height: 17px; padding: 3px; border-radius: 5px; }
+.filter-card-actions button.filter-delete:hover { background: #5d343d; border-color: transparent; }
+.filter-card-details { padding: 12px; border-top: 1px solid #3b3e45; }
+.filter-chip, .filter-logic, .filter-condition, .filter-source, .filter-target { border-radius: 7px; padding: 5px 8px; }
+.filter-chip, .filter-source { background: #32343a; color: #b7bfcd; }
+.filter-logic { background: #343e55; color: #c4d4ff; }
+.filter-condition { background: #303841; color: #c0d0e0; }
+.filter-conditions flowboxchild { padding: 0; border: 0; background: transparent; }
+.filter-target { background: #253f3b; color: #a6dfcb; }
+.filter-account-row { padding: 5px 0; }
+.filter-account-name { font-size: 12px; color: #d6dae4; }
+.filter-account-dot { font-size: 17px; }
+.filter-route-arrow { color: #88c9b5; font-size: 19px; font-weight: 600; }
+.light .filter-card { background: #ffffff; border-color: #daddE5; }
+.light .filter-expanded { border-color: #8fa4d0; }
+.light .filter-card-name { color: #272e3d; }
+.light .filter-paused .filter-card-name { color: #7d8492; }
+.light .filter-card-disclosure, .light .filter-card-disclosure:hover { background: transparent; border: 0; }
+.light .filter-card-chevron { color: #788398; }
+.light .filter-card-details { border-color: #e2e5ec; }
+.light .filter-chip, .light .filter-source { background: #eef0f5; color: #5c6678; }
+.light .filter-logic { background: #e8edfa; color: #4f6598; }
+.light .filter-condition { background: #edf2f7; color: #556c82; }
+.light .filter-target { background: #e1f2eb; color: #397b64; }
+.light .filter-account-name { color: #424e63; }
+.light .filter-route-arrow { color: #43866e; }
+.light .filter-card-actions button.filter-delete:hover { background: #fae6e9; }
+
+.reply-history-controls { border: 0; padding: 0; margin: 0; background: transparent; }
+.reply-history-controls button.reply-history-toggle, .reply-history-controls button.reply-history-remove { min-width: 18px; min-height: 18px; padding: 0; margin: 0; border: 0; border-radius: 3px; background: transparent; font-size: 11px; }
+.reply-history-controls button image, .reply-history-controls button label { min-width: 0; min-height: 0; padding: 0; margin: 0; }
+.reply-history-controls button:hover { background: #363a43; }
+.reply-history-controls button.reply-history-remove:hover { color: #f19fa9; }
+.light .reply-history-controls button:hover { background: #e8ecf2; }
+.mail-loading { padding: 14px 8px; }
+.mail-loading-line { border-radius: 4px; background: alpha(#9aa7bb,.15); }
+.filter-manual-divider { background: #454952; min-height: 1px; margin-top: 10px; margin-bottom: 4px; }
+.filter-manual-heading { font-size: 14px; font-weight: 600; padding-top: 4px; }
+.filter-manual-hint { font-size: 11px; color: #99a4b6; }
+button.filter-run-choice { background: #2b2e35; border: 1px solid #414751; border-radius: 9px; padding: 10px; }
+button.filter-run-choice:hover { background: #333947; border-color: #7488b0; }
+.filter-run-title { font-size: 12px; font-weight: 600; }
+button.filter-pick-row { padding: 8px 10px; border-radius: 7px; }
+.light .filter-manual-divider { background: #d5dbe5; }
+.light .filter-manual-hint { color: #6a768b; }
+.light button.filter-run-choice { background: #f3f5f9; border-color: #d7deea; }
+.light button.filter-run-choice:hover { background: #e8eef9; border-color: #93a8d0; }

@@ -1,0 +1,18 @@
+TeleMail 0.55.0
+
+TeleMail-owned application, native adapters and build scripts are licensed under
+the MIT License. See LICENSE.
+Copyright holders retain their respective rights. This notice grants no rights
+to third-party code beyond its original license.
+
+Bundled PDF.js, Noto fonts, Antiword, Python, MSYS2 runtime components and
+Microsoft WebView2 Loader retain their own licenses and notices.
+See docs/THIRD_PARTY.md and per-component license/source files.
+
+TeleMail is an independent project. Legacy internal asset identifiers do not
+imply endorsement or affiliation with any other mail application.
+
+The Windows binary combination includes GPL-2.0-or-later JBIG-KIT through
+GdkPixbuf/libtiff. Distribution of that combined work follows GPLv3-or-later
+conditions while TeleMail-owned portions retain their MIT permissions.
+See docs/WINDOWS_LICENSE.md and the included GPL text/corresponding sources.

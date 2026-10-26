@@ -1,0 +1,4 @@
+[
+  {"field": "sender", "contains": "newsletter@", "category": "newsletter"},
+  {"field": "subject", "contains": "账单", "category": "notification"}
+]

@@ -1,0 +1,19 @@
+{
+  "accounts": [
+    {
+      "id": "work",
+      "email": "you@example.com",
+      "username": "you@example.com",
+      "imap_host": "imap.example.com",
+      "imap_port": 993,
+      "imap_security": "ssl",
+      "smtp_host": "smtp.example.com",
+      "smtp_port": 465,
+      "smtp_security": "ssl",
+      "auth": "password",
+      "secret_env": "TELEMAIL_WORK_PASSWORD",
+      "folders": ["INBOX"],
+      "sent_folder": ""
+    }
+  ]
+}

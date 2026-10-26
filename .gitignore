@@ -1,0 +1,29 @@
+# Local tooling, build output and private work records
+.runtime/
+dist/
+.planning/
+.analysis/
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+!.env.example
+# Local TeleMail profiles, credentials and cached mail
+config.json
+accounts.json
+logins.json
+device.key
+credentials-*/
+*.sqlite*
+*.db
+*.db-*
+*.log
+*.eml
+*.mbox
+*.pem
+*.key
+# Private investigation material and captures
+evidence/
+*.dmp
+*.etl

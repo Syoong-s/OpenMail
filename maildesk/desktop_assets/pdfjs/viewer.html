@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>TeleMail PDF</title>
+  <link rel="stylesheet" href="vendor/web/pdf_viewer.css">
+  <link rel="stylesheet" href="viewer.css">
+  <script type="module" src="bootstrap.mjs"></script>
+</head>
+<body>
+  <div id="viewport" tabindex="0" aria-label="PDF 文档"><div id="pages" class="pdfViewer"></div></div>
+  <p id="status" role="status">正在加载 PDF…</p>
+  <form id="passwordForm" hidden>
+    <label>此 PDF 需要密码 <input id="password" type="password" autocomplete="off" maxlength="1024"></label>
+    <button type="submit">打开</button><span id="passwordError"></span>
+  </form>
+</body>
+</html>

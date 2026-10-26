@@ -1,0 +1,13 @@
+* text=auto eol=lf
+*.otf -text
+*.ttf -text
+*.wasm -text
+*.bcmap -text
+*.tar.gz -text
+*.png -text
+*.icc -text
+# Preserve the exact bytes used by upstream integrity manifests.
+maildesk/desktop_assets/pdfjs/vendor/** -text -whitespace
+maildesk/desktop_assets/fonts/** -text
+third_party/librsvg-rust-NOTICES.txt -whitespace
+*.pdf -text

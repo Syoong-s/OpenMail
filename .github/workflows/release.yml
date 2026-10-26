@@ -1,0 +1,185 @@
+name: Build and release TeleMail
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag, for example v0.55.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: telemail-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+      - name: Validate version tag
+        run: python -c "import os,sys; sys.path.insert(0,'tools'); from release_context import validate_tag; validate_tag(os.environ['RELEASE_TAG'])"
+      - name: Install hosted Linux build and GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential binutils make pkg-config libgdk-pixbuf-2.0-0 libglib2.0-bin libgtk-3-0t64 libfontconfig1 libssl3t64 libwebkit2gtk-4.1-0 xvfb dbus-x11 bubblewrap openssl
+          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+      - name: Prepare pinned Windows SDK
+        run: python tools/prepare_windows_runtime.py
+      - name: Build Windows ZIP and Linux DEB plus tar.gz
+        run: |
+          python tools/build_windows.py --zip
+          python tools/build_linux.py --cc gcc
+      - name: Linux backend tests
+        run: python tools/run_tests.py --bundle dist/TeleMail-Linux-amd64 --output .runtime/linux-tests
+      - name: Linux native PDF acceptance
+        env:
+          TELEMAIL_WEBKIT_ACCELERATION: software
+        run: dbus-run-session -- xvfb-run -a python tools/verify_pdfjs_desktop.py --bundle dist/TeleMail-Linux-amd64 --encrypted tests/fixtures/pdfjs-encrypted.pdf --output .runtime/linux-gui
+      - name: Linux native mail bubble layout acceptance
+        env:
+          TELEMAIL_WEBKIT_ACCELERATION: software
+        run: dbus-run-session -- xvfb-run -a python tools/verify_mail_layout_desktop.py --bundle dist/TeleMail-Linux-amd64 --output .runtime/linux-mail-gui
+      - name: Collect locked corresponding sources automatically
+        run: |
+          python tools/prepare_release_sources.py
+          python tools/prepare_rust_sources.py
+          python tools/prepare_release.py --stage-only --expected-tag "$RELEASE_TAG"
+      - name: Transfer Windows package for native tests
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-binary
+          path: dist/telemail-*-windows-amd64.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Transfer release inputs and Linux QA reports
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-inputs
+          path: |
+            dist/telemail-*-windows-amd64.zip
+            dist/telemail-*-linux-amd64.tar.gz
+            dist/telemail-desktop_*_amd64.deb
+            dist/telemail-*-source.tar.gz
+            dist/telemail-*-third-party-sources.tar
+            .runtime/linux-tests/report.json
+            .runtime/linux-gui/report.json
+            .runtime/linux-mail-gui/report.json
+          include-hidden-files: true
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  windows-qa:
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: windows-binary
+          path: dist
+      - name: Extract exact Windows package
+        shell: pwsh
+        run: |
+          $archive = Get-ChildItem dist/telemail-*-windows-amd64.zip
+          if (@($archive).Count -ne 1) { throw 'Expected one Windows release ZIP' }
+          Expand-Archive -LiteralPath $archive.FullName -DestinationPath dist
+      - name: Ensure WebView2 on the disposable hosted runner
+        shell: pwsh
+        run: |
+          $roots = @(${env:ProgramFiles(x86)}, $env:ProgramFiles) | Where-Object { $_ }
+          $found = $roots | Where-Object { Test-Path (Join-Path $_ 'Microsoft/EdgeWebView/Application') }
+          if (-not $found) {
+            $installer = Join-Path $env:RUNNER_TEMP 'WebView2Setup.exe'
+            Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $installer
+            $process = Start-Process -FilePath $installer -ArgumentList '/silent','/install' -Wait -PassThru
+            if ($process.ExitCode -notin @(0,3010)) { throw "WebView2 setup failed: $($process.ExitCode)" }
+          }
+      - name: Windows backend tests with existing hosted OpenSSL
+        shell: pwsh
+        run: |
+          $openssl = Get-Command openssl -ErrorAction SilentlyContinue
+          if ($openssl) { $opensslFile = $openssl.Source }
+          else {
+            $gitDirectory = Split-Path (Get-Command git).Source
+            $opensslFile = Join-Path $gitDirectory '../usr/bin/openssl.exe'
+          }
+          if (-not (Test-Path $opensslFile)) { throw 'Hosted OpenSSL CLI is required for TLS fixtures' }
+          $opensslDirectory = Split-Path (Resolve-Path $opensslFile)
+          & ./dist/TeleMail-Windows-amd64/runtime/python/python.exe tools/run_tests.py --bundle dist/TeleMail-Windows-amd64 --qa-openssl-dir $opensslDirectory --output .runtime/windows-tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Windows native PDF acceptance
+        shell: pwsh
+        run: |
+          & ./dist/TeleMail-Windows-amd64/runtime/python/python.exe tools/verify_pdfjs_desktop.py --bundle dist/TeleMail-Windows-amd64 --encrypted tests/fixtures/pdfjs-encrypted.pdf --output .runtime/windows-gui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Transfer Windows QA reports
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-qa-reports
+          path: |
+            .runtime/windows-tests/report.json
+            .runtime/windows-gui/report.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [build, windows-qa]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-inputs
+          path: .
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: windows-qa-reports
+          path: .runtime
+      - name: Restore exact verified package directories
+        run: |
+          python -c "import pathlib,zipfile,tarfile; z=next(pathlib.Path('dist').glob('telemail-*-windows-amd64.zip')); zipfile.ZipFile(z).extractall('dist'); t=next(pathlib.Path('dist').glob('telemail-*-linux-amd64.tar.gz')); tarfile.open(t).extractall('dist',filter='data')"
+      - name: Verify this commit, workflow run, packages, tests and source attachments
+        run: python tools/prepare_release.py --use-existing-sources --require-ci-provenance --expected-tag "$RELEASE_TAG"
+      - name: Create and publish complete GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/publish_release.py

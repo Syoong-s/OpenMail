@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=TeleMail
+GenericName=Email Client
+Comment=Native Linux email client
+Comment[zh_CN]=Linux 原生邮件客户端
+Exec=/opt/telemail/TeleMail
+Icon=org.telemail.Desktop
+Terminal=false
+Categories=Network;Email;
+StartupNotify=true
+StartupWMClass=TeleMail
+Actions=Demo;
+
+[Desktop Action Demo]
+Name=Demo mailbox
+Name[zh_CN]=体验演示邮箱
+Exec=/opt/telemail/TeleMail --demo
