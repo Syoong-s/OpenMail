@@ -44,6 +44,8 @@ python3 tools/verify_mail_layout_desktop.py --output .runtime/linux-mail-check
 
 本地编译/解释器：GCC 15.2.0，Linux Python 3.14.4，Windows 包内 Python 3.14.5。窗口管理器、托盘、通知、字体和 WebKit/WebView2 行为需在目标系统验收。
 
+源码收集脚本使用 Python 3.14+ 标准库。`python3 -B -m unittest tests.test_release_sources -v` 可离线验证空缓存下载命名和 SHA-256 校验。上游下载必须保留 `third_party/upstream-sources.lock.json` 的 `filename`：例如 PDF.js 下载地址末尾是版本号，缓存文件仍须命名为 `pdfjs-v6.4.299.tar.gz`，并按该名称校验锁定哈希。`python3 tools/prepare_release_sources.py` 自动准备缓存；无需上传 `.runtime/` 或手工准备源码包。
+
 ## MIT 发行边界
 
 项目自有代码为 MIT。Windows 使用原固定版本 libtiff/JBIG-KIT，保留 JBIG 压缩 TIFF。自有代码为 MIT，包含 GPL 组件的 Windows 组合分发按 WINDOWS_LICENSE.md 提供相应条件、许可与源码；Antiword 作为独立 GPL 工具保留原许可与源码。GitHub 自动发行无需维护者手工构建源码包，流程见 RELEASING.md。

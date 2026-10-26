@@ -1,4 +1,4 @@
-"""Fetch exact MSYS2 source packages into an ignored cache; never execute them."""
+"""Fetch exact MSYS2 and upstream source archives into an ignored cache; never execute them."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
@@ -28,11 +28,13 @@ def inspect_archive(path):
 
 # ==========================================
 # Function: Retrieve one versioned source snapshot with an atomic checksum-checked cache.
-# Method: Require HTTPS, verify an existing lock or record the first explicitly requested snapshot.
+# Method: Honor explicit lock filenames, verify pinned checksums, and promote complete downloads atomically.
 # ==========================================
 def fetch(record, directory, pinned):
     url = record['source_tarball_url']
-    name = url.rsplit('/', 1)[1]
+    name = record.get('filename', url.rsplit('/', 1)[1])
+    if not name or name in ('.', '..') or '/' in name or '\\' in name:
+        raise ValueError('Invalid source filename: ' + name)
     target = directory / name
     expected = pinned.get(name, {}).get('sha256')
     if target.is_file():
@@ -67,7 +69,7 @@ def fetch(record, directory, pinned):
 
 # ==========================================
 # Function: Materialize all source snapshots for the actual shipped runtime packages.
-# Method: Deduplicate split-package sources, fetch concurrently, and preserve exact hash pins.
+# Method: Deduplicate split-package sources and preserve upstream lock filenames and exact hash pins.
 # ==========================================
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -91,7 +93,7 @@ def main():
         LOCK.write_text(json.dumps(result, indent=2) + '\n')
     extras = json.loads((ROOT / 'third_party/upstream-sources.lock.json').read_text())['sources']
     for item in extras:
-        fetch({'source_tarball_url': item['url'], 'kind': 'upstream'}, directory, {item['filename']: item})
+        fetch(dict(item, source_tarball_url=item['url'], kind='upstream'), directory, {item['filename']: item})
     print(json.dumps({'ok': True, 'archives': len(results) + len(extras),
                       'bytes': sum(item['bytes'] for item in results) + sum(item['bytes'] for item in extras)}, indent=2))
 
