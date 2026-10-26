@@ -143,14 +143,16 @@ jobs:
           & ./dist/TeleMail-Windows-amd64/runtime/python/python.exe tools/verify_pdfjs_desktop.py --bundle dist/TeleMail-Windows-amd64 --encrypted tests/fixtures/pdfjs-encrypted.pdf --output .runtime/windows-gui
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Transfer Windows QA reports
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-qa-reports
           path: |
             .runtime/windows-tests/report.json
+            .runtime/windows-tests/tests.txt
             .runtime/windows-gui/report.json
           include-hidden-files: true
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
 
   publish:

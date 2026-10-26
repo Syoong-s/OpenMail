@@ -11,7 +11,7 @@ import unittest
 
 # ==========================================
 # Function: Run complete backend discovery without reading the user's TeleMail profile.
-# Method: Redirect profile homes, preserve every test, and save platform-specific results.
+# Method: Redirect profile homes, preserve every test, and expose failed tracebacks alongside saved reports.
 # ==========================================
 def main():
     sys.dont_write_bytecode = True
@@ -46,6 +46,8 @@ def main():
         from release_context import provenance
         report['provenance'] = provenance(args.bundle)
         (args.output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+        if not result.wasSuccessful():
+            print((args.output / 'tests.txt').read_text(encoding='utf-8'), file=sys.stderr)
         print(json.dumps(report))
         return 0 if report['ok'] else 1
 

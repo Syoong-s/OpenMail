@@ -38,6 +38,8 @@ python3 tools/verify_mail_layout_desktop.py --output .runtime/linux-mail-check
 
 第一条把资料目录重定向到临时位置；Windows 使用 `--bundle` 指定运行库，如 TLS 测试需要，可用 `--qa-openssl-dir` 指向已有 OpenSSL 命令行目录（仅测试进程 PATH）。
 
+后端失败时，完整测试名称和 traceback 会输出到工作流日志，同时保留在输出目录的 `tests.txt`；Windows QA 即使失败也上传 `windows-qa-reports`，其中包含日志和已生成的报告。测试失败仍返回非零退出码并阻止发布。使用 Python 3.14+ 标准库运行 `python3 -B -m unittest tests.test_test_runner -v` 可验证成功和失败两条诊断路径。
+
 第二条要求真实图形桌面及浏览器运行库，使用临时演示资料并禁止 IMAP/SMTP。加密 PDF 的额外验证可使用 `--encrypted` 指定合成测试文件。Windows 使用包内 Python 运行相同脚本并指定 `--bundle`。
 
 第三条在 Linux 的真实 GTK/WebKit 窗口中验证邮件气泡排版、高度、宽度变化、缩放、图片更新、收起重开和脚本阻止。使用临时合成邮件，禁止真实邮箱调用；CI 在 Xvfb 中执行同一检查。
