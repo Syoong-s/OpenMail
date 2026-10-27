@@ -10,6 +10,14 @@
 
 可从 GitHub Releases 下载对应平台的发行包（当前版本 `0.55.0`），或在 Linux 下直接从源码启动：
 
+| 发行包 | 运行依赖 | 是否自动安装依赖 |
+| --- | --- | --- |
+| Windows 11 x64 ZIP | 已内置 Python、GTK、OpenSSL 和 Antiword；系统需具备 Microsoft Edge WebView2 Evergreen Runtime。 | 标准 Windows 11 已预装 WebView2，通常无需额外安装；若缺失，需手动安装，TeleMail 不会自动安装。启动前须完整解压 ZIP。 |
+| Debian / Ubuntu amd64 DEB | Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器（`librsvg2-common`）及 glibc >= 2.34；预览旧式 `.doc` 文件另需可选组件 `antiword`。 | 使用 `sudo apt install ./telemail-desktop_0.55.0_amd64.deb` 时，apt 会安装已声明的依赖，前提是配置的软件源提供兼容版本；`antiword` 未声明为依赖，需在需要 `.doc` 预览时单独安装。 |
+| Linux x86-64 可移动 tar.gz | Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器及 glibc >= 2.34；预览旧式 `.doc` 文件另需可选组件 `antiword`。 | 不会。启动前需手动安装缺失的系统依赖；解压或运行程序均不会自动安装。 |
+
+实际最低 glibc 版本取决于构建主机，不能保证兼容所有旧版 Linux 发行版，详见[构建指南](docs/BUILDING.md)。
+
 - **Windows 11 (x64)**
   解压 `telemail-0.55.0-windows-amd64.zip`（请保留完整目录结构），双击运行 `TeleMail-Windows-amd64/TeleMail.exe`。包内已自带 Python 与 GTK 运行时，无需安装 Python 或 WSL，仅需系统具备 Microsoft Edge WebView2 Evergreen Runtime。
 - **Debian / Ubuntu (amd64)**

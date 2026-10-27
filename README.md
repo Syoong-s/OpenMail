@@ -12,6 +12,14 @@ A desktop email client featuring multiple inbox layout modes and unified multi-a
 
 Download the release package for your platform from GitHub Releases (current version: `0.55.0`), or run directly from source on Linux:
 
+| Release package | Runtime dependencies | Installed automatically? |
+| --- | --- | --- |
+| Windows 11 x64 ZIP | Python, GTK, OpenSSL and Antiword are bundled; Microsoft Edge WebView2 Evergreen Runtime must be available on the system. | WebView2 is preinstalled on standard Windows 11 systems. If missing, install it manually; TeleMail does not install it automatically. Fully extract the ZIP before launching. |
+| Debian / Ubuntu amd64 DEB | Python 3.12+, GTK 3.24+, Fontconfig, OpenSSL 3, WebKitGTK 4.1, SVG loader (`librsvg2-common`) and glibc >= 2.34; optional `antiword` for legacy `.doc` previews. | `sudo apt install ./telemail-desktop_0.55.0_amd64.deb` installs declared dependencies when compatible versions are available from configured repositories. `antiword` is not declared and must be installed separately for `.doc` previews. |
+| Linux x86-64 portable tar.gz | Python 3.12+, GTK 3.24+, Fontconfig, OpenSSL 3, WebKitGTK 4.1, an SVG loader and glibc >= 2.34; optional `antiword` for legacy `.doc` previews. | No. Install missing system dependencies manually before launching; extracting or running the archive does not install them. |
+
+The actual minimum glibc version depends on the build host; compatibility with older Linux distributions is not guaranteed. See the [build guide](docs/BUILDING.md).
+
 * **Windows 11 (x64)**
 Extract `telemail-0.55.0-windows-amd64.zip` (keeping the complete directory structure intact) and double-click `TeleMail-Windows-amd64/TeleMail.exe`. The archive bundles the required Python and GTK runtimes—neither a local Python installation nor WSL is needed. Only the Microsoft Edge WebView2 Evergreen Runtime is required on the host system.
 * **Debian / Ubuntu (amd64)**
