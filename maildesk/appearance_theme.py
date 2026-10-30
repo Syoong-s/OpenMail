@@ -3,6 +3,7 @@ import ctypes as C
 import re
 import time
 from .message_style import BUBBLE_KEYS,BUBBLE_DEFAULTS,bubble_colors,bubble_palette
+from .ui_typography import DEFAULT_FONT_SIZE,font_size,font_stylesheet,apply_font
 
 ROLES=('canvas','panel','surface','text','accent','border')
 LABELS={'canvas':'工作区背景','panel':'侧栏与列表','surface':'卡片与弹层','text':'界面文字','accent':'强调色','border':'边框与分隔线'}
@@ -36,16 +37,17 @@ def palette(values):
 
 # ==========================================
 # Function: Project a durable scheme onto the named native palette roles.
-# Method: Resolve saved themes/presets and validate independent contrast/opacity values.
+# Method: Resolve saved themes/presets and validate font, contrast and opacity values.
 # ==========================================
 def preferences(store):
     scheme=store.preference('appearance_scheme','original')
     if scheme not in (*PRESETS,'custom','original'):scheme='original'
     colors=PRESETS.get(scheme,PRESETS['paper' if store.preference('theme','dark')=='light' else 'codex'])[1]
-    result={key:store.preference(key,default) for key,default in [('appearance_scheme',scheme),('panel_opacity',100),('window_opacity',100),('appearance_contrast',110),('attachment_open_width',700),('attachment_auto_expand',True)]}
+    result={key:store.preference(key,default) for key,default in [('appearance_scheme',scheme),('ui_font_size',DEFAULT_FONT_SIZE),('panel_opacity',100),('window_opacity',100),('appearance_contrast',110),('attachment_open_width',700),('attachment_auto_expand',True)]}
     from .window_workspace import attachment_width
     result['attachment_open_width']=attachment_width(result['attachment_open_width'])
     result['appearance_contrast']=contrast_level(result['appearance_contrast'])
+    result['ui_font_size']=font_size(result['ui_font_size'])
     result['panel_opacity']=percent(result['panel_opacity']);result['window_opacity']=percent(result['window_opacity'],low=50)
     for role,value in zip(ROLES,colors):
         selected=store.preference('color_'+role,value) if scheme=='custom' else value
@@ -200,14 +202,15 @@ def borderless_stylesheet(accent='#b6c5ff',text='#f1f1f1'):
 
 # ==========================================
 # Function: Reuse one theme provider and apply an explicitly staged or saved appearance.
-# Method: Reload one provider only when CSS changes, preserve live drag drawing and keep Cancel rollback possible.
+# Method: Reuse palette and font providers, preserve live drag drawing and keep Cancel rollback possible.
 # ==========================================
 def apply(app,values=None):
     g=app.g;values=values or preferences(app.service.store);old=getattr(app,'palette_provider',None)
+    size=font_size(values.get('ui_font_size',DEFAULT_FONT_SIZE));apply_font(app,size)
     if values['appearance_scheme']=='original':
         from .desktop_preferences import resolved_theme
         colors=PRESETS['paper' if resolved_theme(app)=='light' else 'codex'][1];values={**values,**{'color_'+role:value for role,value in zip(ROLES,colors)}}
-    source=stylesheet(values);provider=old or g.gtk_css_provider_new()
+    source=font_stylesheet(stylesheet(values),size);provider=old or g.gtk_css_provider_new()
     if not old or source!=getattr(app,'palette_css_source',None):
         encoded=source.encode()
         if not g.gtk_css_provider_load_from_data(provider,encoded,len(encoded),None):raise ValueError('配色样式无法载入')

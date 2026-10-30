@@ -281,12 +281,12 @@ class NativeSurfaces:
 
     # ==========================================
     # Function: Place a root dropdown, adjacent child or centered native editor card.
-    # Method: Clamp planned bounds and immediately commit reader exclusions before GTK paints the floating content.
+    # Method: Honor natural content widths at the selected font size, clamp to the root and commit reader exclusions.
     # ==========================================
     def position(self,state):
         if not state['open'] or state['root'] not in self.roots:return
         g=self.g;overlay=self.roots[state['root']]['overlay'];room_w=max(320,g.gtk_widget_get_allocated_width(overlay));room_h=max(240,g.gtk_widget_get_allocated_height(overlay));ox,oy=C.c_int(),C.c_int();g.gtk_widget_translate_coordinates(overlay,state['root'],0,0,C.byref(ox),C.byref(oy));room_w=max(240,min(room_w,g.gtk_widget_get_allocated_width(state['root'])-ox.value));room_h=max(240,min(room_h,g.gtk_widget_get_allocated_height(state['root'])-oy.value));content_w,content_h=self.natural(state['content']);parent=self.states.get(state['parent']);anchor=self.rectangle(state.get('anchor'),overlay)
-        dialog=state['kind']=='dialog';desired=state.get('width') or content_w+18;width=min(max(120,desired),room_w-24)
+        dialog=state['kind']=='dialog';desired=max(state.get('width') or 0,content_w+18);width=min(max(120,desired),room_w-24)
         adjacent=state.get('placement')=='side' or bool(parent and parent['kind']=='menu')
         if adjacent:
             boundary=parent['frame'] if parent else state.get('boundary') or state.get('anchor');px,py,pw,ph=self.rectangle(boundary,overlay);right=room_w-(px+pw+7)-8;left=px-15

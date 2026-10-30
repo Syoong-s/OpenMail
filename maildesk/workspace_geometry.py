@@ -74,7 +74,7 @@ class WorkspaceGeometry:
         g=self.g;panel=self.app.widget(key);surface=g.gtk_bin_get_child(panel);g.g_object_ref(surface);g.gtk_container_remove(panel,surface);wrapper=g.gtk_box_new(0,0);g.gtk_widget_set_hexpand(wrapper,0);g.gtk_container_add(panel,wrapper);g.gtk_widget_set_size_request(surface,-1,-1);clip=surface;g.gtk_box_pack_start(wrapper,surface,1,1,0);g.g_object_unref(surface)
         edge=g.gtk_event_box_new();g.gtk_event_box_set_visible_window(edge,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(edge),b'navigation-resize-edge');g.gtk_widget_set_size_request(edge,8,-1);g.gtk_widget_set_tooltip_text(edge,'拖动调整侧栏宽度'.encode());g.gtk_box_pack_start(wrapper,edge,0,0,0)
         gesture=g.gtk_gesture_drag_new(edge);g.gtk_gesture_single_set_button(gesture,1);g.gtk_gesture_single_set_touch_only(gesture,0);g.gtk_event_controller_set_propagation_phase(gesture,1)
-        self.nav[key]={'wrapper':wrapper,'surface':surface,'edge':edge,'clip':clip,'gesture':gesture,'width':bounded(self.app.service.store.preference(key+'_width',240),240,NAV_MIN,NAV_MAX),'start':240,'pointer_start':0,'active':False,'applied':None}
+        self.nav[key]={'wrapper':wrapper,'surface':surface,'edge':edge,'clip':clip,'gesture':gesture,'width':bounded(self.app.service.store.preference(key+'_width',300),300,NAV_MIN,NAV_MAX),'start':300,'pointer_start':0,'active':False,'applied':None}
         g.connect(gesture,'drag-begin',lambda widget,x,y,data,name=key:self.nav_begin(name),types=[P,C.c_double,C.c_double,P],group='workspace-geometry')
         g.connect(gesture,'drag-update',lambda widget,x,y,data,name=key:self.nav_update(name,x),types=[P,C.c_double,C.c_double,P],group='workspace-geometry')
         g.connect(gesture,'cancel',lambda *unused,name=key:self.nav_end(name),count=3,group='workspace-geometry')
@@ -129,7 +129,7 @@ class WorkspaceGeometry:
     # Method: Keep128–960 logical-pixel targets, reserve rail/outside space and apply each changed request outside GTK motion/allocation callbacks.
     # ==========================================
     def set_nav_width(self,key,width):
-        available=self.g.gtk_widget_get_allocated_width(self.app.widget('workspace_overlay'));maximum=min(NAV_MAX,max(NAV_MIN,available-120)) if available>1 else NAV_MAX;record=self.nav[key];record['width']=bounded(width,240,NAV_MIN,maximum)
+        available=self.g.gtk_widget_get_allocated_width(self.app.widget('workspace_overlay'));maximum=min(NAV_MAX,max(NAV_MIN,available-120)) if available>1 else NAV_MAX;record=self.nav[key];record['width']=bounded(width,300,NAV_MIN,maximum)
         if not self.updating:self.fit();return
         if record['applied']==record['width']:return
         record['applied']=record['width'];context=self.g.gtk_widget_get_style_context(record['surface'])

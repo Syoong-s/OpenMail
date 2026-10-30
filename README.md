@@ -68,6 +68,8 @@ TeleMail --version                           # Display current version and platf
 
 ### 3. Important Notes
 
+* **Interface Font Size & Sidebar**: Choose **Settings → Appearance → 界面字号** from 10–32 (default 14). This changes text only, with immediate preview, Save and Cancel; GTK handles system DPI. Popup widths follow their content within the available window. The wider navigation rail gives pinned folders the remaining window height; scrolling is needed only when they exceed that space. Expanded folder/mailbox sidebars now default to 300 logical pixels and remain draggable; saved widths are preserved. Email body text and PDF zoom retain their own settings.
+
 > **Important (Auto-Cleanup Policy)**: After connecting a real email account, please review the automatic cleanup policy under **Settings → Storage** first. By default, **unpinned inbox emails older than 365 days** are moved to the server Trash folder (which your email provider may subsequently purge permanently). To keep all inbox messages indefinitely, disable this option or adjust the retention period immediately after setup.
 
 * **Offline PDF Viewer**: PDF attachments are rendered offline via localhost loopback using the bundled PDF.js 6.4.299 engine. It supports continuous scrolling, zooming, text selection, full-text search highlighting, and password unlocking without uploading documents to external servers (OCR is not provided for scanned PDFs).
