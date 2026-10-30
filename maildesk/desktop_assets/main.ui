@@ -304,7 +304,7 @@
                   <object class="GtkBox" id="rail">
                     <property name="name">rail</property>
                     <property name="orientation">vertical</property>
-                    <property name="width-request">52</property>
+                    <property name="width-request">72</property>
                     <property name="spacing">9</property>
                     <child>
                       <object class="GtkLabel" id="brand">
@@ -321,8 +321,7 @@
                         <property name="hscrollbar-policy">never</property>
                         <property name="vscrollbar-policy">automatic</property>
                         <property name="min-content-height">0</property>
-                        <property name="max-content-height">320</property>
-                        <property name="propagate-natural-height">True</property>
+                        <property name="vexpand">True</property>
                         <property name="no-show-all">True</property>
                         <property name="visible">False</property>
                         <child>
@@ -331,12 +330,6 @@
                             <property name="spacing">7</property>
                           </object>
                         </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkBox">
-                        <property name="orientation">horizontal</property>
-                        <property name="vexpand">True</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1150,7 +1143,7 @@
                   <object class="GtkBox" id="sidebar">
                     <property name="name">sidebar</property>
                     <property name="orientation">vertical</property>
-                    <property name="width-request">240</property>
+                    <property name="width-request">300</property>
                     <property name="vexpand">True</property>
                     <child>
                       <object class="GtkScrolledWindow">
@@ -1255,7 +1248,7 @@
                     <property name="spacing">2</property>
                     <property name="margin">0</property>
                     <property name="name">navigation_surface</property>
-                    <property name="width-request">240</property>
+                    <property name="width-request">300</property>
                     <property name="vexpand">True</property>
                     <style>
                       <class name="floating-navigation" />

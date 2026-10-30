@@ -30,6 +30,10 @@ python3 tools/build_windows.py --zip
 
 ## 测试
 
+界面只提供 10–32 的字号选择（默认 14），不再提供整体缩放。`ui_typography.py` 仅将字体声明换算为 DPI 感知的点数，保留布局长度、图标与间距；GTK/GDK 继续处理系统缩放，Windows 保留 PerMonitorV2 声明。旧 `ui_scale` 偏好被忽略。字号可预览、保存、取消恢复与重置，弹窗根据内容自然宽度适配并限制在可用窗口内。设计参考 [Codex 外观设置中的 UI font size](https://learn.chatgpt.com/docs/reference/settings#appearance)，未假定其未公开的桌面实现。
+
+本地验证使用 Python 3.14.4 标准库、GTK 3.24+、Fontconfig 和现有系统运行库，无新增依赖或编译步骤：`python3 -B -m unittest tests.test_ui_typography -v` 验证字体与偏好；`python3 -B tools/verify_ui_typography.py` 使用实际 GTK 控件验证 96/144/192 DPI、10/14/20/32 字号、弹窗边界、12 个固定项无需滚动及真实溢出时仍可滚动。后者需图形桌面，可在 Xvfb 中运行；结果写入 `.runtime/ui-typography/report.json`。正常运行仍使用 `./run.sh --demo`，Windows 构建/运行方式不变。
+
 ```sh
 python3 tools/run_tests.py
 python3 tools/verify_pdfjs_desktop.py --output .runtime/pdfjs-check
