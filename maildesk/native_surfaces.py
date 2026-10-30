@@ -1,5 +1,6 @@
 """Same-window rounded menus and editor cards over compatible native controllers."""
 import ctypes as C
+import sys
 import xml.etree.ElementTree as ET
 from .native_reader_layers import ReaderLayers
 
@@ -73,6 +74,22 @@ class NativeSurfaces:
         g.connect(overlay,'size-allocate',lambda *unused:self.queue_relayout(window),count=3,group=group)
         g.connect(window,'size-allocate',lambda *unused:self.queue_relayout(window),count=3,group=group)
         g.connect(window,'destroy',lambda *unused:self.remove_root(window),group=group)
+        if sys.platform=='win32':
+            # ==========================================
+            # Function: Refit large open editors when their owner moves to a different monitor.
+            # Method: Compare work-area identities and defer layout outside the native configure event.
+            # ==========================================
+            def monitor_changed(*unused):
+                from .windows_display import geometry
+                root=self.roots.get(window)
+                if not root:return False
+                bounds=geometry(g,window)
+                if bounds:
+                    signature=(bounds.work.left,bounds.work.top,bounds.work.right,bounds.work.bottom)
+                    if signature!=root.get('monitor_workarea'):
+                        root['monitor_workarea']=signature;self.queue_relayout(window)
+                return False
+            g.connect(window,'configure-event',monitor_changed,count=3,returns=True,group=group)
 
     # ==========================================
     # Function: Release a secondary root before its native overlay is destroyed.
@@ -281,12 +298,19 @@ class NativeSurfaces:
 
     # ==========================================
     # Function: Place a root dropdown, adjacent child or centered native editor card.
-    # Method: Honor natural content widths at the selected font size, clamp to the root and commit reader exclusions.
+    # Method: Fit editors to the chosen font and available monitor, then clamp and commit reader exclusions.
     # ==========================================
     def position(self,state):
         if not state['open'] or state['root'] not in self.roots:return
         g=self.g;overlay=self.roots[state['root']]['overlay'];room_w=max(320,g.gtk_widget_get_allocated_width(overlay));room_h=max(240,g.gtk_widget_get_allocated_height(overlay));ox,oy=C.c_int(),C.c_int();g.gtk_widget_translate_coordinates(overlay,state['root'],0,0,C.byref(ox),C.byref(oy));room_w=max(240,min(room_w,g.gtk_widget_get_allocated_width(state['root'])-ox.value));room_h=max(240,min(room_h,g.gtk_widget_get_allocated_height(state['root'])-oy.value));content_w,content_h=self.natural(state['content']);parent=self.states.get(state['parent']);anchor=self.rectangle(state.get('anchor'),overlay)
-        dialog=state['kind']=='dialog';desired=max(state.get('width') or 0,content_w+18);width=min(max(120,desired),room_w-24)
+        dialog=state['kind']=='dialog';factor=max(1,getattr(self.app,'ui_font_size',14)/14) if dialog else 1
+        desired=max((state.get('width') or 0)*factor,content_w+18)
+        chrome=max(96,sum(self.natural(state[key])[1] for key in ('header','footer') if state.get(key))+24) if dialog else 14
+        desired_height=720*factor if state.get('workspace') else content_h+chrome
+        if dialog and not state.get('parent') and sys.platform=='win32':
+            from .windows_display import fit_dialog
+            fit_dialog(self,state,desired,desired_height)
+        width=min(max(120,desired),room_w-24)
         adjacent=state.get('placement')=='side' or bool(parent and parent['kind']=='menu')
         if adjacent:
             boundary=parent['frame'] if parent else state.get('boundary') or state.get('anchor');px,py,pw,ph=self.rectangle(boundary,overlay);right=room_w-(px+pw+7)-8;left=px-15
@@ -297,9 +321,9 @@ class NativeSurfaces:
             y=anchor[1]
         elif dialog:x=(room_w-width)//2;y=24
         else:x=anchor[0];y=anchor[1]+anchor[3]+6
-        extra=96 if dialog else 14;max_body=max(80,room_h-extra-24)
+        extra=chrome;max_body=max(80,room_h-extra-24)
         if state['scroll']:g.gtk_scrolled_window_set_max_content_height(state['scroll'],max_body)
-        height=min(720,room_h-24) if state.get('workspace') else min(content_h+extra,room_h-20)
+        height=min(desired_height,room_h-24) if state.get('workspace') else min(content_h+extra,room_h-20)
         if state.get('placement')=='above':y=max(8,anchor[1]-height-6)
         elif dialog and not adjacent:y=max(12,(room_h-height)//2)
         elif y+height>room_h-8:y=max(8,room_h-height-8)
@@ -361,6 +385,9 @@ class NativeSurfaces:
         anchor=state.get('anchor')
         if anchor in self.links and self.g.gtk_toggle_button_get_active(anchor):self.g.gtk_toggle_button_set_active(anchor,0)
         self.reader_layers.sync(state['root'])
+        if state['kind']=='dialog' and sys.platform=='win32':
+            from .windows_display import restore_dialog
+            restore_dialog(self,state['root'])
 
     # ==========================================
     # Function: Close ephemeral menus without discarding unrelated settings/editor cards.
@@ -398,7 +425,7 @@ class NativeSurfaces:
         from .ui_actions import icon_action
         close=icon_action(g,g.gtk_button_new(),'关闭','composer-close',16);g.gtk_box_pack_start(header,close,0,0,0);g.connect(close,'clicked',lambda *unused:g.gtk_dialog_response(controller,-6),group=state['group']);g.gtk_box_pack_start(frame,header,0,1,0)
         scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(scroll,2,1);g.gtk_scrolled_window_set_propagate_natural_height(scroll,1);g.gtk_container_add(scroll,state['content']);g.gtk_box_pack_start(frame,scroll,1,1,0);state['scroll']=scroll;state['title_label']=label
-        footer=g.gtk_box_new(0,8);g.gtk_widget_set_halign(footer,2);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(footer),b'surface-editor-footer');g.gtk_box_pack_start(frame,footer,0,1,0);state['footer']=footer
+        footer=g.gtk_box_new(0,8);g.gtk_widget_set_halign(footer,2);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(footer),b'surface-editor-footer');g.gtk_box_pack_start(frame,footer,0,1,0);state['footer']=footer;state['header']=header
         if state['placement']!='side':
             backdrop=g.gtk_event_box_new();g.gtk_event_box_set_visible_window(backdrop,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(backdrop),b'surface-dimmer');g.gtk_overlay_add_overlay(overlay,backdrop);state['backdrop']=backdrop;self.raise_widget(overlay,frame)
         g.connect(controller,'response',lambda widget,result,data:self.dialog_response(controller,result),types=[P,C.c_int,P],group=state['group']);return state

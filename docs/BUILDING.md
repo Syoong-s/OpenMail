@@ -30,7 +30,9 @@ python3 tools/build_windows.py --zip
 
 ## 测试
 
-界面只提供 10–32 的字号选择（默认 14），不再提供整体缩放。`ui_typography.py` 仅将字体声明换算为 DPI 感知的点数，保留布局长度、图标与间距；GTK/GDK 继续处理系统缩放，Windows 保留 PerMonitorV2 声明。旧 `ui_scale` 偏好被忽略。字号可预览、保存、取消恢复与重置，弹窗根据内容自然宽度适配并限制在可用窗口内。设计参考 [Codex 外观设置中的 UI font size](https://learn.chatgpt.com/docs/reference/settings#appearance)，未假定其未公开的桌面实现。
+界面提供 10–32 的字号选择（默认 14），旧 `ui_scale` 偏好被忽略。`ui_typography.py` 保留字体层级与字号的预览、保存、取消恢复和重置。Linux 继续使用 GTK/GDK 的 DPI 处理；Windows UI 线程通过 `windows_display.py` 使用 System DPI aware 整窗兼容缩放及固定 GTK 渲染比例，避免运行库在 100%/150%/200% 显示器间错误混用几何尺寸。PE 清单不变，线程上下文控制实际窗口创建；非主显示器上的非整数缩放可能略柔和。浮窗宽高随字号扩大，必要时临时扩大主窗口，计算工作区时包含 CSD 标题栏与边框，跨屏重新适配，关闭后恢复自动扩大的尺寸，保留用户手动调整。设计参考 [Codex 外观设置中的 UI font size](https://learn.chatgpt.com/docs/reference/settings#appearance)，未假定其未公开的桌面实现。
+
+已在 Windows 包内 CPython 3.14.5 与现有 GTK 3.24+、WebView2 下验证三块实际显示器（1920×1080/100%、3840×2160/150%、2880×1800/200%）、真实设置浮窗 14/20/32 字号、跨屏收敛、关闭恢复、手动尺寸保留与邮件正文加载。无新增依赖或编译步骤。`python3 -B -m unittest tests.test_windows_display tests.test_ui_typography -v` 使用平台 I/O 替身回归缩放策略、工作区限制和 CSD/手动调整保护。实际屏幕测量报告属于本地验收，不代替 CI 对新发行包的验收。
 
 本地验证使用 Python 3.14.4 标准库、GTK 3.24+、Fontconfig 和现有系统运行库，无新增依赖或编译步骤：`python3 -B -m unittest tests.test_ui_typography -v` 验证字体与偏好；`python3 -B tools/verify_ui_typography.py` 使用实际 GTK 控件验证 96/144/192 DPI、10/14/20/32 字号、弹窗边界、12 个固定项无需滚动及真实溢出时仍可滚动。后者需图形桌面，可在 Xvfb 中运行；结果写入 `.runtime/ui-typography/report.json`。正常运行仍使用 `./run.sh --demo`，Windows 构建/运行方式不变。
 

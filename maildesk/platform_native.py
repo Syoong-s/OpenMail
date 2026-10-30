@@ -35,7 +35,7 @@ def runtime_root():
 
 # ==========================================
 # Function: Configure private DLL and GTK data lookup without modifying global PATH.
-# Method: Register explicit DLL directories for this process and inherit only app-local settings.
+# Method: Register private DLL/data paths and initialize coherent whole-window Windows DPI scaling.
 # ==========================================
 def prepare_windows():
     if not WINDOWS:return
@@ -54,10 +54,8 @@ def prepare_windows():
     os.environ.setdefault('FONTCONFIG_PATH',str(root/'etc/fonts'))
     os.environ.setdefault('FONTCONFIG_FILE',str(root/'etc/fonts/fonts.conf'))
     prepare_pixbuf_cache(root)
-    user=C.WinDLL('user32',use_last_error=True)
-    if hasattr(user,'SetProcessDpiAwarenessContext'):
-        function=user.SetProcessDpiAwarenessContext;function.argtypes=[C.c_void_p];function.restype=C.c_int
-        function(C.c_void_p(-4))
+    from .windows_display import configure
+    configure()
 
 # ==========================================
 # Function: Resolve relocatable SVG/image loaders without writing into the application bundle.
