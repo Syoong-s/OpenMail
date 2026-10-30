@@ -4,7 +4,6 @@ from .appearance_theme import PRESETS,ROLES,LABELS,palette,preferences,apply
 from .message_style import BUBBLE_KEYS,BUBBLE_LABELS,BUBBLE_DEFAULTS,bubble_colors
 
 FIELDS=[('appearance_scheme','界面配色','combo',[('original','沿用当前主题')]+[(key,value[0]) for key,value in PRESETS.items()]+[('custom','自定义')]),('appearance_contrast','对比度（%）','range',(70,150,5)),('attachment_auto_expand','打开附件时自动扩宽窗口（关闭附件栏时还原）','switch',[]),('attachment_open_width','打开附件时增加的宽度（逻辑像素）','range',(280,2000,20)),('panel_opacity','面板背景不透明度（%）','range',(20,100,1)),('window_opacity','整个窗口不透明度（含文字，%）','range',(50,100,1))]+[('color_'+role,LABELS[role],'color',[]) for role in ROLES]+[(key,label,'color',[]) for key,label in zip(BUBBLE_KEYS,BUBBLE_LABELS)]
-FIELDS.insert(0,('ui_scale','界面缩放（%，100 为默认）','range',(100,200,25)))
 KEYS=[field[0] for field in FIELDS]
 
 # ==========================================
@@ -62,13 +61,12 @@ class AppearanceSettings:
         return 0
 
     # ==========================================
-    # Function: Restore baseline zoom and native appearance through the same staged controls.
+    # Function: Restore the baseline native appearance through the same staged controls.
     # Method: Keep account colors and unrelated settings untouched.
     # ==========================================
     def reset(self):
         self.updating=True
         try:
-            self.form.value('ui_scale',100)
             self.form.value('appearance_scheme','original');self.form.value('appearance_contrast',110);self.form.value('attachment_open_width',700);self.form.value('attachment_auto_expand',True);self.form.value('panel_opacity',100);self.form.value('window_opacity',100)
             for role,value in zip(ROLES,PRESETS['codex'][1]):self.form.value('color_'+role,value)
             from .desktop_preferences import resolved_theme
