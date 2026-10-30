@@ -3,8 +3,9 @@ import os
 from email.message import EmailMessage
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from maildesk.desktop_preferences import parse_mailto, row_presentation, cached_attachments
 from maildesk.desktop_install import set_autostart, default_mail_client
@@ -15,6 +16,44 @@ from maildesk.store import Store
 # Method: Use disposable XDG paths, a private SQLite cache and mocked OS integration.
 # ==========================================
 class GeneralAppearanceTests(unittest.TestCase):
+    # ==========================================
+    # Function: Restore saved zoom across launches and reject unusable imported values.
+    # Method: Reopen a real preference store and exercise bounded numeric recovery.
+    # ==========================================
+    def test_ui_scale_persistence_and_bounds(self):
+        from maildesk.appearance_theme import preferences
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'mail.db';store=Store(path)
+            self.assertEqual(preferences(store)['ui_scale'],100)
+            store.set_preference('ui_scale',150)
+            self.assertEqual(preferences(Store(path))['ui_scale'],150)
+            for value,expected in [(0,100),(900,200),('invalid',100),(None,100)]:
+                store.set_preference('ui_scale',value)
+                self.assertEqual(preferences(store)['ui_scale'],expected)
+
+    # ==========================================
+    # Function: Cancel live zoom without persisting it or accumulating global providers.
+    # Method: Preview several scales, cancel through the settings lifecycle, then save and reopen.
+    # ==========================================
+    def test_ui_scale_preview_cancel_and_save(self):
+        from maildesk.appearance_theme import apply,preferences
+        from maildesk.appearance_settings import AppearanceSettings
+        with tempfile.TemporaryDirectory() as folder:
+            store=Store(Path(folder)/'mail.db');g=Mock();g.gtk_css_provider_new.side_effect=[11,12]
+            app=SimpleNamespace(g=g,service=SimpleNamespace(store=store),window=1,closing=False)
+            editor=AppearanceSettings.__new__(AppearanceSettings)
+            editor.app=app;editor.g=g;editor.closed=False;editor.timer=0
+            baseline=preferences(store);editor.values=lambda:{**baseline,'ui_scale':150}
+            apply(app,editor.values());first=app.ui_scale_provider
+            self.assertEqual(store.preference('ui_scale',100),100)
+            apply(app,{**baseline,'ui_scale':200});editor.close()
+            self.assertEqual(app.ui_scale_percent,100)
+            self.assertEqual(app.ui_scale_provider,first)
+            self.assertEqual(g.gtk_style_context_add_provider_for_screen.call_count,2)
+            editor.save();apply(app)
+            self.assertEqual(app.ui_scale_percent,150)
+            self.assertEqual(preferences(Store(store.path))['ui_scale'],150)
+
     # ==========================================
     # Function: Preserve safe mailto fields without allowing executable MIME headers.
     # Method: Decode RFC6068-style recipient/subject/body values and reject injection.

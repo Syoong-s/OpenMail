@@ -68,6 +68,8 @@ TeleMail --version                           # Display current version and platf
 
 ### 3. Important Notes
 
+* **Interface Scaling**: In **Settings → Appearance → 界面缩放**, choose 100–200% to enlarge interface text, buttons and spacing without restarting. Changes are previewed immediately; Save remembers the setting and Cancel restores it. For a 4K screen at 150% system scaling, try 125% or 150% interface scaling. Email body text is configured separately under **Settings → Mail Reading → 阅读字号**.
+
 > **Important (Auto-Cleanup Policy)**: After connecting a real email account, please review the automatic cleanup policy under **Settings → Storage** first. By default, **unpinned inbox emails older than 365 days** are moved to the server Trash folder (which your email provider may subsequently purge permanently). To keep all inbox messages indefinitely, disable this option or adjust the retention period immediately after setup.
 
 * **Offline PDF Viewer**: PDF attachments are rendered offline via localhost loopback using the bundled PDF.js 6.4.299 engine. It supports continuous scrolling, zooming, text selection, full-text search highlighting, and password unlocking without uploading documents to external servers (OCR is not provided for scanned PDFs).

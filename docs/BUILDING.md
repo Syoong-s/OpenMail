@@ -30,6 +30,10 @@ python3 tools/build_windows.py --zip
 
 ## 测试
 
+界面缩放复用 GTK 3.24+ 的 CSS provider 和本地偏好存储，无新增依赖或编译步骤。外观设置中的 100%–200% 缩放从原始样式等比调整字体、按钮与间距，支持即时预览、保存和取消恢复；固定布局宽度、图片和嵌入式邮件/PDF 内容不随此设置缩放，邮件阅读字号及 PDF 缩放沿用各自设置。默认 100%，不修改系统 DPI 设置。
+
+相关回归测试使用本地 Python 3.14.4 标准库：`python3 -B -m unittest tests.test_general_appearance -v`。运行方式仍为 `./run.sh --demo`；Windows 使用正常构建的发行包启动，并在目标机器验收 4K/150% 系统缩放效果。
+
 ```sh
 python3 tools/run_tests.py
 python3 tools/verify_pdfjs_desktop.py --output .runtime/pdfjs-check

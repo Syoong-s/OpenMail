@@ -1,11 +1,13 @@
 """Validated local palette roles and background-only panel transparency."""
 import ctypes as C
+from pathlib import Path
 import re
 import time
 from .message_style import BUBBLE_KEYS,BUBBLE_DEFAULTS,bubble_colors,bubble_palette
 
 ROLES=('canvas','panel','surface','text','accent','border')
 LABELS={'canvas':'工作区背景','panel':'侧栏与列表','surface':'卡片与弹层','text':'界面文字','accent':'强调色','border':'边框与分隔线'}
+UI_CSS=(Path(__file__).parent/'desktop_assets/style.css').read_text(encoding='utf-8')
 PRESETS={
     'codex':('清晰深色',('#141414','#1b1b1b','#252525','#f1f1f1','#b6c5ff','#454545')),
     'graphite':('石墨',('#18191c','#242528','#2e2f33','#e5e7eb','#a9b9ef','#41434a')),
@@ -23,6 +25,23 @@ def percent(value,default=100,low=20):
     except (ValueError,TypeError,OverflowError):return default
 
 # ==========================================
+# Function: Keep application zoom readable even with malformed imported settings.
+# Method: Bound the extra UI scale to 100–200 percent independently of system DPI.
+# ==========================================
+def ui_scale(value):
+    try:return max(100,min(200,int(value)))
+    except (ValueError,TypeError,OverflowError):return 100
+
+# ==========================================
+# Function: Enlarge native interface text and control spacing together.
+# Method: Scale trusted CSS pixel lengths from the original source without cumulative zoom.
+# ==========================================
+def scaled_stylesheet(source,value):
+    factor=ui_scale(value)/100
+    if factor==1:return source
+    return re.sub(r'(?<![\w.])(-?(?:\d+(?:\.\d+)?|\.\d+))px\b',lambda match:f'{float(match[1])*factor:g}px',source)
+
+# ==========================================
 # Function: Validate all palette values before they become native CSS.
 # Method: Allow only full RGB hex tokens, never interpolated CSS expressions.
 # ==========================================
@@ -36,16 +55,17 @@ def palette(values):
 
 # ==========================================
 # Function: Project a durable scheme onto the named native palette roles.
-# Method: Resolve saved themes/presets and validate independent contrast/opacity values.
+# Method: Resolve saved themes/presets and validate zoom, contrast and opacity values.
 # ==========================================
 def preferences(store):
     scheme=store.preference('appearance_scheme','original')
     if scheme not in (*PRESETS,'custom','original'):scheme='original'
     colors=PRESETS.get(scheme,PRESETS['paper' if store.preference('theme','dark')=='light' else 'codex'])[1]
-    result={key:store.preference(key,default) for key,default in [('appearance_scheme',scheme),('panel_opacity',100),('window_opacity',100),('appearance_contrast',110),('attachment_open_width',700),('attachment_auto_expand',True)]}
+    result={key:store.preference(key,default) for key,default in [('appearance_scheme',scheme),('ui_scale',100),('panel_opacity',100),('window_opacity',100),('appearance_contrast',110),('attachment_open_width',700),('attachment_auto_expand',True)]}
     from .window_workspace import attachment_width
     result['attachment_open_width']=attachment_width(result['attachment_open_width'])
     result['appearance_contrast']=contrast_level(result['appearance_contrast'])
+    result['ui_scale']=ui_scale(result['ui_scale'])
     result['panel_opacity']=percent(result['panel_opacity']);result['window_opacity']=percent(result['window_opacity'],low=50)
     for role,value in zip(ROLES,colors):
         selected=store.preference('color_'+role,value) if scheme=='custom' else value
@@ -200,14 +220,21 @@ def borderless_stylesheet(accent='#b6c5ff',text='#f1f1f1'):
 
 # ==========================================
 # Function: Reuse one theme provider and apply an explicitly staged or saved appearance.
-# Method: Reload one provider only when CSS changes, preserve live drag drawing and keep Cancel rollback possible.
+# Method: Reuse CSS providers for staged zoom and palette edits, preserving Cancel rollback.
 # ==========================================
 def apply(app,values=None):
     g=app.g;values=values or preferences(app.service.store);old=getattr(app,'palette_provider',None)
+    scale=ui_scale(values.get('ui_scale',100))
+    if scale!=getattr(app,'ui_scale_percent',100):
+        scale_provider=getattr(app,'ui_scale_provider',None)
+        provider=scale_provider or g.gtk_css_provider_new();encoded=scaled_stylesheet(UI_CSS,scale).encode()
+        if not g.gtk_css_provider_load_from_data(provider,encoded,len(encoded),None):raise ValueError('界面缩放样式无法载入')
+        if not scale_provider:g.gtk_style_context_add_provider_for_screen(g.gdk_screen_get_default(),provider,600)
+        app.ui_scale_provider=provider;app.ui_scale_percent=scale
     if values['appearance_scheme']=='original':
         from .desktop_preferences import resolved_theme
         colors=PRESETS['paper' if resolved_theme(app)=='light' else 'codex'][1];values={**values,**{'color_'+role:value for role,value in zip(ROLES,colors)}}
-    source=stylesheet(values);provider=old or g.gtk_css_provider_new()
+    source=scaled_stylesheet(stylesheet(values),scale);provider=old or g.gtk_css_provider_new()
     if not old or source!=getattr(app,'palette_css_source',None):
         encoded=source.encode()
         if not g.gtk_css_provider_load_from_data(provider,encoded,len(encoded),None):raise ValueError('配色样式无法载入')
