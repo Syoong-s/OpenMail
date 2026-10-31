@@ -8,27 +8,27 @@
 
 ### 1. 安装与启动
 
-可从 GitHub Releases 下载对应平台的发行包（当前版本 `0.55.2`），或在 Linux 下直接从源码启动：
+可从 GitHub Releases 下载对应平台的发行包（当前版本 `0.55.3`），或在 Linux 下直接从源码启动：
 
 | 发行包 | 运行依赖 | 是否自动安装依赖 |
 | --- | --- | --- |
 | Windows 11 x64 ZIP | 已内置 Python、GTK、OpenSSL 和 Antiword；系统需具备 Microsoft Edge WebView2 Evergreen Runtime。 | 标准 Windows 11 已预装 WebView2，通常无需额外安装；若缺失，需手动安装，TeleMail 不会自动安装。启动前须完整解压 ZIP。 |
-| Debian / Ubuntu amd64 DEB | Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器（`librsvg2-common`）及 glibc >= 2.34；预览旧式 `.doc` 文件另需可选组件 `antiword`。 | 使用 `sudo apt install ./telemail-desktop_0.55.2_amd64.deb` 时，apt 会安装已声明的依赖，前提是配置的软件源提供兼容版本；`antiword` 未声明为依赖，需在需要 `.doc` 预览时单独安装。 |
+| Debian / Ubuntu amd64 DEB | Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器（`librsvg2-common`）及 glibc >= 2.34；预览旧式 `.doc` 文件另需可选组件 `antiword`。 | 使用 `sudo apt install ./telemail-desktop_0.55.3_amd64.deb` 时，apt 会安装已声明的依赖，前提是配置的软件源提供兼容版本；`antiword` 未声明为依赖，需在需要 `.doc` 预览时单独安装。 |
 | Linux x86-64 可移动 tar.gz | Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器及 glibc >= 2.34；预览旧式 `.doc` 文件另需可选组件 `antiword`。 | 不会。启动前需手动安装缺失的系统依赖；解压或运行程序均不会自动安装。 |
 
 实际最低 glibc 版本取决于构建主机，不能保证兼容所有旧版 Linux 发行版，详见[构建指南](docs/BUILDING.md)。
 
 - **Windows 11 (x64)**
-  解压 `telemail-0.55.2-windows-amd64.zip`（请保留完整目录结构），双击运行 `TeleMail-Windows-amd64/TeleMail.exe`。包内已自带 Python 与 GTK 运行时，无需安装 Python 或 WSL，仅需系统具备 Microsoft Edge WebView2 Evergreen Runtime。
+  解压 `telemail-0.55.3-windows-amd64.zip`（请保留完整目录结构），双击运行 `TeleMail-Windows-amd64/TeleMail.exe`。包内已自带 Python 与 GTK 运行时，无需安装 Python 或 WSL，仅需系统具备 Microsoft Edge WebView2 Evergreen Runtime。
 - **Debian / Ubuntu (amd64)**
-  安装 `telemail-desktop_0.55.2_amd64.deb`（系统包管理器会自动处理依赖），完成后可从桌面应用菜单或终端执行 `telemail` 启动：
+  安装 `telemail-desktop_0.55.3_amd64.deb`（系统包管理器会自动处理依赖），完成后可从桌面应用菜单或终端执行 `telemail` 启动：
   ```bash
-  sudo apt install ./telemail-desktop_0.55.2_amd64.deb
+  sudo apt install ./telemail-desktop_0.55.3_amd64.deb
   ```
 - **Linux 通用可移动包 (x86-64)**
-  解压 `telemail-0.55.2-linux-amd64.tar.gz` 并运行其中的 `TeleMail`（需系统提供 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1 及 `glibc >= 2.34`）：
+  解压 `telemail-0.55.3-linux-amd64.tar.gz` 并运行其中的 `TeleMail`（需系统提供 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1 及 `glibc >= 2.34`）：
   ```bash
-  tar -xzf telemail-0.55.2-linux-amd64.tar.gz
+  tar -xzf telemail-0.55.3-linux-amd64.tar.gz
   ./TeleMail-Linux-amd64/TeleMail
   # 可选：为当前用户注册桌面快捷方式
   ./TeleMail-Linux-amd64/TeleMail --install-user
@@ -54,7 +54,7 @@
 
 ### 3. 使用注意事项
 
-- **界面字号与侧栏**：在 **“设置 → 外观 → 界面字号”** 中选择 10–32（默认 14），支持即时预览、保存与取消恢复；弹窗宽高随字号扩大并适配可用窗口。左侧固定图标栏宽度为 58 逻辑像素，固定文件夹使用窗口剩余高度，仅在实际放不下时滚动；展开的文件夹和邮箱侧栏默认宽度为 300 逻辑像素，仍可拖动调整，并保留已保存的宽度。邮件正文字号和 PDF 缩放继续使用各自设置。
+- **界面字号与侧栏**：在 **“设置 → 外观 → 界面字号”** 中选择 10–32（默认 14），支持即时预览、保存与取消恢复；弹窗宽高随字号扩大并适配可用窗口。左侧固定图标栏宽度为 40 逻辑像素，固定文件夹使用窗口剩余高度，仅在实际放不下时滚动；展开的文件夹和邮箱侧栏默认宽度为 300 逻辑像素，仍可拖动调整，并保留已保存的宽度。邮件正文字号和 PDF 缩放继续使用各自设置。
 
 - **Windows 多显示器**：使用 Windows 整窗兼容缩放，使窗口、字体与浮窗在 100%、150%、200% 显示器之间保持一致的逻辑尺寸；非主显示器上的非整数缩放可能略柔和。大字号浮窗必要时临时扩大主窗口，跨屏时重新适配工作区，关闭后恢复自动扩大的尺寸，并保留用户手动调整。
 

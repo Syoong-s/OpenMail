@@ -65,7 +65,7 @@ def main():
         'pdf_engine':'PDF.js 6.4.299 (offline legacy browser build)',
         'internal_pdf_resource_transport':'app-owned loopback capability; no external server',
         'reader_runtime_bundled':False,'file_preview':'embedded-right-panel','inline_mail_images':True,
-        'sender_background_colors':True,'account_outline_colors':True,'navigation_rail_px':52,'compact_attachment_footer':True,'settings_navigation':True,'settings_icons':True,'send_later_calendar':True,'gatekeeper_modes':['explicit','inThread','off'],'embedded_composer':True,'local_mdn_receipts':True,'template_variables':True,'general_appearance_settings':True,'focused_sender_summaries':True,'row_quick_actions':['done','seen','trash'],'continuous_conversation_cards':True,'inline_reply':True,'full_compose':True,'credential_storage':'local AES-256-GCM with private device key',
+        'sender_background_colors':True,'account_outline_colors':True,'navigation_rail_px':40,'compact_attachment_footer':True,'settings_navigation':True,'settings_icons':True,'send_later_calendar':True,'gatekeeper_modes':['explicit','inThread','off'],'embedded_composer':True,'local_mdn_receipts':True,'template_variables':True,'general_appearance_settings':True,'focused_sender_summaries':True,'row_quick_actions':['done','seen','trash'],'continuous_conversation_cards':True,'inline_reply':True,'full_compose':True,'credential_storage':'local AES-256-GCM with private device key',
         'sha256':{str(p.relative_to(bundle)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(bundle.rglob('*')) if p.is_file()}}
     (bundle / 'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     for directory, dirs, files in os.walk(bundle):

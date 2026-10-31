@@ -241,8 +241,8 @@ button:focus { outline: 2px solid alpha(@accent,.55); outline-offset: 1px; }
 button.compact-action { border: 1px solid transparent; background: transparent; min-width: 18px; min-height: 18px; padding: 6px; border-radius: 8px; }
 button.compact-action:hover { background: #303238; border-color: #3c3f46; }
 button.compact-action:disabled { opacity: .4; }
-#rail { padding: 10px 6px; border-right: 1px solid #292b30; }
-#rail button { padding: 7px 6px; border-radius: 9px; }
+#rail { padding: 10px 2px; border-right: 1px solid #292b30; }
+#rail button { padding: 7px 4px; border-radius: 9px; }
 #rail .rail-active { background: #303238; }
 #sidebar { padding: 12px 8px; border-right: 1px solid #303238; }
 .nav, .folder-row { border-radius: 8px; padding: 7px 10px; }

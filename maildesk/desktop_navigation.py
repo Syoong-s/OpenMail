@@ -111,11 +111,11 @@ class NavigationUI(FolderNavigationUI,PinnedNavigationUI,NavigationHoverUI,Accou
     # Method: Let GtkOverlay fill the available height while updating only the horizontal inset and transition.
     # ==========================================
     def resize_navigation(self):
-        g=self.g;inset=max(48,g.gtk_widget_get_allocated_width(self.widget('rail')))+6
+        g=self.g;inset=max(40,g.gtk_widget_get_allocated_width(self.widget('rail')))+6
         for key in ('folders_menu','navigation_menu'):
             g.gtk_widget_set_margin_start(self.widget(key),inset)
             g.gtk_revealer_set_transition_duration(self.widget(key),160 if getattr(self,'motion',True) else 0)
-        g.gtk_widget_set_margin_start(self.widget('navigation_backdrop'),max(48,inset-6))
+        g.gtk_widget_set_margin_start(self.widget('navigation_backdrop'),max(40,inset-6))
         if getattr(self,'workspace_geometry',None):self.workspace_geometry.fit()
 
     # ==========================================
