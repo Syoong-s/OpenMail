@@ -98,6 +98,7 @@ def rgba(color,opacity):return 'rgba('+','.join(str(int(color[i:i+2],16)) for i 
 # Method: Use scoped widget roles and transparent list rows over one canvas layer.
 # ==========================================
 def stylesheet(values):
+    from .activity_style import stylesheet as activity_stylesheet
     c=effective_palette(values);alpha=percent(values['panel_opacity']);panel=rgba(c['panel'],alpha);surface=rgba(c['surface'],max(75,alpha));accent=c['accent'];text=c['text'];border=c['border']
     channels=[int(accent[i:i+2],16)/255 for i in (1,3,5)]
     luminance=sum(weight*(value/12.92 if value<=.04045 else ((value+.055)/1.055)**2.4) for weight,value in zip((.2126,.7152,.0722),channels))
@@ -193,7 +194,7 @@ button.conversation-sender:hover {{ background: {rgba(text,7)}; }}
 button.state-enabled, button.state-enabled:focus {{ background: {rgba(text,8)}; color: #e9be58; }}
 #contact_chat button.chat-bottom-button, #contact_chat button.chat-bottom-button:focus {{ background: {c['panel']}; color: {text}; box-shadow: 0 2px 6px rgba(0,0,0,.18); }}
 #contact_chat button.chat-bottom-button:hover {{ background: {rgba(text,18)}; }}
-.reply-history-card {{ border: 1px solid {rgba(text,12)}; border-radius: 10px; background: {c['surface']}; }}'''
+.reply-history-card {{ border: 1px solid {rgba(text,12)}; border-radius: 10px; background: {c['surface']}; }}'''+activity_stylesheet(c)
 
 # ==========================================
 # Function: Remove pointer focus fills while retaining explicit keyboard navigation cues.

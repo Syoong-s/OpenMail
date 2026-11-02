@@ -7,12 +7,13 @@ import time
 from urllib.parse import urlparse
 from .local_mail import LOCAL_ACCOUNT,LOCAL_LABEL
 from .desktop_navigation import NavigationUI
+from .desktop_mail_menu import MailMenuUI
 
 # ==========================================
 # Function: Connect personal mail organization to native GTK controls.
 # Method: Keep persistent state in the service and widgets on the application thread.
 # ==========================================
-class OrganizationUI(NavigationUI):
+class OrganizationUI(NavigationUI,MailMenuUI):
     # ==========================================
     # Function: Bind the expanded mailbox controls and keyboard gestures.
     # Method: Use retained GTK signal callbacks and plain semantic action names.
@@ -23,7 +24,7 @@ class OrganizationUI(NavigationUI):
         actions={'contacts':self.contacts_dialog,'folders_manage':self.manage_folders,'smart_add':self.smart_folder_dialog,
             'save_search':lambda:self.inbox_menu_action(self.smart_folder_dialog),'selection':self.toggle_selection,'move':self.move_dialog,
             'copy':lambda:self.move_dialog(copy=True),'trash':lambda:self.special_action('trash'),
-            'spam':lambda:self.special_action('spam'),'snooze':lambda:self.date_action('snoozed_until'),
+            'spam':self.toggle_spam,'snooze':lambda:self.date_action('snoozed_until'),
             'reminder':lambda:self.date_action('reminder'),'aside':lambda:self.organize_toggle('aside'),
             'done':lambda:self.organize_toggle('done'),'labels':self.labels_dialog,'sender_policy':self.sender_dialog,
             'delete_forever':self.delete_dialog,'preferences':self.preferences,'reply_all':lambda:self.reply_extended('all'),
@@ -62,6 +63,7 @@ class OrganizationUI(NavigationUI):
         self.initialize_navigation()
         from .native_choices import NativeChoice
         self.category_choice=NativeChoice(self.g,self.widget('message_category'),'邮件分类')
+        self.initialize_mail_menu()
         from .ui_actions import icon_action
         for name,title,icon in [('selection','选择邮件','action-select'),('bulk_seen','标为已读','spark-layout-seen'),('bulk_move','移动到文件夹','spark-layout-move'),('bulk_archive','归档','spark-layout-archive'),('bulk_trash','移至废纸篓','spark-layout-trash'),('bulk_done','标为完成','spark-layout-done'),('edit_draft','编辑草稿','spark-layout-compose'),('cancel_job','取消计划','composer-close'),('reschedule_job','更改发送时间','composer-later'),('send_job_now','立即发送','composer-send'),('toast_close','关闭提示','composer-close')]:
             icon_action(self.g,self.widget(name),title,icon,14 if name.startswith('bulk_') else 18)

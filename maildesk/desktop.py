@@ -142,6 +142,8 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             self.initialize_reader()
             self.initialize_inbox()
             self.initialize_chat()
+            from .desktop_activity import MailActivity
+            self.activity=MailActivity(self)
             self.apply_appearance()
             self.fill_accounts()
             self.rendering=True
@@ -271,6 +273,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                     return 1
             if time.monotonic() - self.last_poll >= 2 and self.service:
                 self.last_poll = time.monotonic()
+                if getattr(self,'activity',None):self.activity.refresh()
                 status = self.service.status
                 (self.g.gtk_spinner_start if status['syncing'] else self.g.gtk_spinner_stop)(self.widget('spinner'))
                 self.check_send_sound()
@@ -355,6 +358,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     # ==========================================
     def refresh(self, *unused):
         if not self.service or self.closing:return
+        if getattr(self,'activity',None):self.activity.refresh()
         if getattr(self,'chat_source_return',None) and not self.contact_mode() and not self.chat_discard_return():return
         if getattr(self,"selected_chat","") and not self.contact_mode() and not self.leave_chat():return
         self.cancel_list_render()
@@ -727,6 +731,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 message={**message,'seen':1}
                 self.queue.put((lambda result:self.mail_changed([identity]),None))
         self.current = message
+        self.sync_mail_menu(message)
         parsed = message['parsed']
         prepared=getattr(self,'read_prepared',None)
         if prepared and getattr(self,'mail_person_header',None):

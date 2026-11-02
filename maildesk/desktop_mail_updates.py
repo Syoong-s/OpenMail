@@ -198,7 +198,9 @@ class MailUpdatesUI:
                     card['metadata'].update({key:message[key] for key in ('seen','done','pinned','archived','folder')})
                     surface.update_card_actions(card)
             if self.current and self.current.get('id')==identity:
-                self.current.update({key:message[key] for key in ('seen','done','pinned','archived','folder')})
+                self.current.update({key:message[key] for key in ('seen','done','pinned','archived','folder','folder_special','aside','spam','snoozed_until','reminder')})
+                self.current['labels']=store.labels_for([identity])[identity]
+                self.sync_mail_menu(self.current)
                 for key in ('seen','done','pin','archive'):
                     active=bool(message[{'pin':'pinned','archive':'archived'}.get(key,key)])
                     state_action(self.g,self.widget(key),('标为未读' if active else '标为已读') if key=='seen' else ('移回收件箱' if active else '完成并归档') if key in ('done','archive') else ('取消置顶' if active else '置顶'),'spark-layout-'+key,active)

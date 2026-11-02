@@ -162,6 +162,9 @@ class GeneralUI:
         fullcompose=bool(self.composer and self.composer.embedded and not getattr(self.composer,'inline',False) and not getattr(self.composer,'detached',False))
         preview_open=bool(getattr(self,'workspace_geometry',None) and self.workspace_geometry.preview_open)
         split=(mode=='splitView' or preview_open) and not fullcompose
+        if getattr(self,'activity',None):
+            if not active and not preview_open and not getattr(self,'document',None):self.activity.show()
+            else:self.activity.hide()
         if fullcompose:show_reader=True
         separate=bool(getattr(self,'thread_window',None))
         self.g.gtk_widget_set_visible(self.widget('listpane'),separate or split or not show_reader)

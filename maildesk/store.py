@@ -332,7 +332,9 @@ class Store(OrganizationStore):
     def state(self,identity):
         with self.db() as db:
             row=db.execute('''SELECT m.id,m.account,m.folder,m.validity,m.uid,m.remote_gone,m.seen,m.pinned,m.priority,
-                m.category,m.aside,m.snoozed_until,m.trashed,m.spam,
+                m.category,m.aside,m.snoozed_until,m.reminder,coalesce(f.special,'') AS folder_special,
+                (m.trashed=1 OR coalesce(f.special,'')='trash') AS trashed,
+                (m.spam=1 OR coalesce(f.special,'')='spam') AS spam,
                 (m.done=1 OR m.archived=1 OR coalesce(f.special,'')='archive') AS done,
                 (m.archived=1 OR coalesce(f.special,'')='archive') AS archived
                 FROM messages m LEFT JOIN folders f ON f.account=m.account AND f.folder=m.folder WHERE m.id=?''',(identity,)).fetchone()
