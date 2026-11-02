@@ -1,7 +1,6 @@
 <div align="center">
   <img src="maildesk/desktop_assets/icon.svg" width="72" alt="TeleMail 图标">
   <h1>TeleMail</h1>
-  <p><strong>你的邮件，你的节奏。</strong></p>
   <p>本地优先的桌面邮件客户端，支持 Windows 与 Linux。</p>
   <p><a href="README.md">English</a> · <strong>简体中文</strong></p>
   <p><a href="https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0">下载 0.57.0</a> · <a href="#开始使用">开始使用</a> · <a href="docs/BUILDING.md">从源码构建</a></p>
