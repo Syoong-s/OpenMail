@@ -1,4 +1,5 @@
 """Native limited rich text: inert HTML import and explicit composer formatting."""
+from .i18n import text as _tr
 import ctypes as C
 from html import escape
 from html.parser import HTMLParser
@@ -37,7 +38,7 @@ class InertRichText(HTMLParser):
         if tag=='br':self.append('\n')
         elif tag in ('p','div','li','h1','h2','h3','tr') and self.position and not self.parts[-1].endswith('\n'):self.append('\n')
         if tag=='li':self.append('• ')
-        if tag=='img':self.append('[图片: '+dict(attrs).get('alt','内嵌图片')+']')
+        if tag=='img':self.append(_tr('[图片: ')+dict(attrs).get('alt',_tr('内嵌图片'))+']')
 
     # ==========================================
     # Function: Close rich-text spans and block lines.

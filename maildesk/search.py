@@ -1,4 +1,5 @@
 """Bound, composable search predicates for cached mail and smart folders."""
+from .i18n import text as _tr
 from datetime import datetime
 import shlex
 
@@ -8,11 +9,11 @@ import shlex
 # ==========================================
 def search_terms(query):
     if len(query)>2000:
-        raise ValueError('搜索条件过长')
+        raise ValueError(_tr('搜索条件过长'))
     try:
         tokens=shlex.split(query)
     except ValueError:
-        raise ValueError('搜索引号尚未闭合') from None
+        raise ValueError(_tr('搜索引号尚未闭合')) from None
     clauses,values=[],[]
     for token in tokens:
         negative=token.startswith('-')
@@ -27,14 +28,14 @@ def search_terms(query):
         elif sep and key=='is':
             clause={'unread':'seen=0','read':'seen=1','pinned':'pinned=1','starred':'pinned=1','priority':'priority=1','done':'done=1','aside':'aside=1','snoozed':'snoozed_until>strftime(\'%s\',\'now\')'}.get(value.lower(),'')
             if not clause:
-                raise ValueError('未知 is: 条件')
+                raise ValueError(_tr('未知 is: 条件'))
         elif sep and key=='has' and value=='attachment':
             clause="json_array_length(parsed,'$.attachments')>0"
         elif sep and key in ('before','after'):
             try:
                 moment=datetime.fromisoformat(value).timestamp()
             except ValueError:
-                raise ValueError('日期格式应为 YYYY-MM-DD') from None
+                raise ValueError(_tr('日期格式应为 YYYY-MM-DD')) from None
             clause='timestamp'+('<' if key=='before' else '>=')+'?';params=[moment]
         elif sep and key=='label':
             clause='id IN (SELECT message FROM message_labels WHERE label=?)';params=[value]

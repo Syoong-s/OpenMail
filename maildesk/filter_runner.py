@@ -1,4 +1,5 @@
 """Shared automatic/manual filter execution with preview snapshots and durable move attempts."""
+from .i18n import text as _tr
 from contextlib import nullcontext
 import json,time
 from . import filter_rules as rules
@@ -23,7 +24,7 @@ def context(store):
 def source(store,identity):
     with store.db() as db:
         row=db.execute('SELECT id,account,folder,validity,uid,message_id,parsed,category,reason,seen,remote_gone,length(raw) AS raw_size FROM messages WHERE id=?',(identity,)).fetchone()
-    if row is None:raise ValueError('邮件已从缓存移除')
+    if row is None:raise ValueError(_tr('邮件已从缓存移除'))
     result=dict(row);result['parsed']=json.loads(result['parsed']);return result
 
 # ==========================================
@@ -50,7 +51,7 @@ def claim(store,message,match,manual):
         if current is None or current['remote_gone'] or any(current[key]!=message[key] for key in ('account','folder','validity','uid')):return 'gone'
         if previous and previous['state'] in ('moving','uncertain'):return 'uncertain'
         if not manual and (previous is None or previous['state']!='queued'):return 'already'
-        finish(store,message,match,'moving','正在移动；中断后的结果需要核对',_db=db)
+        finish(store,message,match,'moving',_tr('正在移动；中断后的结果需要核对'),_db=db)
     return 'claimed'
 
 # ==========================================
@@ -62,30 +63,30 @@ def execute(store,message,match,client=None,local=False,manual=False):
     target=match['destination']
     with store.db() as db:previous=db.execute('SELECT state FROM mail_filter_seen WHERE account=? AND message_id=?',(message['account'],message['message_id'])).fetchone()
     if previous and previous['state'] in ('moving','uncertain'):
-        return 'uncertain','上次移动结果待核对；请先同步，在来源和目标文件夹核对后使用普通移动处理'
-    if message['remote_gone']:return 'gone','原件已不在来源文件夹'
+        return 'uncertain',_tr('上次移动结果待核对；请先同步，在来源和目标文件夹核对后使用普通移动处理')
+    if message['remote_gone']:return 'gone',_tr('原件已不在来源文件夹')
     if target==message['folder']:
-        finish(store,message,match,'unchanged','已经位于目标文件夹');return 'unchanged','已经位于目标文件夹'
+        finish(store,message,match,'unchanged',_tr('已经位于目标文件夹'));return 'unchanged',_tr('已经位于目标文件夹')
     destination=next((row for row in store.list_folders(message['account']) if row['folder']==target and row['selectable']),None)
     if destination is None:
-        detail='目标文件夹不存在或不可选择，请修正过滤器后手动运行';finish(store,message,match,'failed',detail);return 'failed',detail
+        detail=_tr('目标文件夹不存在或不可选择，请修正过滤器后手动运行');finish(store,message,match,'failed',detail);return 'failed',detail
     try:
         if not local:
             folders.select_message(client,message)
-            flags=transport.flag_rows(transport.checked(client.uid('FETCH',message['uid'],'(UID FLAGS)'),'核对过滤器原件'))
-            if message['uid'] not in flags:raise ValueError('服务器原件已变更，请先同步后手动运行')
+            flags=transport.flag_rows(transport.checked(client.uid('FETCH',message['uid'],'(UID FLAGS)'),_tr('核对过滤器原件')))
+            if message['uid'] not in flags:raise ValueError(_tr('服务器原件已变更，请先同步后手动运行'))
     except Exception:
-        detail='核对来源邮件失败，请同步后手动运行';finish(store,message,match,'failed',detail);return 'failed',detail
+        detail=_tr('核对来源邮件失败，请同步后手动运行');finish(store,message,match,'failed',detail);return 'failed',detail
     claimed=claim(store,message,match,manual)
-    if claimed!='claimed':return claimed,'来源已经处理、变更或有移动需要核对'
+    if claimed!='claimed':return claimed,_tr('来源已经处理、变更或有移动需要核对')
     try:mapping=None if local else folders.transfer_selected(client,message,target)
     except Exception:
-        detail='移动结果待核对，不自动重试；请同步并核对来源和目标文件夹';finish(store,message,match,'uncertain',detail);return 'uncertain',detail
+        detail=_tr('移动结果待核对，不自动重试；请同步并核对来源和目标文件夹');finish(store,message,match,'uncertain',detail);return 'uncertain',detail
     try:store.transfer_local(message['id'],target,local=local,mapping=mapping)
     except Exception:
         if local:
-            detail='本地移动失败，请检查存储后重新预览';finish(store,message,match,'failed',detail);return 'failed',detail
-        detail='云端已确认移动，缓存等待下次同步更新';finish(store,message,match,'moved',detail);return 'moved',detail
+            detail=_tr('本地移动失败，请检查存储后重新预览');finish(store,message,match,'failed',detail);return 'failed',detail
+        detail=_tr('云端已确认移动，缓存等待下次同步更新');finish(store,message,match,'moved',detail);return 'moved',detail
     finish(store,message,match,'moved',match['reason']);return 'moved',match['reason']
 
 # ==========================================
@@ -110,9 +111,9 @@ def automatic(account,store,client,should_yield=None,report=None):
         except ValueError:
             with store.db() as db:db.execute('DELETE FROM mail_filter_queue WHERE message=?',(identity,))
             continue
-        if message['remote_gone']:finish(store,message,None,'gone','原件已移动');continue
+        if message['remote_gone']:finish(store,message,None,'gone',_tr('原件已移动'));continue
         match=first_match(message,items,ctx) if items else None
-        if match is None:finish(store,message,None,'unmatched','未匹配启用的过滤器');state='unmatched'
+        if match is None:finish(store,message,None,'unmatched',_tr('未匹配启用的过滤器'));state='unmatched'
         else:state,unused=execute(store,message,match,client)
         report['processed']+=1;report['moved']+=int(state=='moved');report['failed']+=int(state in ('failed','uncertain'))
     with store.db() as db:report['pending']=db.execute('SELECT count(*) FROM mail_filter_queue WHERE account=?',(account.id,)).fetchone()[0]
@@ -123,11 +124,11 @@ def automatic(account,store,client,should_yield=None,report=None):
 # Method: Stream cached rows, apply the same ordered matcher and bind the prepared snapshot to rule/model revisions.
 # ==========================================
 def preview(store,accounts,account='',folder='',subfolders=False,rule_id='',limit=1000):
-    if account and account not in accounts:raise ValueError('请选择有效账号')
-    if folder and not account:raise ValueError('请先选择账号，再选择来源文件夹')
+    if account and account not in accounts:raise ValueError(_tr('请选择有效账号'))
+    if folder and not account:raise ValueError(_tr('请先选择账号，再选择来源文件夹'))
     items=rules.rules(store)
     ctx=context(store);fingerprint=rules.fingerprint(store);entries=[];seen=set();scanned=0;unchanged=0;uncertain=0;truncated=False
-    if folder and (account,folder) not in ctx['folders']:raise ValueError('来源文件夹已变更，请重新选择')
+    if folder and (account,folder) not in ctx['folders']:raise ValueError(_tr('来源文件夹已变更，请重新选择'))
     parameters=[];where=['remote_gone=0',"folder NOT LIKE '@%'"]
     if account:where.append('account=?');parameters.append(account)
     else:
@@ -151,7 +152,7 @@ def preview(store,accounts,account='',folder='',subfolders=False,rule_id='',limi
                 entries.append({key:message[key] for key in ('id','account','folder','validity','uid','message_id')}|match|{'subject':message['parsed']['subject'][:200]})
                 if len(entries)>=limit:truncated=True;break
             if truncated:break
-    if rules.fingerprint(store)!=fingerprint:raise ValueError('预览期间过滤器发生变化，请重新预览')
+    if rules.fingerprint(store)!=fingerprint:raise ValueError(_tr('预览期间过滤器发生变化，请重新预览'))
     return {'fingerprint':fingerprint,'entries':entries,'scanned':scanned,'unchanged':unchanged,'uncertain':uncertain,'truncated':truncated,'created':time.time()}
 
 # ==========================================
@@ -160,9 +161,9 @@ def preview(store,accounts,account='',folder='',subfolders=False,rule_id='',limi
 # ==========================================
 def manual(service,plan):
     from . import transport
-    if not isinstance(plan,dict) or not isinstance(plan.get('entries'),list) or len(plan['entries'])>1000:raise ValueError('请先预览，单次最多运行1000封匹配邮件')
-    if plan.get('fingerprint')!=rules.fingerprint(service.store):raise ValueError('过滤器或学习样本已变更，请重新预览')
-    if not service._filter_run_lock.acquire(blocking=False):raise ValueError('已有过滤器正在手动运行')
+    if not isinstance(plan,dict) or not isinstance(plan.get('entries'),list) or len(plan['entries'])>1000:raise ValueError(_tr('请先预览，单次最多运行1000封匹配邮件'))
+    if plan.get('fingerprint')!=rules.fingerprint(service.store):raise ValueError(_tr('过滤器或学习样本已变更，请重新预览'))
+    if not service._filter_run_lock.acquire(blocking=False):raise ValueError(_tr('已有过滤器正在手动运行'))
     service.filter_cancel_event.clear();report={'running':True,'processed':0,'moved':0,'failed':0,'skipped':0,'total':len(plan['entries']),'cancelled':False,'errors':[]};service.status['filters']=report;index=0
     try:
         while index<len(plan['entries']):
@@ -170,10 +171,10 @@ def manual(service,plan):
             with service.lock.background():
                 if service.stop_event.is_set() or service.filter_cancel_event.is_set():report['cancelled']=True;break
                 if service.sync_should_yield():continue
-                if rules.fingerprint(service.store)!=plan['fingerprint']:raise ValueError('运行期间过滤器发生变化；已完成的移动保留，请重新预览剩余邮件')
+                if rules.fingerprint(service.store)!=plan['fingerprint']:raise ValueError(_tr('运行期间过滤器发生变化；已完成的移动保留，请重新预览剩余邮件'))
                 items=rules.rules(service.store);ctx=context(service.store);account=plan['entries'][index]['account'];descriptor=service.accounts.get(account)
                 local=service.demo or account==LOCAL_ACCOUNT;connection=nullcontext(None) if local else transport.imap_connection(descriptor) if descriptor else None
-                if connection is None:raise ValueError('账号已移除，请重新预览')
+                if connection is None:raise ValueError(_tr('账号已移除，请重新预览'))
                 try:
                     with connection as client:
                         turn=0
@@ -191,7 +192,7 @@ def manual(service,plan):
                             except Exception as error:report['failed']+=1;report['errors'].append(str(error))
                             finally:report['processed']+=1
                 except (OSError,transport.imaplib.IMAP4.error):
-                    report['failed']+=1;report['errors'].append('连接失败；剩余邮件未运行，请重新预览');break
+                    report['failed']+=1;report['errors'].append(_tr('连接失败；剩余邮件未运行，请重新预览'));break
         if report['moved']:service.request_sync()
         return report
     finally:report['running']=False;service._filter_run_lock.release()

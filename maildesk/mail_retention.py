@@ -1,4 +1,5 @@
 """Configurable account-scoped inbox retention with durable daily scheduling."""
+from .i18n import text as _tr
 from datetime import datetime
 import json
 import math
@@ -15,8 +16,8 @@ CHECK_INTERVAL=24*60*60
 # Method: Require a real boolean and an integer number of days between1 and36500.
 # ==========================================
 def validate_policy(enabled,days):
-    if not isinstance(enabled,bool):raise ValueError('自动清理开关无效')
-    if type(days) is not int or not 1<=days<=MAX_DAYS:raise ValueError('保留天数须为 1 至 36500 的整数')
+    if not isinstance(enabled,bool):raise ValueError(_tr('自动清理开关无效'))
+    if type(days) is not int or not 1<=days<=MAX_DAYS:raise ValueError(_tr('保留天数须为 1 至 36500 的整数'))
     return enabled,days
 
 # ==========================================
@@ -98,9 +99,9 @@ def expire_inbox(account,store,client,limit=200,now=None,should_yield=None):
     policy=get_policy(store);enabled,days=policy
     if not enabled:return {'moved':0,'disabled':True}
     destination=store.special_folder(account.id,'trash')
-    if not destination:return {'moved':0,'pending':'未设置已删除邮件文件夹'}
+    if not destination:return {'moved':0,'pending':_tr('未设置已删除邮件文件夹')}
     inbox=store.special_folder(account.id,'inbox') or 'INBOX'
-    if destination.casefold()==inbox.casefold():return {'moved':0,'pending':'收件箱与已删除邮件映射相同'}
+    if destination.casefold()==inbox.casefold():return {'moved':0,'pending':_tr('收件箱与已删除邮件映射相同')}
     cutoff=days_cutoff(days,now)
     with store.db() as db:
         candidates=[dict(row) for row in db.execute('''SELECT id,account,folder,validity,uid,remote_gone FROM messages
@@ -113,7 +114,7 @@ def expire_inbox(account,store,client,limit=200,now=None,should_yield=None):
         if get_policy(store)!=policy:break
         select_message(client,message)
         checkpoint(should_yield)
-        rows=transport.checked(client.uid('FETCH',message['uid'],'(UID FLAGS)'),'核对过期邮件星标')
+        rows=transport.checked(client.uid('FETCH',message['uid'],'(UID FLAGS)'),_tr('核对过期邮件星标'))
         stars=transport.star_rows(rows)
         if message['uid'] not in stars:continue
         if stars[message['uid']]:

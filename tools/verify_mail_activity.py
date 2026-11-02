@@ -72,9 +72,22 @@ class ActivityScenario(Scenario):
                 self.metrics['first_overview_seconds']=time.perf_counter()-self.started
                 assert g.gtk_stack_get_visible_child_name(app.widget('reader_stack'))==b'activity'
                 assert activity.data['sent']>0 and activity.data['received']>0
-                self.until=time.monotonic()+.2;self.step=2
+                self.cache_requests=0;original=activity.cache.snapshot;self.initial_loads=activity.cache.full_loads;self.initial_patches=activity.cache.patched_rows
+
+                # ==========================================
+                # Function: Detect unnecessary overview work while the native app is idle.
+                # Method: Count worker requests across the existing two-second service status interval.
+                # ==========================================
+                def counted(*args,**kwargs):
+                    self.cache_requests+=1;return original(*args,**kwargs)
+                activity.cache.snapshot=counted
+                self.until=time.monotonic()+2.2;self.step=2
             elif self.step==2:
                 if time.monotonic()<self.until:return 1
+                assert self.cache_requests==0,'Idle service tick queried activity'
+                getter=g.libs['gtk'].gtk_label_get_text;getter.restype=C.c_char_p;getter.argtypes=[C.c_void_p]
+                assert getter(activity.subtitle).decode()==date.today().strftime('%Y年%m月%d日')
+                self.checks.append('date-only-header-and-no-idle-activity-poll')
                 self.snapshot('overview-dark.png');self.checks.append('idle-reader-shows-painted-calendar-and-real-daily-counts')
                 self.target=self.ids[0];entry=activity.rows[self.target];self.row_handle=entry['root'];self.old_seen=entry['item']['seen']
                 self.action_started=time.perf_counter();g.gtk_button_clicked(entry['seen']);self.step=3
@@ -101,6 +114,9 @@ class ActivityScenario(Scenario):
                 g.gtk_button_clicked(activity.today_button);self.step=7
             elif self.step==7:
                 if not self.ready():return 1
+                assert activity.cache.full_loads==self.initial_loads
+                self.metrics['calendar_cache']={'full_loads':activity.cache.full_loads,'patched_rows_after_actions':activity.cache.patched_rows-self.initial_patches}
+                self.checks.append('mail-actions-and-date-navigation-reuse-annual-cache')
                 self.target=next(row['id'] for row in activity.data['items'] if row['direction']=='received')
                 g.gtk_button_clicked(activity.rows[self.target]['open']);self.step=8
             elif self.step==8:
@@ -160,6 +176,39 @@ class ActivityScenario(Scenario):
                 if not self.ready():return 1
                 assert not app.selected_chat and not app.selected
                 self.checks.append('empty-contact-view-and-closed-chat-return-to-overview')
+                for identity,changes in zip(self.ids[1:5],({'pinned':True},{'category':'verification'},{'category':'notification'},{'category':'newsletter'})):app.service.update(identity,changes)
+                store.set_preference('theme','dark');store.set_preference('active_inbox_view','focused');app.apply_appearance();app.set_view('inbox')
+                resize=g.libs['gtk'].gtk_window_resize;resize.restype=None;resize.argtypes=[C.c_void_p,C.c_int,C.c_int];resize(app.window,1352,860)
+                self.until=time.monotonic()+.2;self.step=20
+            elif self.step==20:
+                if not self.ready() or not self.list_ready() or time.monotonic()<self.until:return 1
+                self.until=time.monotonic()+.3;self.step=201
+            elif self.step==201:
+                if time.monotonic()<self.until:return 1
+                self.snapshot('focused-dark.png');app.open_navigation('folders_menu');self.until=time.monotonic()+.2;self.step=21
+            elif self.step==21:
+                if time.monotonic()<self.until:return 1
+                self.snapshot('folders-dark.png');app.open_navigation('navigation_menu');self.until=time.monotonic()+.2;self.step=22
+            elif self.step==22:
+                if time.monotonic()<self.until:return 1
+                self.snapshot('mailboxes-dark.png');app.close_navigation()
+                from maildesk.desktop_settings import settings_dialog
+                app.queue.put((lambda unused:settings_dialog(app,'reading'),None));self.until=time.monotonic()+.5;self.step=23
+            elif self.step==23:
+                if time.monotonic()<self.until or not getattr(app,'settings_form',None):return 1
+                self.until=time.monotonic()+.3;self.step=231
+            elif self.step==231:
+                if time.monotonic()<self.until:return 1
+                self.snapshot('settings-dark.png');store.set_preference('theme','light');app.apply_appearance();self.until=time.monotonic()+.25;self.step=24
+            elif self.step==24:
+                if time.monotonic()<self.until:return 1
+                self.snapshot('settings-light.png');g.gtk_dialog_response(app.settings_form.window,0);self.step=25
+            elif self.step==25:
+                if getattr(app,'settings_form',None):return 1
+                app.apply_appearance();app.open_navigation('folders_menu');self.until=time.monotonic()+.2;self.step=26
+            elif self.step==26:
+                if time.monotonic()<self.until:return 1
+                self.snapshot('folders-light.png');self.checks.append('focused-cards-navigation-and-settings-use-shared-companion-palette')
                 self.complete=True;app.on_delete(force=True);return 0
         except Exception as error:
             import traceback

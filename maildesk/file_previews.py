@@ -1,4 +1,5 @@
 """Local bounded file preview dispatch: text, grids, notebooks and Office XML."""
+from .i18n import text as _tr
 import base64
 import csv
 from datetime import datetime,timedelta
@@ -37,7 +38,7 @@ class Preview:
 def text_bytes(data):
     from .document_reader import document_text
     value=document_text(data[:2_000_000])
-    return value+('\n\n[预览显示前 2 MB；保存原始文件可获得完整内容。]' if len(data)>2_000_000 else '')
+    return value+(_tr('\n\n[预览显示前 2 MB；保存原始文件可获得完整内容。]') if len(data)>2_000_000 else '')
 
 # ==========================================
 # Function: Sanitize standalone SVG images before placing them in an image context.
@@ -51,7 +52,7 @@ def svg_uri(data):
         for key,value in list(parent.attrib.items()):
             local=key.split('}')[-1].lower()
             if local.startswith('on') or local=='style' or (local=='href' and not value.startswith('#')) or re.search(r'url\s*\(\s*[\'\"]?(?!#)',value,re.I):del parent.attrib[key]
-    if root.tag.split('}')[-1]!='svg':raise ValueError('无效 SVG 文件')
+    if root.tag.split('}')[-1]!='svg':raise ValueError(_tr('无效 SVG 文件'))
     return 'data:image/svg+xml;base64,'+base64.b64encode(ET.tostring(root,encoding='utf-8')).decode('ascii')
 
 # ==========================================
@@ -70,7 +71,7 @@ def image_data(name,data):
 # Method: Reject declarations before ElementTree and never extract document-controlled paths.
 # ==========================================
 def xml_root(data):
-    if len(data)>8_000_000 or re.search(br'<!\s*(?:DOCTYPE|ENTITY)',data,re.I):raise ValueError('文档 XML 过大或包含不支持的实体声明')
+    if len(data)>8_000_000 or re.search(br'<!\s*(?:DOCTYPE|ENTITY)',data,re.I):raise ValueError(_tr('文档 XML 过大或包含不支持的实体声明'))
     return ET.fromstring(data)
 
 # ==========================================
@@ -84,7 +85,7 @@ class Package:
     # ==========================================
     def __init__(self,data):
         self.zip=zipfile.ZipFile(io.BytesIO(data));entries=self.zip.infolist()
-        if len(entries)>4000 or sum(e.file_size for e in entries)>64_000_000 or len({e.filename for e in entries})!=len(entries):self.zip.close();raise ValueError('文档解压内容过大或包含重复部件，不能在应用内预览')
+        if len(entries)>4000 or sum(e.file_size for e in entries)>64_000_000 or len({e.filename for e in entries})!=len(entries):self.zip.close();raise ValueError(_tr('文档解压内容过大或包含重复部件，不能在应用内预览'))
         self.names={e.filename for e in entries};self.image_budget=16_000_000
 
     # ==========================================
@@ -94,9 +95,9 @@ class Package:
     def read(self,name):
         if name not in self.names:return b''
         info=self.zip.getinfo(name)
-        if info.file_size>8_000_000:raise ValueError('文档部件超过 8 MB 预览限制')
+        if info.file_size>8_000_000:raise ValueError(_tr('文档部件超过 8 MB 预览限制'))
         with self.zip.open(info) as member:data=member.read(8_000_001)
-        if len(data)>8_000_000:raise ValueError('文档部件过大')
+        if len(data)>8_000_000:raise ValueError(_tr('文档部件过大'))
         return data
 
     # ==========================================
@@ -172,7 +173,7 @@ def word_preview(package):
     name='word/document.xml';root=xml_root(package.read(name));rels=package.relationships(name);body=root.find('w:body',NS);out=[];count=0
     for node in ([] if body is None else body):
         count+=1
-        if count>4000:out.append('<p>预览显示前4000个内容块。</p>');break
+        if count>4000:out.append(_tr('<p>预览显示前4000个内容块。</p>'));break
         if node.tag=='{'+NS['w']+'}p':out.append(word_paragraph(node,package,rels))
         elif node.tag=='{'+NS['w']+'}tbl':
             rows=[]
@@ -183,7 +184,7 @@ def word_preview(package):
                     cells.append('<td colspan="'+str(colspan)+'">'+''.join(word_paragraph(p,package,rels) for p in cell.findall('w:p',NS))+'</td>')
                 rows.append('<tr>'+''.join(cells)+'</tr>')
             out.append('<table>'+''.join(rows)+'</table>')
-    return Preview('document',[('文档',PAGE_STYLE+'<article class="office-page">'+''.join(out)+'</article>')],preserve_style=True)
+    return Preview('document',[(_tr('文档'),PAGE_STYLE+'<article class="office-page">'+''.join(out)+'</article>')],preserve_style=True)
 
 # ==========================================
 # Function: Convert a spreadsheet column label to a bounded zero-based index.
@@ -206,7 +207,7 @@ def grid(rows):
         letters.append(text)
     head='<tr><th></th>'+''.join('<th>'+v+'</th>' for v in letters)+'</tr>'
     body=''.join('<tr><th>'+str(index+1)+'</th>'+''.join('<td>'+html.escape(str(value))+'</td>' for value in (list(row)+['']*columns)[:columns])+'</tr>' for index,row in enumerate(rows))
-    return PAGE_STYLE+'<div class="office-page"><table class="sheet">'+head+body+'</table><p class="preview-note">显示最多1000行、80列；公式显示文件中保存的结果，不执行宏或重新计算。</p></div>'
+    return PAGE_STYLE+'<div class="office-page"><table class="sheet">'+head+body+_tr('</table><p class="preview-note">显示最多1000行、80列；公式显示文件中保存的结果，不执行宏或重新计算。</p></div>')
 
 # ==========================================
 # Function: Render XLSX worksheets including shared strings and saved formula results.
@@ -245,9 +246,9 @@ def workbook_preview(package):
                 values[col]=value
         rendered=grid(rows)
         if sum(len(page.encode('utf-8')) for title,page in pages)+len(rendered.encode('utf-8'))>12_000_000:
-            pages.append(('预览限制','<p>已达到12 MB表格预览上限。保存原始文件可查看完整工作簿。</p>'));break
-        pages.append((sheet.get('name','工作表'),rendered))
-    return Preview('sheet',pages or [('工作簿',grid([]))],preserve_style=True)
+            pages.append((_tr('预览限制'),_tr('<p>已达到12 MB表格预览上限。保存原始文件可查看完整工作簿。</p>')));break
+        pages.append((sheet.get('name',_tr('工作表')),rendered))
+    return Preview('sheet',pages or [(_tr('工作簿'),grid([]))],preserve_style=True)
 
 # ==========================================
 # Function: Render ordered PowerPoint slides with positioned text boxes and embedded images.
@@ -273,8 +274,8 @@ def slides_preview(package):
             if content:shapes.append('<div class="slide-shape" style="'+style+'">'+''.join(content)+'</div>')
         background=slide.find('p:cSld/p:bg/p:bgPr/a:solidFill/a:srgbClr',NS);color=background.get('val','') if background is not None else ''
         color='#'+color if re.fullmatch('[0-9a-fA-F]{6}',color) else '#ffffff'
-        pages.append(('幻灯片 '+str(i+1),PAGE_STYLE+f'<div class="slide" style="padding-top:{100*height/max(1,width):.3f}%;background:{color}">'+''.join(shapes)+'</div>'))
-    return Preview('presentation',pages or [('幻灯片','<p>没有可预览的幻灯片。</p>')],preserve_style=True)
+        pages.append((_tr('幻灯片 ')+str(i+1),PAGE_STYLE+f'<div class="slide" style="padding-top:{100*height/max(1,width):.3f}%;background:{color}">'+''.join(shapes)+'</div>'))
+    return Preview('presentation',pages or [(_tr('幻灯片'),_tr('<p>没有可预览的幻灯片。</p>'))],preserve_style=True)
 
 # ==========================================
 # Function: Render notebook source and saved outputs as inert content.
@@ -295,11 +296,11 @@ def notebook_preview(data):
                     try:decoded=base64.b64decode(raw,validate=True)
                     except ValueError:decoded=b''
                     uri=image_data('output.png',decoded)
-                    if uri:outputs.append('<img src="'+uri+'" alt="单元输出">')
+                    if uri:outputs.append('<img src="'+uri+_tr('" alt="单元输出">'))
             elif 'text/html' in payload:
                 raw=payload['text/html'];parser=InertHTML();parser.feed(''.join(raw) if isinstance(raw,list) else str(raw));parser.close();outputs.append(''.join(parser.parts))
             elif text:outputs.append('<pre>'+html.escape(text[:100_000])+'</pre>')
-        out.append('<section class="notebook-cell"><div class="cell-title">单元 '+str(i+1)+' · '+html.escape(str(cell.get('cell_type','raw')))+'</div>'+body+('<div class="cell-output">'+''.join(outputs)+'</div>' if outputs else '')+'</section>')
+        out.append(_tr('<section class="notebook-cell"><div class="cell-title">单元 ')+str(i+1)+' · '+html.escape(str(cell.get('cell_type','raw')))+'</div>'+body+('<div class="cell-output">'+''.join(outputs)+'</div>' if outputs else '')+'</section>')
     return Preview('notebook',[('Notebook',PAGE_STYLE+''.join(out))],text_bytes(data),True)
 
 # ==========================================
@@ -307,14 +308,14 @@ def notebook_preview(data):
 # Method: Cover installed-app preview families without installing Office, cloud conversion or executing attachments.
 # ==========================================
 def preview(name,data,media_type=''):
-    if len(data)>30*1024*1024:raise ValueError('文件超过30 MiB预览限制')
+    if len(data)>30*1024*1024:raise ValueError(_tr('文件超过30 MiB预览限制'))
     suffix=Path(name).suffix.lower();mime=media_type.split(';')[0].lower()
     if suffix=='.pdf' or mime=='application/pdf' or data.lstrip().startswith(b'%PDF-'):return Preview('pdf',[])
     uri=image_data(name,data)
-    if uri:return Preview('image',[('图片','<figure><img src="'+uri+'" alt="'+html.escape(name,quote=True)+'"></figure>')])
+    if uri:return Preview('image',[(_tr('图片'),'<figure><img src="'+uri+'" alt="'+html.escape(name,quote=True)+'"></figure>')])
     if suffix in ('.doc','.rtf') or mime in ('application/msword','application/rtf','text/rtf'):
         from .legacy_documents import legacy_preview
-        content,source,kind=legacy_preview(data);return Preview(kind,[('Word文档',content)],source if kind=='html' else '')
+        content,source,kind=legacy_preview(data);return Preview(kind,[(_tr('Word文档'),content)],source if kind=='html' else '')
     office=suffix in ('.docx','.docm','.dotx','.dotm','.xlsx','.xlsm','.xltx','.xltm','.pptx','.pptm','.ppsx','.ppsm','.potx','.potm') or mime in ('application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.openxmlformats-officedocument.presentationml.presentation','application/vnd.ms-excel.sheet.macroenabled.12')
     if office:
         package=Package(data)
@@ -322,24 +323,24 @@ def preview(name,data,media_type=''):
             if 'word/document.xml' in package.names:return word_preview(package)
             if 'xl/workbook.xml' in package.names:return workbook_preview(package)
             if 'ppt/presentation.xml' in package.names:return slides_preview(package)
-            raise ValueError('Office文件中没有有效文档部件')
+            raise ValueError(_tr('Office文件中没有有效文档部件'))
         finally:package.zip.close()
     if suffix in ('.csv','.tsv') or mime in ('text/csv','text/tab-separated-values'):
         source=text_bytes(data);reader=csv.reader(io.StringIO(source),delimiter='\t' if suffix=='.tsv' or mime=='text/tab-separated-values' else ',');rows=[]
         for row in reader:
             rows.append(row[:80])
             if len(rows)>=1000:break
-        return Preview('sheet',[('表格',grid(rows))],source,True)
+        return Preview('sheet',[(_tr('表格'),grid(rows))],source,True)
     if suffix=='.ipynb' or mime=='application/x-ipynb+json':return notebook_preview(data)
     if suffix in AUDIO or mime.startswith('audio/'):
-        kind=AUDIO.get(suffix,mime);return Preview('audio',[('音频',PAGE_STYLE+'<audio controls="controls" preload="metadata" src="data:'+kind+';base64,'+base64.b64encode(data).decode()+'"></audio>')],preserve_style=True)
+        kind=AUDIO.get(suffix,mime);return Preview('audio',[(_tr('音频'),PAGE_STYLE+'<audio controls="controls" preload="metadata" src="data:'+kind+';base64,'+base64.b64encode(data).decode()+'"></audio>')],preserve_style=True)
     if suffix in VIDEO or mime.startswith('video/'):
-        kind=VIDEO.get(suffix,mime);return Preview('video',[('视频',PAGE_STYLE+'<video controls="controls" preload="metadata" src="data:'+kind+';base64,'+base64.b64encode(data).decode()+'"></video>')],preserve_style=True)
+        kind=VIDEO.get(suffix,mime);return Preview('video',[(_tr('视频'),PAGE_STYLE+'<video controls="controls" preload="metadata" src="data:'+kind+';base64,'+base64.b64encode(data).decode()+'"></video>')],preserve_style=True)
     source=text_bytes(data)
-    if suffix in ('.md','.markdown') or mime=='text/markdown':return Preview('markdown',[('预览',source)],source)
-    if suffix in ('.html','.htm') or mime=='text/html':return Preview('html',[('预览',source)],source)
-    if mime.startswith('text/') or suffix.lstrip('.') in TEXT_EXT or name.lower() in ('makefile','dockerfile','license','readme') or (not suffix and b'\0' not in data[:8192]):return Preview('text',[('源码','<pre><code>'+html.escape(source)+'</code></pre>')],source)
-    return Preview('metadata',[('文件','<h3>'+html.escape(name)+'</h3><p>当前格式暂不支持内容预览，可保存原始文件。</p><p>'+html.escape(mime or '未知文件类型')+'</p>')])
+    if suffix in ('.md','.markdown') or mime=='text/markdown':return Preview('markdown',[(_tr('预览'),source)],source)
+    if suffix in ('.html','.htm') or mime=='text/html':return Preview('html',[(_tr('预览'),source)],source)
+    if mime.startswith('text/') or suffix.lstrip('.') in TEXT_EXT or name.lower() in ('makefile','dockerfile','license','readme') or (not suffix and b'\0' not in data[:8192]):return Preview('text',[(_tr('源码'),'<pre><code>'+html.escape(source)+'</code></pre>')],source)
+    return Preview('metadata',[(_tr('文件'),'<h3>'+html.escape(name)+_tr('</h3><p>当前格式暂不支持内容预览，可保存原始文件。</p><p>')+html.escape(mime or _tr('未知文件类型'))+'</p>')])
 
 # ==========================================
 # Function: Convert TIFF/ICO using the existing private GdkPixbuf decoders.
@@ -363,11 +364,11 @@ def native_raster(g,data):
         if error:g.g_error_free(error);error=P()
         closed=lib.gdk_pixbuf_loader_close(loader,C.byref(error))
         if error:g.g_error_free(error)
-        if not ok or not closed or oversized[0]:raise ValueError('图片无法解码或超过原生预览像素限制')
+        if not ok or not closed or oversized[0]:raise ValueError(_tr('图片无法解码或超过原生预览像素限制'))
         pixels=lib.gdk_pixbuf_loader_get_pixbuf(loader);buffer=P();length=C.c_size_t();error=P()
         if not pixels or not lib.gdk_pixbuf_save_to_bufferv(pixels,C.byref(buffer),C.byref(length),b'png',None,None,C.byref(error)):
             if error:g.g_error_free(error)
-            raise ValueError('无法准备图片预览')
+            raise ValueError(_tr('无法准备图片预览'))
         try:return 'data:image/png;base64,'+base64.b64encode(C.string_at(buffer,length.value)).decode('ascii')
         finally:g.g_free(buffer)
     finally:g.disconnect(group);g.g_object_unref(loader)

@@ -1,4 +1,5 @@
 """Validated local palette roles and background-only panel transparency."""
+from .i18n import text as _tr
 import ctypes as C
 import re
 import time
@@ -6,14 +7,14 @@ from .message_style import BUBBLE_KEYS,BUBBLE_DEFAULTS,bubble_colors,bubble_pale
 from .ui_typography import DEFAULT_FONT_SIZE,font_size,font_stylesheet,apply_font
 
 ROLES=('canvas','panel','surface','text','accent','border')
-LABELS={'canvas':'工作区背景','panel':'侧栏与列表','surface':'卡片与弹层','text':'界面文字','accent':'强调色','border':'边框与分隔线'}
+LABELS={'canvas':_tr('工作区背景'),'panel':_tr('侧栏与列表'),'surface':_tr('卡片与弹层'),'text':_tr('界面文字'),'accent':_tr('强调色'),'border':_tr('边框与分隔线')}
 PRESETS={
-    'codex':('清晰深色',('#141414','#1b1b1b','#252525','#f1f1f1','#b6c5ff','#454545')),
-    'graphite':('石墨',('#18191c','#242528','#2e2f33','#e5e7eb','#a9b9ef','#41434a')),
-    'ocean':('深海',('#111a24','#1b2b3b','#263b50','#e2edf6','#80b9e8','#3b536b')),
-    'forest':('苔绿',('#151d19','#223129','#304137','#e0ebe4','#8cc9a5','#43584b')),
-    'plum':('暮紫',('#1c1823','#2d2538','#3b3049','#eee5f5','#c0a0e3','#564562')),
-    'paper':('浅纸',('#e5e7eb','#f0f1f3','#fafafa','#30343a','#526ca4','#cbd0d8'))}
+    'codex':(_tr('清晰深色'),('#14191f','#1c232c','#252e39','#e9edf3','#abc3ed','#3c495a')),
+    'graphite':(_tr('石墨'),('#18191c','#242528','#2e2f33','#e5e7eb','#a9b9ef','#41434a')),
+    'ocean':(_tr('深海'),('#111a24','#1b2b3b','#263b50','#e2edf6','#80b9e8','#3b536b')),
+    'forest':(_tr('苔绿'),('#151d19','#223129','#304137','#e0ebe4','#8cc9a5','#43584b')),
+    'plum':(_tr('暮紫'),('#1c1823','#2d2538','#3b3049','#eee5f5','#c0a0e3','#564562')),
+    'paper':(_tr('浅纸'),('#f4f3ef','#edf1f5','#fcfcfa','#303c49','#52749f','#d7dfe7'))}
 
 # ==========================================
 # Function: Bound a durable percentage even if imported preferences are malformed.
@@ -31,7 +32,7 @@ def palette(values):
     clean={}
     for role in ROLES:
         value=values.get('color_'+role,'')
-        if not isinstance(value,str) or not re.fullmatch(r'#[0-9a-fA-F]{6}',value):raise ValueError(LABELS[role]+' 请填写 #RRGGBB 颜色')
+        if not isinstance(value,str) or not re.fullmatch(r'#[0-9a-fA-F]{6}',value):raise ValueError(LABELS[role]+_tr(' 请填写 #RRGGBB 颜色'))
         clean[role]=value.lower()
     return clean
 
@@ -99,6 +100,7 @@ def rgba(color,opacity):return 'rgba('+','.join(str(int(color[i:i+2],16)) for i 
 # ==========================================
 def stylesheet(values):
     from .activity_style import stylesheet as activity_stylesheet
+    from .semantic_style import stylesheet as semantic_stylesheet
     c=effective_palette(values);alpha=percent(values['panel_opacity']);panel=rgba(c['panel'],alpha);surface=rgba(c['surface'],max(75,alpha));accent=c['accent'];text=c['text'];border=c['border']
     channels=[int(accent[i:i+2],16)/255 for i in (1,3,5)]
     luminance=sum(weight*(value/12.92 if value<=.04045 else ((value+.055)/1.055)**2.4) for weight,value in zip((.2126,.7152,.0722),channels))
@@ -133,7 +135,8 @@ headerbar .title, .light headerbar .title {{ color: {text}; }}
 .surface-editor .settings-navigation.active, .light .surface-editor .settings-navigation.active, .surface-editor .settings-link:hover, .light .surface-editor .settings-link:hover {{ background: {rgba(accent,16)}; color: {text}; }}
 .surface-editor .settings-option, .surface-editor .settings-link, .surface-editor .account-card, .light .surface-editor .settings-option, .light .surface-editor .settings-link, .light .surface-editor .account-card {{ background: transparent; border-color: {border}; }}
 .surface-editor entry, .surface-editor .settings-option entry, .surface-editor .editor-field entry, .choice-chip, .light .choice-chip {{ background: {c['surface']}; color: {text}; border-color: {border}; }}
-.surface-editor button.suggested-action, button.suggested-action {{ background: {accent}; color: {c['canvas']}; border-color: {accent}; }}
+.surface-editor button.suggested-action, button.suggested-action {{ background: {accent}; color: {send_ink}; border-color: {accent}; }}
+.surface-editor button.suggested-action label, button.suggested-action label {{ color: {send_ink}; }}
 .file-tabs, .file-tab.active, .document-tab, .document-canvas, .document-controls, #list_header, .document-panel, .attachment-card, paned > separator {{ border-color: {border}; }}
 .document-controls, .light .document-controls, .attachment-card, .light .attachment-card {{ background: {surface}; color: {text}; }}
 .attachment-card:hover, .light .attachment-card:hover {{ background: {rgba(accent,15)}; }}
@@ -194,7 +197,7 @@ button.conversation-sender:hover {{ background: {rgba(text,7)}; }}
 button.state-enabled, button.state-enabled:focus {{ background: {rgba(text,8)}; color: #e9be58; }}
 #contact_chat button.chat-bottom-button, #contact_chat button.chat-bottom-button:focus {{ background: {c['panel']}; color: {text}; box-shadow: 0 2px 6px rgba(0,0,0,.18); }}
 #contact_chat button.chat-bottom-button:hover {{ background: {rgba(text,18)}; }}
-.reply-history-card {{ border: 1px solid {rgba(text,12)}; border-radius: 10px; background: {c['surface']}; }}'''+activity_stylesheet(c)
+.reply-history-card {{ border: 1px solid {rgba(text,12)}; border-radius: 10px; background: {c['surface']}; }}'''+activity_stylesheet(c)+semantic_stylesheet(c,alpha)
 
 # ==========================================
 # Function: Remove pointer focus fills while retaining explicit keyboard navigation cues.
@@ -223,7 +226,7 @@ def apply(app,values=None):
     source=font_stylesheet(stylesheet(values),size);provider=old or g.gtk_css_provider_new()
     if not old or source!=getattr(app,'palette_css_source',None):
         encoded=source.encode()
-        if not g.gtk_css_provider_load_from_data(provider,encoded,len(encoded),None):raise ValueError('配色样式无法载入')
+        if not g.gtk_css_provider_load_from_data(provider,encoded,len(encoded),None):raise ValueError(_tr('配色样式无法载入'))
         if not old:g.gtk_style_context_add_provider_for_screen(g.gdk_screen_get_default(),provider,650)
         app.palette_css_source=source
     app.palette_provider=provider;app.message_style_values=bubble_colors(values);colors=effective_palette(values)

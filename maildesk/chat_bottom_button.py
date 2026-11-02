@@ -1,4 +1,5 @@
 """A viewport-owned, quiet return-to-latest control for the contact timeline."""
+from .i18n import text as _tr
 import ctypes as C
 import time
 from .desktop_general import bind,P
@@ -15,7 +16,7 @@ class ChatBottomButton:
     # ==========================================
     def __init__(self,app,overlay):
         self.app=app;self.state=None;self.following=False;self.key='';self.adjusting=False;g=app.g;self.adjustment=g.gtk_scrolled_window_get_vadjustment(app.chat_scroll)
-        self.button=g.gtk_button_new();icon_action(g,self.button,'回到底部','scroll-bottom',18)
+        self.button=g.gtk_button_new();icon_action(g,self.button,_tr('回到底部'),'scroll-bottom',18)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.button),b'chat-bottom-button')
         g.gtk_widget_set_size_request(self.button,36,36);g.gtk_widget_set_halign(self.button,3);g.gtk_widget_set_valign(self.button,2);g.gtk_widget_set_margin_bottom(self.button,14)
         g.gtk_overlay_add_overlay(overlay,self.button);g.gtk_widget_set_no_show_all(self.button,1);g.gtk_widget_hide(self.button)

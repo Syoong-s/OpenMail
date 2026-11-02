@@ -20,7 +20,7 @@ def form_xml(fields):
     rows = []
     for key, title, kind, options in fields:
         if kind == 'combo':
-            items = ''.join(f'<item id="{escape(value)}">{escape(label)}</item>' for value, label in options)
+            items = ''.join(f'<item translatable="no" id="{escape(value)}">{escape(label)}</item>' for value, label in options)
             widget = f'<object class="GtkComboBoxText" id="{key}"><items>{items}</items></object>'
         elif kind == 'check':
             widget=f'<object class="GtkCheckButton" id="{key}"><property name="halign">end</property><property name="valign">center</property></object>'
@@ -36,7 +36,7 @@ def form_xml(fields):
         else:
             extra = '<property name="visibility">False</property><property name="input-purpose">password</property>' if kind == 'secret' else ''
             widget = f'<object class="GtkEntry" id="{key}">{extra}</object>'
-        rows.append(f'<child><object class="GtkBox"><property name="spacing">12</property><child><object class="GtkLabel"><property name="label">{escape(title)}</property><property name="width-request">105</property><property name="xalign">0</property></object><packing><property name="expand">False</property></packing></child><child>{widget}<packing><property name="expand">True</property><property name="fill">True</property></packing></child></object></child>')
+        rows.append(f'<child><object class="GtkBox"><property name="spacing">12</property><child><object class="GtkLabel"><property name="label" translatable="no">{escape(title)}</property><property name="width-request">105</property><property name="xalign">0</property></object><packing><property name="expand">False</property></packing></child><child>{widget}<packing><property name="expand">True</property><property name="fill">True</property></packing></child></object></child>')
     return '<interface><object class="GtkBox" id="form"><property name="orientation">vertical</property><property name="spacing">10</property><property name="margin">20</property>' + ''.join(rows) + '<child><object class="GtkLabel" id="note"><property name="wrap">True</property><property name="xalign">0</property><style><class name="muted"/></style></object></child></object></interface>'
 
 # ==========================================

@@ -1,4 +1,5 @@
 """Compact sender chip and account menu using the shared native surface broker."""
+from .i18n import text as _tr
 from .native_choices import NativeChoice
 
 # ==========================================
@@ -12,7 +13,7 @@ class SenderChoice(NativeChoice):
     # ==========================================
     def __init__(self,app,combo,return_focus=None,compact=False):
         self.app=app;self.return_focus=return_focus;self.compact=compact
-        super().__init__(app.g,combo,'发件邮箱')
+        super().__init__(app.g,combo,_tr('发件邮箱'))
         g=self.g;g.gtk_label_set_max_width_chars(self.label,14 if compact else 20)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.button),b'sender-choice')
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.popup),b'sender-menu')
@@ -37,7 +38,7 @@ class SenderChoice(NativeChoice):
     def fill(self):
         if self.closed:return
         g=self.g;g.surfaces.retire(self.group+'-options');g.clear(self.menu)
-        heading=g.gtk_label_new('发件邮箱'.encode());g.gtk_label_set_xalign(heading,0)
+        heading=g.gtk_label_new(_tr('发件邮箱').encode());g.gtk_label_set_xalign(heading,0)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(heading),b'picker-heading');g.gtk_box_pack_start(self.menu,heading,0,1,0)
         selected=(g.gtk_combo_box_get_active_id(self.combo) or b'').decode()
         for identity,caption in self.items():

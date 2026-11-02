@@ -1,4 +1,5 @@
 """GTK native print dialog with Pango/Cairo Unicode pagination."""
+from .i18n import text as _tr
 import ctypes as C
 import math
 
@@ -48,7 +49,7 @@ def print_message(app, message, export=None):
     try:
         result=gtk.gtk_print_operation_run(operation,3 if export else 0,app.window,C.byref(error))
         if result==0:
-            detail=C.cast(error,C.POINTER(GError)).contents.message.decode() if error else '打印失败'
+            detail=C.cast(error,C.POINTER(GError)).contents.message.decode() if error else _tr('打印失败')
             raise RuntimeError(detail)
     finally:
         g.disconnect(group)

@@ -1,4 +1,5 @@
 """Inline folder tree editing and direct account-scoped context operations."""
+from .i18n import text as _tr
 import ctypes as C
 import json
 from pathlib import Path
@@ -76,7 +77,7 @@ class FolderNavigationUI:
         g=self.g;self.clear_folder_popup(host,popup);rows=self.service.store.list_folders(account)
         if path is None:
             from .desktop_forms import account_settings
-            self.folder_menu_button(host,popup,'添加邮箱','settings-accounts',lambda:account_settings(self),submenu='editor',header=True)
+            self.folder_menu_button(host,popup,_tr('添加邮箱'),'settings-accounts',lambda:account_settings(self),submenu='editor',header=True)
             combo=g.gtk_combo_box_text_new();g.gtk_box_pack_start(host,combo,0,1,3)
             for row in rows:g.gtk_combo_box_text_append(combo,row['folder'].encode(),row['folder'].encode())
             selected=self.folder_path if self.folder_account==account and any(r['folder']==self.folder_path for r in rows) else (rows[0]['folder'] if rows else '')
@@ -85,7 +86,7 @@ class FolderNavigationUI:
             g.connect(combo,'changed',lambda *unused:self.fill_folder_actions(actions,popup,account,(g.gtk_combo_box_get_active_id(combo) or b'').decode()),group=group)
             self.fill_folder_actions(actions,popup,account,selected)
             from .native_choices import NativeChoice
-            NativeChoice(g,combo,'选择账户中的文件夹')
+            NativeChoice(g,combo,_tr('选择账户中的文件夹'))
         else:self.fill_folder_actions(host,popup,account,path)
         g.gtk_widget_show_all(host)
 
@@ -96,17 +97,17 @@ class FolderNavigationUI:
     def fill_folder_actions(self,host,popup,account,path):
         g=self.g;self.retire_folder_group('folder-popup-actions-'+str(popup));g.clear(host);row=next((r for r in self.service.store.list_folders(account) if r['folder']==path),None)
         if not row:
-            g.gtk_box_pack_start(host,g.gtk_label_new('暂无文件夹'.encode()),0,1,5);g.gtk_widget_show_all(host);return
+            g.gtk_box_pack_start(host,g.gtk_label_new(_tr('暂无文件夹').encode()),0,1,5);g.gtk_widget_show_all(host);return
         descriptor={'kind':'folder','account':account,'path':path};pinned=self.navigation_is_pinned(descriptor)
         mutable=not row['special'];children=bool(row['delimiter'] and any(r['folder'].startswith(path+row['delimiter']) for r in self.service.store.list_folders(account)))
-        commands=[('重命名','folder-edit',lambda:self.edit_existing_folder(row,popup),mutable),
-            ('取消收藏' if row['favorite'] else '收藏','folder-favorite',lambda:self.folder_option(row,popup,favorite=not row['favorite']),True),
-            ('设置颜色','folder-color',lambda child,menu:self.folder_color_menu(child,menu,row),True),
-            ('删除','spark-layout-trash',lambda child,menu:self.folder_delete_menu(child,menu,row),mutable and not row['total'] and not children),
-            ('取消订阅' if row['subscribed'] else '订阅','spark-layout-seen',lambda:self.folder_remote_option(row,popup,'unsubscribe' if row['subscribed'] else 'subscribe'),True),
-            ('移动','spark-layout-move',lambda child,menu:self.folder_move_menu(child,menu,row),mutable and bool(row['delimiter'])),
-            ('取消固定' if pinned else '固定到左侧栏','spark-layout-pin',lambda:(g.gtk_popover_popdown(popup),self.toggle_navigation_pin(descriptor)),bool(row['selectable']))]
-        for title,icon,callback,enabled in commands:self.folder_menu_button(host,popup,title,icon,callback,enabled,submenu=title in ('设置颜色','移动','删除'))
+        commands=[(_tr('重命名'),'folder-edit',lambda:self.edit_existing_folder(row,popup),mutable),
+            (_tr('取消收藏') if row['favorite'] else _tr('收藏'),'folder-favorite',lambda:self.folder_option(row,popup,favorite=not row['favorite']),True),
+            (_tr('设置颜色'),'folder-color',lambda child,menu:self.folder_color_menu(child,menu,row),True),
+            (_tr('删除'),'spark-layout-trash',lambda child,menu:self.folder_delete_menu(child,menu,row),mutable and not row['total'] and not children),
+            (_tr('取消订阅') if row['subscribed'] else _tr('订阅'),'spark-layout-seen',lambda:self.folder_remote_option(row,popup,'unsubscribe' if row['subscribed'] else 'subscribe'),True),
+            (_tr('移动'),'spark-layout-move',lambda child,menu:self.folder_move_menu(child,menu,row),mutable and bool(row['delimiter'])),
+            (_tr('取消固定') if pinned else _tr('固定到左侧栏'),'spark-layout-pin',lambda:(g.gtk_popover_popdown(popup),self.toggle_navigation_pin(descriptor)),bool(row['selectable']))]
+        for title,icon,callback,enabled in commands:self.folder_menu_button(host,popup,title,icon,callback,enabled,submenu=title in (_tr('设置颜色'),_tr('移动'),_tr('删除')))
         g.gtk_widget_show_all(host)
 
     # ==========================================
@@ -115,7 +116,7 @@ class FolderNavigationUI:
     # ==========================================
     def folder_color_menu(self,host,popup,row):
         self.clear_folder_popup(host,popup)
-        for color,title in [('', '默认'),('blue','蓝色'),('purple','紫色'),('green','绿色'),('orange','橙色'),('red','红色')]:
+        for color,title in [('', _tr('默认')),('blue',_tr('蓝色')),('purple',_tr('紫色')),('green',_tr('绿色')),('orange',_tr('橙色')),('red',_tr('红色'))]:
             button=self.folder_menu_button(host,popup,('✓ ' if row['color']==color else '')+title,'folder-color',lambda c=color:self.folder_option(row,popup,color=c))
             if color:self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(button),('folder-'+color).encode())
         self.g.gtk_widget_show_all(host)
@@ -125,9 +126,9 @@ class FolderNavigationUI:
     # Method: Keep confirmation in the current popover and reuse server-side deletion protections.
     # ==========================================
     def folder_delete_menu(self,host,popup,row):
-        self.clear_folder_popup(host,popup);label=self.g.gtk_label_new('删除此空文件夹？'.encode());self.g.gtk_box_pack_start(host,label,0,1,6)
-        self.folder_menu_button(host,popup,'取消','composer-close',lambda:self.g.gtk_popover_popdown(popup))
-        self.folder_menu_button(host,popup,'确认删除','spark-layout-trash',lambda:self.folder_remote_option(row,popup,'delete'))
+        self.clear_folder_popup(host,popup);label=self.g.gtk_label_new(_tr('删除此空文件夹？').encode());self.g.gtk_box_pack_start(host,label,0,1,6)
+        self.folder_menu_button(host,popup,_tr('取消'),'composer-close',lambda:self.g.gtk_popover_popdown(popup))
+        self.folder_menu_button(host,popup,_tr('确认删除'),'spark-layout-trash',lambda:self.folder_remote_option(row,popup,'delete'))
         self.g.gtk_widget_show_all(host)
 
     # ==========================================
@@ -140,8 +141,8 @@ class FolderNavigationUI:
         for parent in parents:
             target=parent+delimiter+basename if parent else basename
             if target==path:continue
-            button=self.folder_menu_button(host,popup,parent or '账户根目录','spark-layout-folder',lambda destination=target:self.folder_remote_option(row,popup,'rename',destination))
-            self.g.gtk_widget_set_tooltip_text(button,(parent or '账户根目录').encode())
+            button=self.folder_menu_button(host,popup,parent or _tr('账户根目录'),'spark-layout-folder',lambda destination=target:self.folder_remote_option(row,popup,'rename',destination))
+            self.g.gtk_widget_set_tooltip_text(button,(parent or _tr('账户根目录')).encode())
         self.g.gtk_widget_show_all(host)
 
     # ==========================================
@@ -176,7 +177,7 @@ class FolderNavigationUI:
         if self.folder_account==account and (self.folder_path==path or bool(delimiter and self.folder_path.startswith(path+delimiter))):
             if operation=='rename':self.folder_path=target+self.folder_path[len(path):]
             elif operation=='delete':self.view='inbox';self.folder_account=self.folder_path=''
-        self.refresh();self.message('文件夹操作完成')
+        self.refresh();self.message(_tr('文件夹操作完成'))
 
     # ==========================================
     # Function: Render one folder with hover actions and a separately expandable child list.
@@ -184,9 +185,9 @@ class FolderNavigationUI:
     # ==========================================
     def folder_tree_row(self,parent,row,has_children,expand_key):
         g=self.g;account,path=row['account'],row['folder'];host=g.gtk_box_new(1,1);event=g.gtk_event_box_new();g.gtk_event_box_set_visible_window(event,0);line=g.gtk_box_new(0,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(line),b'folder-item-row');g.gtk_container_add(event,line);g.gtk_box_pack_start(host,event,0,1,0)
-        toggle=icon_action(g,g.gtk_toggle_button_new(),'展开或收起子文件夹','conversation-open',12);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(toggle),b'folder-disclosure');g.gtk_box_pack_start(line,toggle,0,0,0)
+        toggle=icon_action(g,g.gtk_toggle_button_new(),_tr('展开或收起子文件夹'),'conversation-open',12);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(toggle),b'folder-disclosure');g.gtk_box_pack_start(line,toggle,0,0,0)
         delimiter=row['delimiter'];name=path.rsplit(delimiter,1)[-1] if delimiter else path
-        name={'inbox':'收件箱','sent':'已发送','drafts':'草稿','archive':'归档','trash':'废纸篓','spam':'垃圾邮件'}.get(row['special'],name)
+        name={'inbox':_tr('收件箱'),'sent':_tr('已发送'),'drafts':_tr('草稿'),'archive':_tr('归档'),'trash':_tr('废纸篓'),'spam':_tr('垃圾邮件')}.get(row['special'],name)
         caption=('★ ' if row['favorite'] else '')+name+(f"  {row['unread']}" if row['unread'] else '')
         button=g.gtk_button_new_with_label(caption.encode());g.gtk_button_set_alignment(button,0,.5);label=g.gtk_bin_get_child(button);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_width_chars(label,0);g.gtk_label_set_max_width_chars(label,-1)
         icon={'inbox':'inbox','sent':'send','drafts':'compose','archive':'archive','trash':'trash','spam':'trash'}.get(row['special'],'folder');g.gtk_button_set_image(button,g.image_file(ICONS/('spark-layout-'+icon+'.svg'),14));g.gtk_button_set_always_show_image(button,1);self.shrink_navigation_labels(button)
@@ -198,9 +199,9 @@ class FolderNavigationUI:
         g.connect(button,'clicked',lambda *unused:self.open_folder(account,path),group='folders')
         pin=g.image_file(ICONS/'spark-layout-pin-active.svg',14);g.gtk_box_pack_start(line,pin,0,0,3)
         pinned=self.navigation_is_pinned({'kind':'folder','account':account,'path':path})
-        g.gtk_widget_set_no_show_all(pin,not pinned);g.gtk_widget_set_visible(pin,pinned);g.gtk_widget_set_tooltip_text(pin,'已固定到左侧栏'.encode())
+        g.gtk_widget_set_no_show_all(pin,not pinned);g.gtk_widget_set_visible(pin,pinned);g.gtk_widget_set_tooltip_text(pin,_tr('已固定到左侧栏').encode())
         tools=g.gtk_box_new(0,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(tools),b'folder-inline-tools');g.gtk_box_pack_start(line,tools,0,0,0)
-        add=icon_action(g,g.gtk_button_new(),'新建子文件夹','action-add',14);more=g.gtk_menu_button_new();icon_action(g,more,'文件夹操作','spark-layout-more',14)
+        add=icon_action(g,g.gtk_button_new(),_tr('新建子文件夹'),'action-add',14);more=g.gtk_menu_button_new();icon_action(g,more,_tr('文件夹操作'),'spark-layout-more',14)
         for action in (add,more):g.gtk_box_pack_start(tools,action,0,0,0)
         g.gtk_widget_set_sensitive(add,bool(delimiter));g.gtk_widget_set_sensitive(more,not row.get('virtual',False))
         popup=g.gtk_popover_new(more);menu=g.gtk_box_new(1,2);g.gtk_container_set_border_width(menu,6);g.gtk_menu_button_set_popover(more,popup);g.gtk_container_add(popup,menu);g.surfaces.beside(popup,self.widget('folders_menu'))
@@ -274,12 +275,12 @@ class FolderNavigationUI:
     def begin_folder_edit(self,account,parent='',rename=False):
         self.cancel_folder_edit();g=self.g
         section=self.folder_account_sections.get(account)
-        if not section:raise ValueError('账户栏目尚未就绪')
+        if not section:raise ValueError(_tr('账户栏目尚未就绪'))
         row_view=self.folder_row_widgets.get((account,parent)) if parent else None
         row=row_view['row'] if row_view else None
         delimiter=row['delimiter'] if row else ('/' if account==LOCAL_ACCOUNT or self.profile.demo else next((r['delimiter'] for r in self.service.store.list_folders(account) if r['delimiter']),''))
-        if parent and not delimiter and not rename:raise ValueError('此文件夹不支持子文件夹')
-        entry=g.gtk_entry_new();g.gtk_entry_set_placeholder_text(entry,'文件夹名称 · Enter 创建，Esc 取消'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(entry),b'inline-folder-entry')
+        if parent and not delimiter and not rename:raise ValueError(_tr('此文件夹不支持子文件夹'))
+        entry=g.gtk_entry_new();g.gtk_entry_set_placeholder_text(entry,_tr('文件夹名称 · Enter 创建，Esc 取消').encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(entry),b'inline-folder-entry')
         if not g.gtk_revealer_get_reveal_child(section['revealer']):self.toggle_folder_account(account,section['revealer'],section['toggle'])
         if not rename and row_view:g.gtk_toggle_button_set_active(row_view['toggle'],1)
         if rename and row_view:
@@ -324,13 +325,13 @@ class FolderNavigationUI:
         if not edit:return
         name=self.g.text(edit['entry']).strip();delimiter=edit['delimiter'];parent=edit['parent']
         if not name:self.cancel_folder_edit();return
-        if name in ('.','..') or (delimiter and delimiter in name) or '/' in name or any(ord(c)<32 for c in name):raise ValueError('只需输入文件夹名称，不要输入路径或控制字符')
+        if name in ('.','..') or (delimiter and delimiter in name) or '/' in name or any(ord(c)<32 for c in name):raise ValueError(_tr('只需输入文件夹名称，不要输入路径或控制字符'))
         prefix=parent.rsplit(delimiter,1)[0]+delimiter if edit['rename'] and delimiter and delimiter in parent else ''
         target=(prefix+name) if edit['rename'] else ((parent+delimiter if parent else '')+name)
         from .folders import valid_path
         valid_path(target)
         if edit['rename'] and target==parent:self.cancel_folder_edit();return
-        if any(r['folder']==target for r in self.service.store.list_folders(edit['account'])):raise ValueError('此位置已有同名文件夹')
+        if any(r['folder']==target for r in self.service.store.list_folders(edit['account'])):raise ValueError(_tr('此位置已有同名文件夹'))
         account=edit['account'];rename=edit['rename'];self.cancel_folder_edit()
         if rename:
             row={'account':account,'folder':parent,'delimiter':delimiter};self.folder_remote_option(row,None,'rename',target)

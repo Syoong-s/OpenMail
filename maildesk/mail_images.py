@@ -1,4 +1,5 @@
 """Bounded cached MIME images for inline mail rendering, without remote fetches."""
+from .i18n import text as _tr
 import base64
 from email import policy
 from email.parser import BytesParser
@@ -24,7 +25,7 @@ def image_type(data):
 # ==========================================
 def image_uri(data):
     kind=image_type(data)
-    if not kind:raise ValueError('当前支持 PNG、JPEG、GIF、WebP、BMP 图片，文件最大 30 MiB')
+    if not kind:raise ValueError(_tr('当前支持 PNG、JPEG、GIF、WebP、BMP 图片，文件最大 30 MiB'))
     return 'data:'+kind+';base64,'+base64.b64encode(data).decode('ascii')
 
 # ==========================================
@@ -32,7 +33,7 @@ def image_uri(data):
 # Method: Traverse the same MIME indices as attachment metadata and bound aggregate decoded bytes.
 # ==========================================
 def message_images(raw):
-    if len(raw)>MAX_MESSAGE_BYTES:raise ValueError('邮件超过 30 MiB 上限')
+    if len(raw)>MAX_MESSAGE_BYTES:raise ValueError(_tr('邮件超过 30 MiB 上限'))
     message=BytesParser(policy=policy.default).parsebytes(raw);images=[];total=0;excluded=set()
     for index,part in enumerate(message.walk()):
         if id(part) in excluded:continue
@@ -45,5 +46,5 @@ def message_images(raw):
         total+=len(data)
         if total>MAX_MESSAGE_BYTES:break
         images.append({'index':index,'cid':str(part.get('Content-ID','')).strip().strip('<>'),
-                       'name':part.get_filename() or '内嵌图片','uri':image_uri(data)})
+                       'name':part.get_filename() or _tr('内嵌图片'),'uri':image_uri(data)})
     return images

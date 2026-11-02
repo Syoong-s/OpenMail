@@ -3,6 +3,7 @@
 The locator never contains accounts or credentials. Its lock is distinct from the
 mailbox instance lock; callers retain the latter while committing migrations.
 """
+from .i18n import text as _tr
 from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
@@ -28,14 +29,14 @@ _KEYS = frozenset(('generation', 'data', 'config', 'cache', 'downloads'))
 def safe_path(value):
     path = Path(value).expanduser()
     if not path.is_absolute() or '..' in path.parts:
-        raise ValueError('存储路径必须是绝对路径，且不能包含 ..')
+        raise ValueError(_tr('存储路径必须是绝对路径，且不能包含 ..'))
     for item in (path, *path.parents):
         try:
             info = item.lstat()
         except FileNotFoundError:
             continue
         if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
-            raise ValueError('存储路径及其父目录不能是链接：' + str(item))
+            raise ValueError(_tr('存储路径及其父目录不能是链接：') + str(item))
     return path
 
 
@@ -47,7 +48,7 @@ def _unique_object(pairs):
     result = {}
     for key, value in pairs:
         if key in result:
-            raise ValueError('存储位置索引包含重复字段')
+            raise ValueError(_tr('存储位置索引包含重复字段'))
         result[key] = value
     return result
 
@@ -64,27 +65,27 @@ def read_locator(path):
         return {'version': 1, 'profiles': {}}
     with os.fdopen(descriptor, 'rb') as stream:
         if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
-            raise ValueError('存储位置索引必须是普通文件')
+            raise ValueError(_tr('存储位置索引必须是普通文件'))
         raw = stream.read(1024 * 1024 + 1)
     if len(raw) > 1024 * 1024:
-        raise ValueError('存储位置索引过大')
+        raise ValueError(_tr('存储位置索引过大'))
     try:
         document = json.loads(raw, object_pairs_hook=_unique_object)
     except (UnicodeError, json.JSONDecodeError) as error:
-        raise ValueError('存储位置索引损坏，请保留该文件并修复后重试') from error
+        raise ValueError(_tr('存储位置索引损坏，请保留该文件并修复后重试')) from error
     if (not isinstance(document, dict) or set(document) != {'version', 'profiles'}
             or type(document['version']) is not int or document['version'] != 1
             or not isinstance(document['profiles'], dict)):
-        raise ValueError('存储位置索引格式无效')
+        raise ValueError(_tr('存储位置索引格式无效'))
     for scope, record in document['profiles'].items():
         if not isinstance(scope, str) or not re.fullmatch(r'(live|demo|explicit-[0-9a-f]{24})', scope):
-            raise ValueError('存储位置索引的配置范围无效')
+            raise ValueError(_tr('存储位置索引的配置范围无效'))
         if (not isinstance(record, dict) or set(record) != _KEYS
                 or type(record['generation']) is not int or record['generation'] < 1):
-            raise ValueError('存储位置索引的记录无效')
+            raise ValueError(_tr('存储位置索引的记录无效'))
         for name in ('data', 'config', 'cache', 'downloads'):
             if not isinstance(record[name], str) or not record[name] or '\0' in record[name]:
-                raise ValueError('存储位置索引的路径无效')
+                raise ValueError(_tr('存储位置索引的路径无效'))
             safe_path(record[name])
     return document
 
@@ -129,7 +130,7 @@ class StorageLocations:
         defaults['downloads'] = Path.home() / 'Downloads' / ('TeleMail' if scope == 'live' else 'TeleMail-' + scope)
         record = read_locator(locator)['profiles'].get(scope)
         if record and not Path(record['data']).is_dir():
-            raise ValueError('已配置的数据目录不可用，请恢复该目录或修复存储位置索引；不会创建空邮箱：' + record['data'])
+            raise ValueError(_tr('已配置的数据目录不可用，请恢复该目录或修复存储位置索引；不会创建空邮箱：') + record['data'])
         for key, value in {'demo': bool(demo), 'original_config': config, 'original_data': data,
                            'scope': scope, 'locator': locator, 'record': MappingProxyType(dict(record or {}))}.items():
             object.__setattr__(self, key, value)
@@ -186,7 +187,7 @@ def validate_profile_destinations(locations,paths,document=None):
                     try:
                         if target!=profiles and os.path.commonpath((target,profiles))==profiles:continue
                     except ValueError:pass
-                raise ValueError('新目录与另一个配置的存储位置重叠：'+str(paths[name]))
+                raise ValueError(_tr('新目录与另一个配置的存储位置重叠：')+str(paths[name]))
 
 
 # ==========================================
@@ -242,13 +243,13 @@ def locator_lock(path, cancel_event=None):
         deadline = time.monotonic() + 30
         while True:
             if cancel_event is not None and cancel_event.is_set():
-                raise InterruptedError('已取消存储位置切换')
+                raise InterruptedError(_tr('已取消存储位置切换'))
             try:
                 lock_instance(stream)
                 break
             except OSError:
                 if time.monotonic() >= deadline:
-                    raise RuntimeError('另一个窗口正在更新存储位置，请稍后重试')
+                    raise RuntimeError(_tr('另一个窗口正在更新存储位置，请稍后重试'))
                 time.sleep(0.05)
         yield
 
@@ -262,7 +263,7 @@ def commit_locations(locations, paths, publish, cancel_event=None, backup=True):
         document = read_locator(locations.locator)
         current = document['profiles'].get(locations.scope, {})
         if current != dict(locations.record):
-            raise RuntimeError('此配置的存储位置已被另一个窗口修改，请重新打开设置')
+            raise RuntimeError(_tr('此配置的存储位置已被另一个窗口修改，请重新打开设置'))
         record = {'generation': current.get('generation', 0) + 1}
         record.update({name: str(safe_path(paths[name])) for name in ('data', 'config', 'cache', 'downloads')})
         validate_profile_destinations(locations,record,document)

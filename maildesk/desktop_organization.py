@@ -1,4 +1,5 @@
 """Native folder navigation, message actions and desktop preferences."""
+from .i18n import text as _tr, join_text as _join_ui
 import ctypes as C
 import os
 from datetime import datetime
@@ -62,10 +63,10 @@ class OrganizationUI(NavigationUI,MailMenuUI):
             self.g.gtk_button_set_alignment(self.widget(name),0,.5);self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(self.widget(name)),b'nav')
         self.initialize_navigation()
         from .native_choices import NativeChoice
-        self.category_choice=NativeChoice(self.g,self.widget('message_category'),'邮件分类')
+        self.category_choice=NativeChoice(self.g,self.widget('message_category'),_tr('邮件分类'))
         self.initialize_mail_menu()
         from .ui_actions import icon_action
-        for name,title,icon in [('selection','选择邮件','action-select'),('bulk_seen','标为已读','spark-layout-seen'),('bulk_move','移动到文件夹','spark-layout-move'),('bulk_archive','归档','spark-layout-archive'),('bulk_trash','移至废纸篓','spark-layout-trash'),('bulk_done','标为完成','spark-layout-done'),('edit_draft','编辑草稿','spark-layout-compose'),('cancel_job','取消计划','composer-close'),('reschedule_job','更改发送时间','composer-later'),('send_job_now','立即发送','composer-send'),('toast_close','关闭提示','composer-close')]:
+        for name,title,icon in [('selection',_tr('选择邮件'),'action-select'),('bulk_seen',_tr('标为已读'),'spark-layout-seen'),('bulk_move',_tr('移动到文件夹'),'spark-layout-move'),('bulk_archive',_tr('归档'),'spark-layout-archive'),('bulk_trash',_tr('移至废纸篓'),'spark-layout-trash'),('bulk_done',_tr('标为完成'),'spark-layout-done'),('edit_draft',_tr('编辑草稿'),'spark-layout-compose'),('cancel_job',_tr('取消计划'),'composer-close'),('reschedule_job',_tr('更改发送时间'),'composer-later'),('send_job_now',_tr('立即发送'),'composer-send'),('toast_close',_tr('关闭提示'),'composer-close')]:
             icon_action(self.g,self.widget(name),title,icon,14 if name.startswith('bulk_') else 18)
 
     # ==========================================
@@ -85,7 +86,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         for account_id in accounts:
             account_body=self.folder_account_section(account_id);subset=[r for r in rows if r['account']==account_id];nodes={}
             if not subset:
-                hint=g.gtk_label_new('尚未同步文件夹'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(hint),b'muted');g.gtk_box_pack_start(account_body,hint,0,1,8)
+                hint=g.gtk_label_new(_tr('尚未同步文件夹').encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(hint),b'muted');g.gtk_box_pack_start(account_body,hint,0,1,8)
             for row in subset:
                 parts=row['folder'].split(row['delimiter']) if row['delimiter'] else [row['folder']];cursor=nodes
                 for depth,part in enumerate(parts):
@@ -97,7 +98,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
             # ==========================================
             def render(parent,tree,prefix=()):
                 for name,node in sorted(tree.items(),key=lambda item:item[0].casefold()):
-                    path=node['delimiter'].join((*prefix,name)) if node['delimiter'] else name
+                    path=_join_ui(node['delimiter'],((*prefix,name))) if node['delimiter'] else name
                     row=node['row'] or {'account':account_id,'folder':path,'delimiter':node['delimiter'],'favorite':False,'special':'','color':'','subscribed':True,'selectable':False,'unread':0,'total':0,'virtual':True}
                     key=__import__('json').dumps([account_id,*prefix,name],ensure_ascii=False)
                     children=self.folder_tree_row(parent,row,bool(node['children']),key)
@@ -106,7 +107,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         for item in smart:
             if account!='all' and item['account'] and item['account']!=account:continue
             button=g.gtk_button_new_with_label(('⌕ '+item['name']).encode());label=g.gtk_bin_get_child(button);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,20)
-            g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'folder-row');g.gtk_widget_set_tooltip_text(button,('条件：'+item['query']).encode())
+            g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'folder-row');g.gtk_widget_set_tooltip_text(button,(_tr('条件：')+item['query']).encode())
             g.connect(button,'clicked',lambda *unused,row=item:self.open_smart(row),group='folders');g.gtk_box_pack_start(self.widget('smart_tree'),button,0,1,0)
         self.folder_tree_signature=signature;g.gtk_widget_show_all(self.widget('folder_tree'));g.gtk_widget_show_all(self.widget('smart_tree'));self.refresh_pinned_navigation()
 
@@ -153,8 +154,8 @@ class OrganizationUI(NavigationUI,MailMenuUI):
     def smart_folder_dialog(self):
         from .desktop_forms import Form
         items=self.service.store.smart_folders()
-        fields=[('existing','智能文件夹','combo',[('new','新建')]+[(r['id'],r['name']) for r in items]),('name','名称','text',[]),('query','搜索条件','text',[]),('account','范围','combo',[('','全部账户')]+[(r['account'],LOCAL_LABEL if r['account']==LOCAL_ACCOUNT else r['account']) for r in self.service.store.list_folders() if r['folder'].upper()=='INBOX'])]
-        form=Form(self,'智能文件夹',fields,640)
+        fields=[('existing',_tr('智能文件夹'),'combo',[('new',_tr('新建'))]+[(r['id'],r['name']) for r in items]),('name',_tr('名称'),'text',[]),('query',_tr('搜索条件'),'text',[]),('account',_tr('范围'),'combo',[('',_tr('全部账户'))]+[(r['account'],LOCAL_LABEL if r['account']==LOCAL_ACCOUNT else r['account']) for r in self.service.store.list_folders() if r['folder'].upper()=='INBOX'])]
+        form=Form(self,_tr('智能文件夹'),fields,640)
         form.value('existing','new');form.value('account','');form.value('query',self.g.text(self.widget('search')) or self.smart_query)
         # ==========================================
         # Function: Populate an existing saved query for editing.
@@ -164,8 +165,8 @@ class OrganizationUI(NavigationUI,MailMenuUI):
             item=next((r for r in items if r['id']==form.value('existing')),None)
             for key in ('name','query','account'):form.value(key,item[key] if item else '')
         self.g.connect(form.fields['existing'][0],'changed',selected,group=form.group)
-        form.button('关闭',-6);form.button('删除定义',2);form.button('保存',1)
-        self.g.label(form.note,'例如 has:attachment from:example.com is:unread after:2026-01-01；支持 - 排除。')
+        form.button(_tr('关闭'),-6);form.button(_tr('删除定义'),2);form.button(_tr('保存'),1)
+        self.g.label(form.note,_tr('例如 has:attachment from:example.com is:unread after:2026-01-01；支持 - 排除。'))
         self.g.gtk_widget_show_all(form.window)
         response=self.g.gtk_dialog_run(form.window)
         try:
@@ -207,8 +208,8 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         self.multi=not self.multi
         self.g.gtk_list_box_set_selection_mode(self.widget('messages'),3 if self.multi else 1)
         self.g.gtk_revealer_set_reveal_child(self.widget('bulk_revealer'),self.multi)
-        self.g.label(self.widget('selection'),'完成选择' if self.multi else '选择',button=True)
-        self.message('点击邮件选择多封，Ctrl+A 全选当前列表' if self.multi else '已退出多选')
+        self.g.label(self.widget('selection'),_tr('完成选择') if self.multi else _tr('选择'),button=True)
+        self.message(_tr('点击邮件选择多封，Ctrl+A 全选当前列表') if self.multi else _tr('已退出多选'))
 
     # ==========================================
     # Function: Execute one action on the selected messages.
@@ -216,9 +217,9 @@ class OrganizationUI(NavigationUI,MailMenuUI):
     # ==========================================
     def perform_bulk(self, action, value=None):
         identities=self.selected_ids()
-        if not identities:self.message('请先选择邮件');return
+        if not identities:self.message(_tr('请先选择邮件'));return
         self.g.gtk_popover_popdown(self.widget('mail_menu'))
-        self.local_loader.action(lambda:self.service.bulk_action(identities,action,value),lambda result:(self.mail_changed(identities),self.message(f'已处理 {len(result)} 封邮件')),self.show_error)
+        self.local_loader.action(lambda:self.service.bulk_action(identities,action,value),lambda result:(self.mail_changed(identities),self.message(_tr('已处理 {0} 封邮件').format(len(result)))),self.show_error)
 
     # ==========================================
     # Function: Move selected messages to a configured system folder.
@@ -241,12 +242,12 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         ids=self.selected_ids()
         if not ids:return
         accounts={self.service.store.get(v)['account'] for v in ids}
-        if len(accounts)!=1:raise ValueError('请按账户分别移动或复制邮件')
+        if len(accounts)!=1:raise ValueError(_tr('请按账户分别移动或复制邮件'))
         rows=[r for r in self.service.store.list_folders(accounts.pop()) if r['selectable']]
-        form=Form(self,'复制到' if copy else '移动到',[('folder','目标文件夹','combo',[(r['folder'],r['folder']) for r in rows])],560)
+        form=Form(self,_tr('复制到') if copy else _tr('移动到'),[('folder',_tr('目标文件夹'),'combo',[(r['folder'],r['folder']) for r in rows])],560)
         if rows:form.value('folder',rows[0]['folder'])
-        form.button('取消',-6);form.button('复制' if copy else '移动',1)
-        self.g.label(form.note,'仅在同一账户内操作；“本地文件夹”的操作仅保存在此电脑。')
+        form.button(_tr('取消'),-6);form.button(_tr('复制') if copy else _tr('移动'),1)
+        self.g.label(form.note,_tr('仅在同一账户内操作；“本地文件夹”的操作仅保存在此电脑。'))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);path=form.value('folder');form.close()
         if response==1:self.perform_bulk('copy' if copy else 'move',path)
 
@@ -256,10 +257,10 @@ class OrganizationUI(NavigationUI,MailMenuUI):
     # ==========================================
     def date_action(self, field):
         from .desktop_forms import Form
-        form=Form(self,'稍后处理' if field=='snoozed_until' else '跟进提醒',[('when','本地时间','text',[])],540)
+        form=Form(self,_tr('稍后处理') if field=='snoozed_until' else _tr('跟进提醒'),[('when',_tr('本地时间'),'text',[])],540)
         form.value('when',datetime.fromtimestamp(time.time()+86400).strftime('%Y-%m-%d 09:00'))
-        form.button('取消',-6);form.button('清除',2);form.button('设置',1)
-        self.g.label(form.note,'例如 2026-10-20 09:00。到期会重新显示并通知；关闭应用后将在下次打开时处理。')
+        form.button(_tr('取消'),-6);form.button(_tr('清除'),2);form.button(_tr('设置'),1)
+        self.g.label(form.note,_tr('例如 2026-10-20 09:00。到期会重新显示并通知；关闭应用后将在下次打开时处理。'))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);value=form.value('when');form.close()
         if response in (1,2):self.perform_bulk(field,0 if response==2 else datetime.fromisoformat(value).timestamp())
 
@@ -278,9 +279,9 @@ class OrganizationUI(NavigationUI,MailMenuUI):
     def labels_dialog(self):
         from .desktop_forms import Form
         if not self.current or self.selected.startswith('job:'):return
-        form=Form(self,'邮件标签',[('labels','逗号分隔','text',[])],540);form.value('labels',', '.join(self.current['labels']))
-        form.button('取消',-6);form.button('保存',1)
-        self.g.label(form.note,'标签保存在本机，可用 label:标签名 搜索；服务器文件夹请使用“移动到”。')
+        form=Form(self,_tr('邮件标签'),[('labels',_tr('逗号分隔'),'text',[])],540);form.value('labels',_join_ui(', ',(self.current['labels'])))
+        form.button(_tr('取消'),-6);form.button(_tr('保存'),1)
+        self.g.label(form.note,_tr('标签保存在本机，可用 label:标签名 搜索；服务器文件夹请使用“移动到”。'))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);value=form.value('labels');form.close()
         if response==1:self.perform_bulk('labels',value.replace('，',',').split(','))
 
@@ -291,9 +292,9 @@ class OrganizationUI(NavigationUI,MailMenuUI):
     def sender_dialog(self):
         from .desktop_forms import Form
         if not self.current or self.selected.startswith('job:'):return
-        form=Form(self,'发件人筛选',[('policy',self.current['sender'],'combo',[('accepted','接受'),('blocked','屏蔽'),('priority','优先'),('new','恢复为新发件人'),('domain:accepted','接受同域名发件人'),('domain:blocked','屏蔽同域名发件人'),('domain:priority','同域名发件人优先')])],620)
-        form.value('policy',self.current['sender_policy']);form.button('取消',-6);form.button('保存',1)
-        self.g.label(form.note,'屏蔽后从智能收件箱隐藏，可在“已屏蔽”中恢复。此规则保存在本机。')
+        form=Form(self,_tr('发件人筛选'),[('policy',self.current['sender'],'combo',[('accepted',_tr('接受')),('blocked',_tr('屏蔽')),('priority',_tr('优先')),('new',_tr('恢复为新发件人')),('domain:accepted',_tr('接受同域名发件人')),('domain:blocked',_tr('屏蔽同域名发件人')),('domain:priority',_tr('同域名发件人优先'))])],620)
+        form.value('policy',self.current['sender_policy']);form.button(_tr('取消'),-6);form.button(_tr('保存'),1)
+        self.g.label(form.note,_tr('屏蔽后从智能收件箱隐藏，可在“已屏蔽”中恢复。此规则保存在本机。'))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);value=form.value('policy');form.close()
         if response==1:self.perform_bulk('sender_policy',value)
 
@@ -305,8 +306,8 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         from .desktop_forms import Form
         count=len(self.selected_ids())
         if not count:return
-        form=Form(self,'永久删除邮件',[],500);form.button('取消',-6);form.button('永久删除',1)
-        self.g.label(form.note,f'将永久删除选中的 {count} 封邮件。服务器操作无法撤销。普通删除请使用废纸篓。')
+        form=Form(self,_tr('永久删除邮件'),[],500);form.button(_tr('取消'),-6);form.button(_tr('永久删除'),1)
+        self.g.label(form.note,_tr('将永久删除选中的 {0} 封邮件。服务器操作无法撤销。普通删除请使用废纸篓。').format(count))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);form.close()
         if response==1:self.perform_bulk('delete')
 
@@ -318,7 +319,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         if not identity and (not self.current or self.selected.startswith('job:')):return
         message=self.service.store.get(identity) if identity else self.current;parsed=message['parsed'];subject=message['subject']
         if mode=='forward':
-            body='\n\n---------- 转发邮件 ----------\n发件人: '+parsed['sender']+'\n主题: '+subject+'\n\n'+parsed['body']
+            body=_tr('\n\n---------- 转发邮件 ----------\n发件人: ')+parsed['sender']+_tr('\n主题: ')+subject+'\n\n'+parsed['body']
             import base64
             from .mime import attachment_content
             from email import policy
@@ -332,7 +333,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         attachments=reply_attachments(self,message)
         if attachments is None:return
         from .reply_history import from_message
-        self.open_composer({'reply_history':from_message(message),'reply_source':message['id'],'attachments':attachments,'account':message['account'],'to':', '.join(targets),'subject':subject if subject.lower().startswith('re:') else 'Re: '+subject,'in_reply_to':parsed['message_id'],'references':' '.join(parsed['references']+[parsed['message_id']]),'body':''})
+        self.open_composer({'reply_history':from_message(message),'reply_source':message['id'],'attachments':attachments,'account':message['account'],'to':_join_ui(', ',(targets)),'subject':subject if subject.lower().startswith('re:') else 'Re: '+subject,'in_reply_to':parsed['message_id'],'references':_join_ui(' ',(parsed['references']+[parsed['message_id']])),'body':''})
 
     # ==========================================
     # Function: Copy selected message as readable Markdown.
@@ -342,7 +343,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         if not self.current or self.selected.startswith('job:'):return
         text='# '+self.current['subject']+'\n\n'+self.current['sender']+'\n\n'+self.current['body']
         clipboard=self.g.gtk_clipboard_get(self.g.gdk_atom_intern_static_string(b'CLIPBOARD'))
-        self.g.gtk_clipboard_set_text(clipboard,text.encode(),-1);self.message('已复制 Markdown')
+        self.g.gtk_clipboard_set_text(clipboard,text.encode(),-1);self.message(_tr('已复制 Markdown'))
 
     # ==========================================
     # Function: Offer explicit unsubscribe through a message's advertised mechanism.
@@ -354,10 +355,10 @@ class OrganizationUI(NavigationUI,MailMenuUI):
         import re
         header=self.current['parsed']['headers'].get('list-unsubscribe','')
         urls=[v for v in re.findall(r'<([^<>]+)>',header) if urlparse(v).scheme.lower() in ('https','mailto')]
-        if not urls:self.message('这封邮件没有可用的 List-Unsubscribe 链接');return
-        form=Form(self,'退订',[('url','退订方式','combo',[(v,v) for v in urls])],700);form.value('url',urls[0])
-        form.button('取消',-6);form.button('打开退订',1)
-        self.g.label(form.note,'将打开发件人提供的退订页面；mailto 会创建一封待确认的草稿。')
+        if not urls:self.message(_tr('这封邮件没有可用的 List-Unsubscribe 链接'));return
+        form=Form(self,_tr('退订'),[('url',_tr('退订方式'),'combo',[(v,v) for v in urls])],700);form.value('url',urls[0])
+        form.button(_tr('取消'),-6);form.button(_tr('打开退订'),1)
+        self.g.label(form.note,_tr('将打开发件人提供的退订页面；mailto 会创建一封待确认的草稿。'))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);url=form.value('url');form.close()
         if response==1:
             if url.startswith('mailto:'):
@@ -465,7 +466,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
             if count>known_receipts:
                 with store.db() as db:recent=db.execute('SELECT recipient FROM read_receipts ORDER BY received DESC LIMIT ?',(count-known_receipts,)).fetchall()
                 visible=sum(1 for row in recent if allows_notice(row['recipient'],quiet))
-                if visible:self.notify('收到阅读回执',f'{visible} 位收件人返回了显示回执')
+                if visible:self.notify(_tr('收到阅读回执'),_tr('{0} 位收件人返回了显示回执').format(visible))
             if count!=known_receipts:store.set_preference('notified_receipt_count',count)
         with store.db() as db:
             rows=db.execute('SELECT m.id,m.account,m.message_id,m.folder,m.seen,m.remote_gone,m.subject,m.snoozed_until,m.reminder,coalesce(d.raw_from,m.sender) AS raw_from FROM messages m LEFT JOIN message_display d ON d.message=m.id').fetchall()
@@ -474,7 +475,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
             new={row['id'] for row in rows if (row['account'],row['message_id'] or row['id']) not in self.known_messages and not row['remote_gone'] and not row['seen'] and row['folder'].upper()=='INBOX' and row['account']!='@local' and allows_message_notice(store,row,quiet,own)}
             if store.preference('notify_priority_only',False):
                 new={identity for identity in new if store.get(identity)['effective_priority']}
-            if new:self.notify('收到新邮件',f'{len(new)} 封新邮件已同步')
+            if new:self.notify(_tr('收到新邮件'),_tr('{0} 封新邮件已同步').format(len(new)))
         self.known_messages=known
         acknowledged=store.preference('notified_deadlines',{})
         changed=False
@@ -484,7 +485,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
             for key in ('snoozed_until','reminder'):
                 deadline=row[key];identity=row['id']+':'+key
                 if deadline and deadline<=now and acknowledged.get(identity)!=deadline:
-                    if allows_message_notice(store,row,quiet,own):self.notify('稍后邮件已回到收件箱' if key=='snoozed_until' else '邮件跟进提醒',row['subject'])
+                    if allows_message_notice(store,row,quiet,own):self.notify(_tr('稍后邮件已回到收件箱') if key=='snoozed_until' else _tr('邮件跟进提醒'),row['subject'])
                     acknowledged[identity]=deadline;changed=True
         if changed:
             store.set_preference('notified_deadlines',dict(list(acknowledged.items())[-500:]))
@@ -559,14 +560,14 @@ class OrganizationUI(NavigationUI,MailMenuUI):
                 header=self.g.gtk_box_new(0,10)
                 self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(header),b'section-label')
                 unread=sum(not item['seen'] for item in section['items'])
-                title=('▸ ' if section['collapsed'] else '▾ ')+section['title']+f"   {len(section['items'])}"+(f" · {unread} 未读" if unread else '')
+                title=('▸ ' if section['collapsed'] else '▾ ')+section['title']+f"   {len(section['items'])}"+(_tr(' · {0} 未读').format(unread) if unread else '')
                 button=self.g.gtk_button_new_with_label(title.encode())
                 self.g.gtk_button_set_alignment(button,0,0.5)
                 self.g.connect(button,'clicked',lambda *unused,key=group:self.toggle_inbox_group(key),group='list-section-headers')
                 self.g.gtk_box_pack_start(header,button,1,1,0)
                 definition=self.inboxes.active()
                 if definition['mode']=='smart' and section['action']!='none':
-                    action=self.g.gtk_button_new_with_label({'seen':'全部已读','done':'全部完成','trash':'移到废纸篓'}[section['action']].encode())
+                    action=self.g.gtk_button_new_with_label({'seen':_tr('全部已读'),'done':_tr('全部完成'),'trash':_tr('移到废纸篓')}[section['action']].encode())
                     self.g.connect(action,'clicked',lambda *unused,key=group:self.inbox_group_action(key),group='list-section-headers')
                     self.g.gtk_box_pack_start(header,action,0,0,0)
                 if definition['mode']=='smart':
@@ -575,7 +576,7 @@ class OrganizationUI(NavigationUI,MailMenuUI):
                     self.g.connect(settings,'clicked',lambda *unused,key=group:self.inbox_card_dialog(key),group='list-section-headers')
                     self.g.gtk_box_pack_start(header,settings,0,0,0)
                 if len(section['shown'])<len(section['items']):
-                    more=self.g.gtk_button_new_with_label('全部'.encode())
+                    more=self.g.gtk_button_new_with_label(_tr('全部').encode())
                     self.g.connect(more,'clicked',lambda *unused,key=group:self.show_all_cards(key),group='list-section-headers')
                     self.g.gtk_box_pack_start(header,more,0,0,0)
             else:

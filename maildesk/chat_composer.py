@@ -1,4 +1,5 @@
 """Docked mail composer with one durable, contact-scoped draft identity."""
+from .i18n import text as _tr
 import base64
 import ctypes as C
 import json
@@ -48,9 +49,9 @@ class ChatComposer:
             g.gtk_label_set_xalign(label,0);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,45)
             g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),role.encode());g.gtk_box_pack_start(route_labels,label,0,1,0)
         g.connect(self.route_button,'clicked',lambda *unused:self.edit_route(),group=self.group)
-        self.action(top,'完整编辑器','composer-expand',self.full_editor)
+        self.action(top,_tr('完整编辑器'),'composer-expand',self.full_editor)
         self.fields={};self.field_rows={}
-        for name,title in [('to','收件人'),('cc','抄送'),('subject','主题')]:
+        for name,title in [('to',_tr('收件人')),('cc',_tr('抄送')),('subject',_tr('主题'))]:
             entry=g.gtk_entry_new();self.fields[name]=entry;g.gtk_style_context_add_class(g.gtk_widget_get_style_context(entry),b'chat-compose-field')
             default=', '.join(route.get(name,[])) if name in ('to','cc') else route.get('subject','')
             if name=='subject' and default and not default.lower().startswith('re:'):default='Re: '+default
@@ -81,19 +82,19 @@ class ChatComposer:
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.body),b'chat-compose-body')
         g.text(self.body,body,view=True);g.gtk_container_add(scroll,self.body)
         body_overlay=g.gtk_overlay_new();g.gtk_container_add(body_overlay,scroll);g.gtk_box_pack_start(self.bubble,body_overlay,0,1,0)
-        self.placeholder=g.gtk_label_new('撰写回复…'.encode());g.gtk_label_set_xalign(self.placeholder,0);g.gtk_widget_set_halign(self.placeholder,1);g.gtk_widget_set_valign(self.placeholder,1);g.gtk_widget_set_margin_start(self.placeholder,3);g.gtk_widget_set_margin_top(self.placeholder,2);g.gtk_widget_set_no_show_all(self.placeholder,1)
+        self.placeholder=g.gtk_label_new(_tr('撰写回复…').encode());g.gtk_label_set_xalign(self.placeholder,0);g.gtk_widget_set_halign(self.placeholder,1);g.gtk_widget_set_valign(self.placeholder,1);g.gtk_widget_set_margin_start(self.placeholder,3);g.gtk_widget_set_margin_top(self.placeholder,2);g.gtk_widget_set_no_show_all(self.placeholder,1)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.placeholder),b'chat-compose-placeholder');g.gtk_overlay_add_overlay(body_overlay,self.placeholder);bind(app,'gtk','gtk_overlay_set_overlay_pass_through',None,P,P,I)(body_overlay,self.placeholder,1)
         from .reply_history import ReplyHistoryView,from_message,validated
         original=next((item for item in app.chat_items if item['id']==self.metadata.get('reply_source')),None)
         self.metadata['reply_history']=validated(draft.get('reply_history')) if job else from_message(original) if original else {}
         self.history_view=ReplyHistoryView(self,self.bubble,self.metadata['reply_history']);self.history_view.set_visible(False)
         footer=g.gtk_box_new(0,7);self.footer=footer;g.gtk_widget_set_no_show_all(footer,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(footer),b'chat-compose-toolbar');g.gtk_box_pack_start(self.bubble,footer,0,1,0)
-        self.action(footer,'添加附件','composer-attachment',self.add_attachment)
+        self.action(footer,_tr('添加附件'),'composer-attachment',self.add_attachment)
         self.note=g.gtk_label_new(b'');g.gtk_label_set_xalign(self.note,0);g.gtk_label_set_ellipsize(self.note,3);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.note),b'chat-compose-note');g.gtk_box_pack_start(footer,self.note,1,1,0)
         g.gtk_box_pack_start(footer,self.account,0,1,0)
         from .sender_choice import SenderChoice
         self.account_choice=SenderChoice(app,self.account,self.body,compact=True)
-        self.send_button=self.action(footer,'发送邮件 · Ctrl+Enter','composer-send',self.send)
+        self.send_button=self.action(footer,_tr('发送邮件 · Ctrl+Enter'),'composer-send',self.send)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.send_button),b'chat-compose-send')
         from .chat_composer_visuals import send_glyph
         self.send_glyph=send_glyph(g,self.send_button,self.group)
@@ -281,7 +282,7 @@ class ChatComposer:
     # Method: Keep paused identities selectable; service policy remains authoritative on send.
     # ==========================================
     def account_choices(self):
-        return [('demo','演示邮箱')] if self.app.profile.demo else [(a.id,a.email) for a in self.app.service.accounts.values()]+[(LOCAL_ACCOUNT,'本地草稿')]
+        return [('demo',_tr('演示邮箱'))] if self.app.profile.demo else [(a.id,a.email) for a in self.app.service.accounts.values()]+[(LOCAL_ACCOUNT,_tr('本地草稿'))]
 
     # ==========================================
     # Function: Add a compact native icon action with owned callbacks.
@@ -351,18 +352,18 @@ class ChatComposer:
         account=(self.g.gtk_combo_box_get_active_id(self.account) or b'').decode();to=self.g.text(self.fields['to']);cc=self.g.text(self.fields['cc'])
         from .chat_composer_visuals import recipient_caption
         caption=recipient_caption(to,cc,self.bcc)
-        subject=self.g.text(self.fields['subject']) or '无主题'
-        text='收件人：'+(to or '未选择')+('\n抄送：'+cc if cc else '')+'\n主题：'+subject
-        if self.bcc:text+='\n有密送（完整编辑器核对）'
+        subject=self.g.text(self.fields['subject']) or _tr('无主题')
+        text=_tr('收件人：')+(to or _tr('未选择'))+(_tr('\n抄送：')+cc if cc else '')+_tr('\n主题：')+subject
+        if self.bcc:text+=_tr('\n有密送（完整编辑器核对）')
         planned=bool(self.metadata.get('scheduled_at') or self.metadata.get('remind_at'))
         if planned:
-            plan=('计划 '+str(self.metadata['scheduled_at']) if self.metadata.get('scheduled_at') else '')+(' · 有未回复提醒' if self.metadata.get('remind_at') else '')
+            plan=(_tr('计划 ')+str(self.metadata['scheduled_at']) if self.metadata.get('scheduled_at') else '')+(_tr(' · 有未回复提醒') if self.metadata.get('remind_at') else '')
             text+='\n'+plan
         self.g.label(self.summary,caption);self.g.label(self.subject_summary,subject)
-        self.g.gtk_widget_set_tooltip_text(self.route_button,(text+'\n点击编辑收件人和主题').encode())
+        self.g.gtk_widget_set_tooltip_text(self.route_button,(text+_tr('\n点击编辑收件人和主题')).encode())
         allowed=self.route.get('safe',False) and not self.bcc and not planned and account in self.app.service.accounts and not self.app.profile.demo and not self.busy
         self.g.gtk_widget_set_sensitive(self.send_button,allowed);self.g.gtk_widget_set_sensitive(self.body,not self.busy or self.saving)
-        self.g.label(self.note,self.error or ('已保留发送计划 / 提醒' if planned else '请核对收件人' if not self.route.get('safe') else ''))
+        self.g.label(self.note,self.error or (_tr('已保留发送计划 / 提醒') if planned else _tr('请核对收件人') if not self.route.get('safe') else ''))
 
     # ==========================================
     # Function: Assemble the complete durable draft with explicit contact provenance.
@@ -401,7 +402,7 @@ class ChatComposer:
         # Method: Leave its revision dirty and refuse navigation until a later save succeeds.
         # ==========================================
         def failed(error):
-            self.busy=False;self.saving=False;self.error='草稿未保存：'+str(error);self.update_state();self.app.message(self.error)
+            self.busy=False;self.saving=False;self.error=_tr('草稿未保存：')+str(error);self.update_state();self.app.message(self.error)
         if not force:
             self.busy=True;self.saving=True;self.update_state();self.app.background(operation,saved,failed);return True
         try:operation();saved(None);return True
@@ -423,10 +424,10 @@ class ChatComposer:
         # A rapid follow-up during the reveal cannot confirm context still in motion.
         if self.animation_source:return
         payload=self.payload()
-        if self.metadata.get('scheduled_at') or self.metadata.get('remind_at'):raise ValueError('已保留发送计划或未回复提醒，请在完整编辑器确认并发送')
-        if not self.route.get('safe') or self.bcc:raise ValueError('请先在完整编辑器核对收件人')
-        if self.app.profile.demo or payload['account'] not in self.app.service.accounts:raise ValueError('请选择可发送的邮箱账户')
-        if not has_draft_content(payload):raise ValueError('请先输入邮件正文或添加附件')
+        if self.metadata.get('scheduled_at') or self.metadata.get('remind_at'):raise ValueError(_tr('已保留发送计划或未回复提醒，请在完整编辑器确认并发送'))
+        if not self.route.get('safe') or self.bcc:raise ValueError(_tr('请先在完整编辑器核对收件人'))
+        if self.app.profile.demo or payload['account'] not in self.app.service.accounts:raise ValueError(_tr('请选择可发送的邮箱账户'))
+        if not has_draft_content(payload):raise ValueError(_tr('请先输入邮件正文或添加附件'))
         payload['due']=time.time()+int(self.app.service.store.preference('undo_send_seconds',10));self.busy=True;self.update_state()
         # ==========================================
         # Function: Commit only a confirmed durable enqueue to this live editor.
@@ -434,8 +435,8 @@ class ChatComposer:
         # ==========================================
         def saved(result):
             self.busy=False
-            if result.get('state')!='queued':self.failed(ValueError('邮件尚未进入发送队列'));return
-            self.identity=uuid.uuid4().hex;self.attachments=[];self.g.text(self.body,self.baseline.get('body',''),view=True);self.html='';self.snapshot='';self.revision+=1;self.refresh_chips();self.update_state();self.app.message('邮件已排队；可在草稿与发件箱撤销');self.focus_changed();self.app.refresh()
+            if result.get('state')!='queued':self.failed(ValueError(_tr('邮件尚未进入发送队列')));return
+            self.identity=uuid.uuid4().hex;self.attachments=[];self.g.text(self.body,self.baseline.get('body',''),view=True);self.html='';self.snapshot='';self.revision+=1;self.refresh_chips();self.update_state();self.app.message(_tr('邮件已排队；可在草稿与发件箱撤销'));self.focus_changed();self.app.refresh()
         self.app.background(lambda:self.app.service.compose(payload,send=True),saved,self.failed)
 
     # ==========================================
@@ -443,7 +444,7 @@ class ChatComposer:
     # Method: Re-enable the existing buffer without replacing its draft identity.
     # ==========================================
     def failed(self,error):
-        self.busy=False;self.error='未发送：'+str(error);self.update_state();self.focus_changed();self.app.message(self.error)
+        self.busy=False;self.error=_tr('未发送：')+str(error);self.update_state();self.focus_changed();self.app.message(self.error)
 
     # ==========================================
     # Function: Reveal editable exact recipients and subject in the docked composer.
@@ -464,11 +465,11 @@ class ChatComposer:
     def add_attachment(self):
         if self.busy:return
         self.focus_hold+=1
-        try:filename=self.g.choose(self.app.window,'添加附件')
+        try:filename=self.g.choose(self.app.window,_tr('添加附件'))
         finally:self.focus_hold-=1;self.deactivated=False;self.focus_changed()
         if not filename:return
         filename=Path(filename);size=filename.stat().st_size
-        if len(self.attachments)>=20 or size+sum(len(base64.b64decode(a['base64'])) for a in self.attachments)>MAX_MESSAGE_BYTES:raise ValueError('附件最多 20 个，总大小上限 30 MiB')
+        if len(self.attachments)>=20 or size+sum(len(base64.b64decode(a['base64'])) for a in self.attachments)>MAX_MESSAGE_BYTES:raise ValueError(_tr('附件最多 20 个，总大小上限 30 MiB'))
         self.attachments.append({'name':filename.name,'base64':base64.b64encode(filename.read_bytes()).decode()});self.refresh_chips();self.snapshot='';self.revision+=1
 
     # ==========================================

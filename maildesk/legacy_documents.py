@@ -1,4 +1,5 @@
 """Bounded offline Word binary/RTF text extraction; no Office automation or macros."""
+from .i18n import text as _tr
 import html
 import os
 from pathlib import Path
@@ -13,7 +14,7 @@ from .platform_native import runtime_root
 # Method: Track destinations/codepages/Unicode fallback, ignore binary data and bound output length.
 # ==========================================
 def rtf_text(data):
-    if len(data)>8_000_000:raise ValueError('RTF文件超过8 MB预览限制')
+    if len(data)>8_000_000:raise ValueError(_tr('RTF文件超过8 MB预览限制'))
     control=re.compile(r'([a-zA-Z]+)(-?\d+)? ?')
     text=data.decode('latin-1');out=[];stack=[];skip=False;unicode_skip=1;codepage='cp1252';index=0;fallback=0
     destinations={'fonttbl','colortbl','stylesheet','info','pict','object','objdata','filetbl','datastore','themedata','xmlopen','xmlattrname','xmlattrvalue','fldinst','header','footer','generator'}
@@ -69,11 +70,11 @@ def rtf_text(data):
 # Method: Use a disposable input/output directory and a finite noninteractive child process; never invoke a shell or Word.
 # ==========================================
 def binary_word_text(data):
-    if len(data)>30*1024*1024:raise ValueError('Word文件超过30 MiB预览限制')
+    if len(data)>30*1024*1024:raise ValueError(_tr('Word文件超过30 MiB预览限制'))
     if os.name=='nt':
         runtime=runtime_root();program=runtime/'bin/antiword.exe';resources=runtime/'share/antiword'
     else:program=Path(shutil.which('antiword') or '/nonexistent/antiword');resources=None
-    if not program.is_file():raise ValueError('缺少本机.doc读取组件，请使用完整客户端运行目录')
+    if not program.is_file():raise ValueError(_tr('缺少本机.doc读取组件，请使用完整客户端运行目录'))
     env=dict(os.environ)
     if resources:env['ANTIWORDHOME']=str(resources)
     from .storage_paths import active_cache
@@ -83,11 +84,11 @@ def binary_word_text(data):
         with (folder/'output.txt').open('w+b') as output,(folder/'error.txt').open('w+b') as error:
             try:
                 result=subprocess.run([str(program),'-m','UTF-8.txt','-w','0',str(input_path)],stdout=output,stderr=error,env=env,cwd=folder,timeout=8,creationflags=0x08000000 if os.name=='nt' else 0)
-            except subprocess.TimeoutExpired as exc:raise ValueError('Word文件读取超时，可保存原始文件后查看') from exc
+            except subprocess.TimeoutExpired as exc:raise ValueError(_tr('Word文件读取超时，可保存原始文件后查看')) from exc
             output.seek(0);raw=output.read(2_000_001);error.seek(0);message=error.read(2000).decode('utf-8',errors='replace').strip()
-            if result.returncode!=0:raise ValueError('无法读取该Word文件（可能已加密或损坏）：'+message[:300])
+            if result.returncode!=0:raise ValueError(_tr('无法读取该Word文件（可能已加密或损坏）：')+message[:300])
     text=raw[:2_000_000].decode('utf-8',errors='replace')
-    if len(raw)>2_000_000:text+='\n\n[预览显示前2 MB文字；保存原始文件可获得完整内容。]'
+    if len(raw)>2_000_000:text+=_tr('\n\n[预览显示前2 MB文字；保存原始文件可获得完整内容。]')
     return text
 
 # ==========================================

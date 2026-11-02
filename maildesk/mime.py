@@ -1,4 +1,5 @@
 """MIME parsing, safe text previews, attachment metadata and composition."""
+from .i18n import text as _tr
 from datetime import datetime, timezone
 from email import policy
 from email.message import EmailMessage
@@ -83,7 +84,7 @@ def attachment_content(part):
 # ==========================================
 def parse_message(raw):
     if len(raw) > MAX_MESSAGE_BYTES:
-        raise ValueError('邮件超过 30 MiB 上限')
+        raise ValueError(_tr('邮件超过 30 MiB 上限'))
     msg = BytesParser(policy=policy.default).parsebytes(raw)
     sender_name, sender = parseaddr(str(msg.get('From', '')))
     attachments, excluded = [], set()
@@ -128,10 +129,10 @@ def parse_message(raw):
 # ==========================================
 def addresses(value):
     if not isinstance(value, str) or any(c in value for c in '\r\n'):
-        raise ValueError('收件人格式无效')
+        raise ValueError(_tr('收件人格式无效'))
     parsed = getaddresses([value])
     if not parsed or any(not re.fullmatch(r'[^\s@<>]+@[^\s@<>]+', address) for _, address in parsed):
-        raise ValueError('请输入完整邮箱地址；多个收件人用逗号分隔')
+        raise ValueError(_tr('请输入完整邮箱地址；多个收件人用逗号分隔'))
     return [address for _, address in parsed]
 
 # ==========================================
@@ -165,5 +166,5 @@ def compose(sender, draft, message_id=None):
         maintype, subtype = content_type.split('/', 1)
         msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=attachment['name'])
     if len(msg.as_bytes()) > MAX_MESSAGE_BYTES:
-        raise ValueError('邮件和附件总大小超过 30 MiB')
+        raise ValueError(_tr('邮件和附件总大小超过 30 MiB'))
     return msg, list(dict.fromkeys(targets + cc + bcc))

@@ -1,4 +1,5 @@
 """Native x64 GTK desktop application; talks directly to the mail core."""
+from .i18n import text as _tr, join_text as _join_ui, system_message
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import ctypes as C
@@ -32,9 +33,9 @@ from .desktop_chat import ContactChatUI
 from .desktop_mail_updates import MailUpdatesUI
 
 ASSETS = Path(__file__).parent / 'desktop_assets'
-VIEWS = {'inbox':'收件箱','unread':'未读邮件','priority':'优先处理','pinned':'置顶邮件','sent':'已发送','drafts':'草稿与发件箱','archive':'归档','snoozed':'稍后','reminders':'跟进提醒','aside':'暂存','done':'已完成','trash':'废纸篓','spam':'垃圾邮件','all':'所有邮件','new_senders':'新发件人','blocked':'已屏蔽'}
-CATEGORIES = {'personal':'个人','notification':'通知','newsletter':'订阅','verification':'验证码'}
-STATES = {'draft':'草稿','queued':'等待发送','sending':'正在发送','sent':'已发送','partial':'部分接受','failed':'发送失败','uncertain':'结果待确认'}
+VIEWS = {'inbox':_tr('收件箱'),'unread':_tr('未读邮件'),'priority':_tr('优先处理'),'pinned':_tr('置顶邮件'),'sent':_tr('已发送'),'drafts':_tr('草稿与发件箱'),'archive':_tr('归档'),'snoozed':_tr('稍后'),'reminders':_tr('跟进提醒'),'aside':_tr('暂存'),'done':_tr('已完成'),'trash':_tr('废纸篓'),'spam':_tr('垃圾邮件'),'all':_tr('所有邮件'),'new_senders':_tr('新发件人'),'blocked':_tr('已屏蔽')}
+CATEGORIES = {'personal':_tr('个人'),'notification':_tr('通知'),'newsletter':_tr('订阅'),'verification':_tr('验证码')}
+STATES = {'draft':_tr('草稿'),'queued':_tr('等待发送'),'sending':_tr('正在发送'),'sent':_tr('已发送'),'partial':_tr('部分接受'),'failed':_tr('发送失败'),'uncertain':_tr('结果待确认')}
 
 # ==========================================
 # Function: Run native windows and coordinate mailbox operations.
@@ -48,6 +49,10 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     def __init__(self, options):
         from .gtk_native import GtkNative
         self.options, self.profile = options, DesktopProfile(options.demo, options.config, options.data)
+        from .i18n import configure
+        configure(self.profile.data)
+        from .i18n import language,native_calendar_language
+        os.environ['LANGUAGE']='en' if language()=='en' else 'zh_CN'
         from .reader_runtime import prepare_readers
         prepare_readers()
         self.g = GtkNative()
@@ -56,7 +61,8 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         self.g.g_set_prgname(b'TeleMail')
         self.g.g_set_application_name(b'TeleMail')
         if not self.g.gtk_init_check(None, None):
-            raise RuntimeError('无法初始化系统图形桌面，请在桌面会话中打开 TeleMail。')
+            raise RuntimeError(_tr('无法初始化系统图形桌面，请在桌面会话中打开 TeleMail。'))
+        native_calendar_language()
         self.application = self.g.gtk_application_new(self.profile.application_id.encode(), 4|(32 if os.name=='nt' else 0))
         self.window = self.builder = self.service = self.lock_file = self.composer = None
         self.widgets, self.rows, self.items, self.current = {}, {}, [], None
@@ -152,8 +158,8 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             self.refresh()
             self.last_sync=self.service.status['last_sync']
         except Exception as error:
-            self.message('无法打开邮箱：' + str(error), permanent=True)
-            self.g.label(self.widget('banner'), '数据目录已在使用或配置无效。请关闭旧版本进程，或检查账户配置。')
+            self.message(_tr('无法打开邮箱：') + str(error), permanent=True)
+            self.g.label(self.widget('banner'), _tr('数据目录已在使用或配置无效。请关闭旧版本进程，或检查账户配置。'))
             self.g.gtk_widget_show_all(self.window)
             return
         self.g.gtk_widget_show_all(self.window)
@@ -168,7 +174,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 warm_reader(self)
             except (OSError,RuntimeError):pass  # Opening a message reports any actual reader failure.
         if getattr(self.options,'background',False) and self.tray_available():self.g.gtk_widget_hide(self.window)
-        self.g.label(self.widget('banner'), '演示邮箱 · 合成邮件，外发已关闭' if self.profile.demo else '你的邮件，你的节奏')
+        self.g.label(self.widget('banner'), _tr('演示邮箱 · 合成邮件，外发已关闭') if self.profile.demo else _tr('你的邮件，你的节奏'))
         from .desktop_forms import ask_credential
         if not self.options.self_test:
             for account in accounts:
@@ -180,7 +186,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             from .desktop_smoke import NativeSmoke
             self.smoke = NativeSmoke(self)
         if not accounts and not self.profile.demo:
-            self.message('可直接创建本地文件夹、导入 EML 和保存草稿；添加邮箱账户后即可正常收发。')
+            self.message(_tr('可直接创建本地文件夹、导入 EML 和保存草稿；添加邮箱账户后即可正常收发。'))
 
     # ==========================================
     # Function: Attach fixed native actions and desktop lifecycle events.
@@ -273,7 +279,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                     return 1
             if time.monotonic() - self.last_poll >= 2 and self.service:
                 self.last_poll = time.monotonic()
-                if getattr(self,'activity',None):self.activity.refresh()
+                if getattr(self,'activity',None):self.activity.check_date()
                 status = self.service.status
                 (self.g.gtk_spinner_start if status['syncing'] else self.g.gtk_spinner_stop)(self.widget('spinner'))
                 self.check_send_sound()
@@ -288,7 +294,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                         self.refresh()
                 if time.monotonic() >= self.notice_until:
                     failures = [key for key,value in status['accounts'].items() if not value.get('ok')]
-                    text = status.get('worker_error') or status.get('mutation_error') or ('同步失败：' + '、'.join(failures) if failures else '正在同步邮件…' if status['syncing'] else '最近同步 ' + datetime.fromtimestamp(status['last_sync']).strftime('%H:%M:%S') if status['last_sync'] else '本地邮件核心已就绪')
+                    text = status.get('worker_error') or status.get('mutation_error') or (_tr('同步失败：') + _join_ui('、',(failures)) if failures else _tr('正在同步邮件…') if status['syncing'] else _tr('最近同步 ') + datetime.fromtimestamp(status['last_sync']).strftime('%H:%M:%S') if status['last_sync'] else _tr('本地邮件核心已就绪'))
                     self.g.gtk_widget_set_tooltip_text(self.widget('sync'),text.encode())
                     self.g.gtk_revealer_set_reveal_child(self.widget('toast_revealer'),0)
         except Exception as error:
@@ -312,7 +318,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     # Method: Show exception text for local validation and generic transport failures.
     # ==========================================
     def show_error(self, error):
-        self.message('操作未完成：' + str(error))
+        self.message(_tr('操作未完成：') + str(error))
 
     # ==========================================
     # Function: Switch the native sidebar mailbox view.
@@ -402,7 +408,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         render_has_more=False;self.items=projection['items'];self.total=projection['total']
         self.refresh_folders(projection['folders'],projection['smart']);new_count=projection['new_count']
         self.g.gtk_widget_set_visible(self.widget('gatekeeper_inbox'),bool(new_count))
-        self.g.label(self.widget('gatekeeper_inbox'),f'新发件人 {new_count} · 审阅',button=True)
+        self.g.label(self.widget('gatekeeper_inbox'),_tr('新发件人 {0} · 审阅').format(new_count),button=True)
         for key in VIEWS:
             context=self.g.gtk_widget_get_style_context(self.widget('nav_'+key))
             (self.g.gtk_style_context_add_class if key==self.view else self.g.gtk_style_context_remove_class)(context,b'active')
@@ -445,11 +451,11 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 from .desktop_focus import focused_render_items
                 render_items,render_has_more=focused_render_items(sections,self.limit)
         else:
-            self.g.label(self.widget('view_subtitle'),'按时间排列')
+            self.g.label(self.widget('view_subtitle'),_tr('按时间排列'))
             if grouping in ('sender','domain') and self.view!='drafts':
                 self.items.sort(key=lambda r:((r['sender'].rsplit('@',1)[-1] if grouping=='domain' else r['sender']),-r['timestamp']))
         self.g.gtk_widget_set_visible(self.widget('focus_back'),bool(self.focus_group))
-        if self.focus_group:self.g.label(self.widget('view_subtitle'),'分组邮件 · '+self.focus_group.split(':')[0])
+        if self.focus_group:self.g.label(self.widget('view_subtitle'),_tr('分组邮件 · ')+self.focus_group.split(':')[0])
         from .desktop_preferences import row_presentation
         presentation=row_presentation(self.service.store)
         avatar_state=self.identity_colors.snapshot([item['account'] for item in self.items])
@@ -479,16 +485,16 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 context=self.g.gtk_widget_get_style_context(row);self.g.gtk_style_context_add_class(context,b'card-row')
                 if item==section['shown'][-1] or section['collapsed']:self.g.gtk_style_context_add_class(context,b'card-last')
             if self.view == 'drafts':
-                texts = [(STATES[item['state']]+(' · '+datetime.fromtimestamp(item['due']).strftime('%m-%d %H:%M') if item['state']=='queued' else '')+(' · ◉ 回执 '+str(item['receipts']) if item.get('receipts') else ''), 'mail-sender'), (item['draft'].get('subject') or '(无主题)', 'mail-subject'), (item['draft'].get('to') or '(尚无收件人)', 'mail-preview')]
+                texts = [(STATES[item['state']]+(' · '+datetime.fromtimestamp(item['due']).strftime('%m-%d %H:%M') if item['state']=='queued' else '')+(_tr(' · ◉ 回执 ')+str(item['receipts']) if item.get('receipts') else ''), 'mail-sender'), (item['draft'].get('subject') or _tr('(无主题)'), 'mail-subject'), (item['draft'].get('to') or _tr('(尚无收件人)'), 'mail-preview')]
             else:
-                suffix = ((' · ☆ 优先' if item['priority'] else '') + (' · 置顶' if item['pinned'] else '')) if presentation['labels_system'] else ''
+                suffix = ((_tr(' · ☆ 优先') if item['priority'] else '') + (_tr(' · 置顶') if item['pinned'] else '')) if presentation['labels_system'] else ''
                 labels=labels_by_id.get(identity,[])
-                suffix+=('  ['+' · '.join(labels)+']') if labels else ''
-                texts = [((item.get('sender_name') or item['sender']) + ' · ' + datetime.fromtimestamp(item['timestamp']).strftime('%m-%d %H:%M'), 'mail-sender'), ((item['subject'] or '(无主题)')+suffix+(' · ◉' if item.get('receipts') else ''), 'mail-subject'), (item['preview'], 'mail-preview')]
+                suffix+=('  ['+_join_ui(' · ',(labels))+']') if labels else ''
+                texts = [((item.get('sender_name') or item['sender']) + ' · ' + datetime.fromtimestamp(item['timestamp']).strftime('%m-%d %H:%M'), 'mail-sender'), ((item['subject'] or _tr('(无主题)'))+suffix+(' · ◉' if item.get('receipts') else ''), 'mail-subject'), (item['preview'], 'mail-preview')]
             if not presentation['preview_lines']:texts=[pair for pair in texts if pair[1]!='mail-preview']
             for text, css in texts:
                 # Fold CRLF, tabs and Unicode separators only in the list; keep original mail intact.
-                text = ' '.join(text.split())
+                text = _join_ui(' ',(text.split()))
                 if css == 'mail-preview':text = text[:90*max(1,presentation['preview_lines'])]
                 label = self.g.gtk_label_new(text.encode())
                 self.g.gtk_label_set_single_line_mode(label, int(not(css=='mail-preview' and presentation['preview_lines']>1)))
@@ -511,7 +517,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 self.g.gtk_widget_set_visible(avatar,show_avatar)
                 self.g.gtk_box_pack_start(horizontal,self.row_actions(identity,item),0,0,0)
                 from .mail_list_visuals import avatar_bubble,row_markers
-                avatar_host,badge=avatar_bubble(self.g,avatar,item.get('history_count',1),title='历史会话 · '+str(item.get('history_count',1))+' 封邮件')
+                avatar_host,badge=avatar_bubble(self.g,avatar,item.get('history_count',1),title=_tr('历史会话 · ')+str(item.get('history_count',1))+_tr(' 封邮件'))
                 self.row_history_badges[identity]=badge
                 self.g.gtk_widget_set_no_show_all(avatar_host,not show_avatar);self.g.gtk_widget_set_visible(avatar_host,show_avatar)
                 self.g.gtk_box_pack_start(horizontal,avatar_host,0,0,0)
@@ -521,11 +527,11 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 else:self.g.gtk_widget_destroy(markers)
                 if presentation['labels_list']:
                     labels=labels_by_id.get(identity,[])
-                    if labels:self.g.gtk_widget_set_tooltip_text(box,('标签：'+' · '.join(labels)).encode())
+                    if labels:self.g.gtk_widget_set_tooltip_text(box,(_tr('标签：')+_join_ui(' · ',(labels))).encode())
                 if item['id'] in self.inbox_sections:
                     self.row_groups[row]=self.inbox_sections[item['id']]['key']
                 elif grouping in ('sender','domain'):
-                    group=(item['sender'].rsplit('@',1)[-1] if grouping=='domain' else item['sender']) if grouping in ('sender','domain') else ('优先' if item['priority'] else CATEGORIES[item['category']])
+                    group=(item['sender'].rsplit('@',1)[-1] if grouping=='domain' else item['sender']) if grouping in ('sender','domain') else (_tr('优先') if item['priority'] else CATEGORIES[item['category']])
                     self.row_groups[row]=group
                 self.g.gtk_container_add(row,horizontal)
             else:
@@ -548,7 +554,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         if selected_row:
             self.g.gtk_list_box_select_row(self.widget('messages'), selected_row)
         self.rendering = False
-        self.g.label(self.widget('count'), f'{self.total} ' + ('项' if self.view == 'drafts' else '封邮件'))
+        self.g.label(self.widget('count'), f'{self.total} ' + (_tr('项') if self.view == 'drafts' else _tr('封邮件')))
         self.render_has_more=render_has_more
         self.g.gtk_widget_set_visible(self.widget('more'), int(render_has_more or (len(render_items) if self.focus_group else len(self.items)) < self.total))
         if self.selected and (selected_row or (not self.selected.startswith('job:') and self.current and self.selected==self.current.get('id'))):
@@ -619,12 +625,12 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     def delete_selected_draft(self):
         if not self.selected.startswith('job:'):return
         identity=self.selected[4:];job=self.service.store.job(identity)
-        if job['state']!='draft':raise ValueError('只能删除未发送草稿；请先撤销发送计划')
+        if job['state']!='draft':raise ValueError(_tr('只能删除未发送草稿；请先撤销发送计划'))
         if self.composer and not self.composer.closed and self.composer.identity==identity:
             if self.composer.busy:return
             self.composer.close();self.composer=None
         self.service.store.delete_draft(identity)
-        self.selected='';self.current=None;self.refresh();self.message('草稿已删除')
+        self.selected='';self.current=None;self.refresh();self.message(_tr('草稿已删除'))
 
     # ==========================================
     # Function: Reset stale message content and dynamic signal groups.
@@ -642,7 +648,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         for name in ('attachments','thread'):
             self.g.clear(self.widget(name))
         self.g.label(self.widget('subject'), '')
-        self.g.label(self.widget('sender'), '选择一封邮件，或添加你的邮箱账户。')
+        self.g.label(self.widget('sender'), _tr('选择一封邮件，或添加你的邮箱账户。'))
         self.g.label(self.widget('reason'), '')
         self.g.label(self.widget('message_tags'),'')
         self.g.text(self.widget('body'), '', view=True)
@@ -715,12 +721,12 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             self.g.gtk_widget_hide(self.widget('mail_footer'));self.g.gtk_widget_hide(self.widget('message_tags'));self.g.gtk_widget_hide(self.widget('sender_review'))
             job = self.service.store.job(identity[4:])
             self.current = job
-            self.g.label(self.widget('subject'), job['draft'].get('subject') or '(无主题)')
-            self.g.label(self.widget('sender'), STATES[job['state']] + ' · 发往 ' + job['draft'].get('to',''))
-            self.g.label(self.widget('reason'), '\n'.join(filter(None, [job['error'],job['copy_status'],('已收到 '+str(job['receipts'])+' 份阅读回执') if job.get('receipts') else '', '计划发送 ' + datetime.fromtimestamp(job['due']).strftime('%Y-%m-%d %H:%M') if job['state'] == 'queued' else ''])))
+            self.g.label(self.widget('subject'), job['draft'].get('subject') or _tr('(无主题)'))
+            self.g.label(self.widget('sender'), STATES[job['state']] + _tr(' · 发往 ') + job['draft'].get('to',''))
+            self.g.label(self.widget('reason'), _join_ui('\n',(filter(None, [system_message(job['error']),system_message(job['copy_status']),(_tr('已收到 ')+str(job['receipts'])+_tr(' 份阅读回执')) if job.get('receipts') else '', _tr('计划发送 ') + datetime.fromtimestamp(job['due']).strftime('%Y-%m-%d %H:%M') if job['state'] == 'queued' else '']))))
             self.g.text(self.widget('body'), job['draft'].get('body',''), view=True)
             self.clear_conversation()
-            label=self.g.gtk_label_new((job['draft'].get('body','') or '(无正文)').encode());self.g.gtk_label_set_line_wrap(label,1)
+            label=self.g.gtk_label_new((job['draft'].get('body','') or _tr('(无正文)')).encode());self.g.gtk_label_set_line_wrap(label,1)
             self.g.gtk_box_pack_start(self.widget('conversation_host'),label,0,1,0);self.g.gtk_widget_show_all(self.widget('conversation_host'))
             self.set_reader_state(False, job)
             self.apply_layout()
@@ -748,30 +754,30 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         tags=list(message['labels'])
         with self.service.store.db() as db:
             receipts=db.execute('SELECT count(*) FROM read_receipts r JOIN jobs j ON j.id=r.job WHERE j.account=? AND j.message_id=?',(message['account'],parsed['message_id'])).fetchone()[0]
-        if receipts:tags.append(f'◉ 已收到 {receipts} 份阅读回执')
-        if message['snoozed_until']>time.time():tags.append('稍后 '+datetime.fromtimestamp(message['snoozed_until']).strftime('%m-%d %H:%M'))
-        if message['reminder']:tags.append('提醒 '+datetime.fromtimestamp(message['reminder']).strftime('%m-%d %H:%M'))
-        if message['aside']:tags.append('暂存')
-        if message['done']:tags.append('已完成')
-        self.g.label(self.widget('message_tags'),'  ·  '.join(tags))
+        if receipts:tags.append(_tr('◉ 已收到 {0} 份阅读回执').format(receipts))
+        if message['snoozed_until']>time.time():tags.append(_tr('稍后 ')+datetime.fromtimestamp(message['snoozed_until']).strftime('%m-%d %H:%M'))
+        if message['reminder']:tags.append(_tr('提醒 ')+datetime.fromtimestamp(message['reminder']).strftime('%m-%d %H:%M'))
+        if message['aside']:tags.append(_tr('暂存'))
+        if message['done']:tags.append(_tr('已完成'))
+        self.g.label(self.widget('message_tags'),_join_ui('  ·  ',(tags)))
         self.g.gtk_widget_set_visible(self.widget('message_tags'),bool(tags))
-        self.g.label(self.widget('sender'), f"{parsed['sender_name']} <{parsed['sender']}>\n发往 {parsed['recipients']} · {datetime.fromtimestamp(parsed['timestamp']).strftime('%Y-%m-%d %H:%M')}")
+        self.g.label(self.widget('sender'), _tr('{0} <{1}>\n发往 {2} · {3}').format(parsed['sender_name'],parsed['sender'],parsed['recipients'],datetime.fromtimestamp(parsed['timestamp']).strftime('%Y-%m-%d %H:%M')))
         # The hidden accessibility fallback needs text only; rich conversation leaves own HTML.
-        self.g.text(self.widget('body'), parsed['body'] or '(没有可显示的文字正文)', view=True)
+        self.g.text(self.widget('body'), parsed['body'] or _tr('(没有可显示的文字正文)'), view=True)
         self.mail_image_indices=set()
-        self.g.label(self.widget('reason'), message['reason'])
+        self.g.label(self.widget('reason'), system_message(message['reason']))
         self.g.gtk_combo_box_set_active_id(self.widget('message_category'), message['category'].encode())
-        self.g.gtk_widget_set_tooltip_text(self.widget('seen'), ('标为未读' if message['seen'] else '标为已读').encode())
-        self.g.gtk_widget_set_tooltip_text(self.widget('pin'), ('取消置顶' if message['pinned'] else '置顶').encode())
-        self.g.gtk_widget_set_tooltip_text(self.widget('priority'), ('取消优先' if message['priority'] else '☆ 优先').encode())
+        self.g.gtk_widget_set_tooltip_text(self.widget('seen'), (_tr('标为未读') if message['seen'] else _tr('标为已读')).encode())
+        self.g.gtk_widget_set_tooltip_text(self.widget('pin'), (_tr('取消置顶') if message['pinned'] else _tr('置顶')).encode())
+        self.g.gtk_widget_set_tooltip_text(self.widget('priority'), (_tr('取消优先') if message['priority'] else _tr('☆ 优先')).encode())
         archived=bool(message['archived']) or message['folder']==self.service.store.special_folder(message['account'],'archive')
-        self.g.gtk_widget_set_tooltip_text(self.widget('archive'), ('移回收件箱' if archived else '归档').encode())
+        self.g.gtk_widget_set_tooltip_text(self.widget('archive'), (_tr('移回收件箱') if archived else _tr('归档')).encode())
         from .ui_actions import state_action
         for name,icon,active in [('pin','spark-layout-pin',message['pinned']),('priority','spark-layout-priority',message.get('effective_priority',message['priority'])),('done','spark-layout-done',message['done']),('seen','spark-layout-seen',message['seen']),('archive','spark-layout-archive',archived),('snooze','spark-layout-snooze',message['snoozed_until']>time.time())]:
-            title={'pin':'取消置顶' if active else '置顶','priority':'取消优先' if active else '优先','done':'取消完成' if active else '完成','seen':'标为未读' if active else '标为已读','archive':'移回收件箱' if active else '归档','snooze':'更改稍后时间' if active else '稍后'}[name]
+            title={'pin':_tr('取消置顶') if active else _tr('置顶'),'priority':_tr('取消优先') if active else _tr('优先'),'done':_tr('取消完成') if active else _tr('完成'),'seen':_tr('标为未读') if active else _tr('标为已读'),'archive':_tr('移回收件箱') if active else _tr('归档'),'snooze':_tr('更改稍后时间') if active else _tr('稍后')}[name]
             state_action(self.g,self.widget(name),title,icon,bool(active))
         attachments=parsed['attachments']
-        self.g.label(self.widget('attachments_toggle'),f'▤ 附件 {len(attachments)} · {sum(a["size"] for a in attachments)/1024:.0f} KB',button=True)
+        self.g.label(self.widget('attachments_toggle'),_tr('▤ 附件 {0} · {1:.0f} KB').format(len(attachments),sum(a["size"] for a in attachments)/1024),button=True)
         self.g.gtk_widget_set_visible(self.widget('attachments_toggle'),bool(attachments))
         for attachment in attachments:
             from .attachment_cards import card as attachment_card
@@ -831,7 +837,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     def request_sync(self):
         if self.service:
             self.service.request_sync()
-            self.message('已请求同步')
+            self.message(_tr('已请求同步'))
 
     # ==========================================
     # Function: Reapply independent classification rules.
@@ -839,7 +845,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     # ==========================================
     def reclassify(self):
         if self.service:
-            self.background(self.service.store.reclassify, lambda count:(self.refresh(),self.message(f'已重新归类 {count} 封邮件')))
+            self.background(self.service.store.reclassify, lambda count:(self.refresh(),self.message(_tr('已重新归类 {0} 封邮件').format(count))))
 
     # ==========================================
     # Function: Open the graphical mailbox settings dialog.
@@ -864,7 +870,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 self.service.accounts = {a.id:a for a in accounts}
                 self.service.status['accounts']={key:value for key,value in self.service.status['accounts'].items() if key in self.service.accounts}
             return True
-        self.background(apply, lambda result:(self.fill_accounts(),self.request_sync(),self.message('账户已保存，可在客户端直接收发邮件')))
+        self.background(apply, lambda result:(self.fill_accounts(),self.request_sync(),self.message(_tr('账户已保存，可在客户端直接收发邮件'))))
 
     # ==========================================
     # Function: Open or focus the native editor.
@@ -898,7 +904,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             attachments=reply_attachments(self,message)
             if attachments is None:return
             from .reply_history import from_message
-            self.open_composer({'reply_history':from_message(message),'reply_source':message['id'],'attachments':attachments,'account':message['account'],'to':parsed['headers'].get('reply-to',parsed['sender']), 'subject':message['subject'] if message['subject'].lower().startswith('re:') else 'Re: ' + message['subject'], 'in_reply_to':parsed['message_id'],'references':' '.join(parsed['references'] + [parsed['message_id']])})
+            self.open_composer({'reply_history':from_message(message),'reply_source':message['id'],'attachments':attachments,'account':message['account'],'to':parsed['headers'].get('reply-to',parsed['sender']), 'subject':message['subject'] if message['subject'].lower().startswith('re:') else 'Re: ' + message['subject'], 'in_reply_to':parsed['message_id'],'references':_join_ui(' ',(parsed['references'] + [parsed['message_id']]))})
 
     # ==========================================
     # Function: Edit a saved local draft.
@@ -909,7 +915,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             payload={**self.current['draft'],'account':self.current['account']}
             if self.current['state']=='draft':payload['id']=self.current['id']
             elif self.current['state'] in ('uncertain','partial'):
-                self.message('原邮件可能已送达部分或全部收件人，请先核对已发送邮件；新草稿需再次明确发送')
+                self.message(_tr('原邮件可能已送达部分或全部收件人，请先核对已发送邮件；新草稿需再次明确发送'))
             self.open_composer(payload)
 
     # ==========================================
@@ -931,10 +937,10 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         if now:due=time.time()
         else:
             from .scheduling import choose_schedule,schedule_timestamp
-            value=choose_schedule(self,'修改发送时间',datetime.fromtimestamp(job['due']).isoformat(timespec='minutes'),clear=False)
+            value=choose_schedule(self,_tr('修改发送时间'),datetime.fromtimestamp(job['due']).isoformat(timespec='minutes'),clear=False)
             if not value:return
             due=schedule_timestamp(value)
-        self.background(lambda:self.service.reschedule(identity,due),lambda result:(self.refresh(),self.message('发送计划已更新')))
+        self.background(lambda:self.service.reschedule(identity,due),lambda result:(self.refresh(),self.message(_tr('发送计划已更新'))))
 
     # ==========================================
     # Function: Import an EML file through the native filesystem dialog.
@@ -943,7 +949,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     def import_mail(self):
         if not self.service:
             return
-        filename = self.g.choose(self.window, '导入 EML 邮件')
+        filename = self.g.choose(self.window, _tr('导入 EML 邮件'))
         if not filename:
             return
         folder=self.folder_path if self.folder_account==LOCAL_ACCOUNT and self.folder_path else 'INBOX'
@@ -955,7 +961,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             if self.profile.demo:self.refresh()
             else:self.open_folder(LOCAL_ACCOUNT,folder)
             self.read(identity)
-            self.message('邮件已导入本地文件夹，不会上传到邮箱服务器')
+            self.message(_tr('邮件已导入本地文件夹，不会上传到邮箱服务器'))
         self.background(lambda:self.service.import_eml(filename,folder),imported)
 
     # ==========================================
@@ -964,11 +970,11 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     # ==========================================
     def export_mail(self):
         if self.current and not self.selected.startswith('job:'):
-            destination = self.g.choose(self.window, '导出 EML 邮件', 'message.eml')
+            destination = self.g.choose(self.window, _tr('导出 EML 邮件'), 'message.eml')
             if destination:
                 raw = self.service.store.get(self.selected, raw=True)['raw']
                 destination.write_bytes(raw)
-                self.message('邮件已导出')
+                self.message(_tr('邮件已导出'))
 
     # ==========================================
     # Function: Save a selected MIME attachment without rendering it.
@@ -976,12 +982,12 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
     # ==========================================
     def save_attachment(self, identity, attachment):
         name = Path(attachment['name'].replace('\x00','')).name or 'attachment'
-        destination = self.g.choose(self.window, '保存附件', name)
+        destination = self.g.choose(self.window, _tr('保存附件'), name)
         if destination:
             raw = self.service.store.get(identity, raw=True)['raw']
             part = list(BytesParser(policy=policy.default).parsebytes(raw).walk())[attachment['index']]
             destination.write_bytes(attachment_content(part))
-            self.message('附件已保存')
+            self.message(_tr('附件已保存'))
 
     # ==========================================
     # Function: Open a separate demo profile from the desktop.
@@ -1003,9 +1009,9 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         from .desktop_install import install_user
         executable = os.environ.get('TELEMAIL_LAUNCHER')
         if not executable:
-            self.message('请使用发行目录中的 TeleMail 可执行程序安装桌面入口')
+            self.message(_tr('请使用发行目录中的 TeleMail 可执行程序安装桌面入口'))
             return
-        self.background(lambda:install_user(Path(executable).resolve().parent), lambda result:self.message('已添加到应用菜单：TeleMail。以后可直接点击图标启动。'))
+        self.background(lambda:install_user(Path(executable).resolve().parent), lambda result:self.message(_tr('已添加到应用菜单：TeleMail。以后可直接点击图标启动。')))
 
     # ==========================================
     # Function: Stage one migration only when mailbox shutdown is accepted.
@@ -1025,7 +1031,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         if getattr(self,'chat_composer',None) and not self.chat_composer.autosave(force=True):return True
         if self.composer and not self.composer.closed:
             if self.composer.busy:
-                self.message('正在保存邮件，请稍后退出');return True
+                self.message(_tr('正在保存邮件，请稍后退出'));return True
             if self.composer.autosave(force=True) is False:return True
             self.composer.close()
         if not force and self.service and self.service.store.preference('close_to_tray',False) and self.tray_available():
@@ -1074,7 +1080,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 self.reader_termination_requested=True
                 for reader in self.shutdown_readers:reader.finish_shutdown()
             if not self.reader_drain.ready(now,active) or (self.shutdown_readers and now-self.reader_drain.started<.6):return 1
-            if self.reader_drain.timed_out:self.storage_shutdown_error='阅读器未能完全关闭，未开始迁移。'
+            if self.reader_drain.timed_out:self.storage_shutdown_error=_tr('阅读器未能完全关闭，未开始迁移。')
             if os.name=='nt' and getattr(self,'windows_webview_bridge',None):self.close_general()
             else:self.release_reader_widgets()
             self.shutdown_readers=[];self.reader_shutdown_phase='context';self.reader_drain=ReaderDrain(now)
@@ -1087,12 +1093,12 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             deadline=10
             if (pending or active or not drained) and now-self.reader_drain.started<deadline:return 1
             if pending or active or not drained:
-                self.storage_shutdown_error='Windows 阅读器进程尚未完全关闭，未开始迁移。'
-                print('TeleMail: Windows 阅读器在关闭期限内未完全结束',file=sys.stderr)
+                self.storage_shutdown_error=_tr('Windows 阅读器进程尚未完全关闭，未开始迁移。')
+                print(_tr('TeleMail: Windows 阅读器在关闭期限内未完全结束'),file=sys.stderr)
             self.release_reader_widgets()
             bridge.md_webview_finish()
         elif not self.reader_drain.ready(now,owned_renderers()):return 1
-        elif self.reader_drain.timed_out:self.storage_shutdown_error='阅读器进程仍在结束，未开始迁移。'
+        elif self.reader_drain.timed_out:self.storage_shutdown_error=_tr('阅读器进程仍在结束，未开始迁移。')
         self.readers_drained=True
         self.reader_drain_timer=0
         self.g.g_application_release(self.application)
@@ -1142,9 +1148,9 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
                 if plan:
                     from .storage_runtime import StorageProgress
                     error=self.storage_shutdown_error
-                    if not getattr(self,'readers_drained',False):error=error or '阅读器尚未完全关闭，未开始迁移。'
+                    if not getattr(self,'readers_drained',False):error=error or _tr('阅读器尚未完全关闭，未开始迁移。')
                     worker=getattr(self.service,'worker',None)
-                    if worker and worker.is_alive():error='邮件后台服务未能结束，未开始迁移。'
+                    if worker and worker.is_alive():error=_tr('邮件后台服务未能结束，未开始迁移。')
                     progress=StorageProgress(self,plan,error or None)
                     restart=progress.run()
                     self.migrated_storage=progress.result
@@ -1166,11 +1172,11 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
 # ==========================================
 def main(argv=None):
     system='Windows 11 x64' if sys.platform=='win32' else 'Linux amd64'
-    parser = argparse.ArgumentParser(description='TeleMail '+system+' 桌面客户端')
+    parser = argparse.ArgumentParser(description='TeleMail '+system+_tr(' 桌面客户端'))
     parser.add_argument('--version', action='version', version=f'TeleMail {__version__} · {system}')
     parser.add_argument('--demo', action='store_true')
     parser.add_argument('--background',action='store_true',help=argparse.SUPPRESS)
-    parser.add_argument('uris',nargs='*',help='mailto: 链接（仅打开未发送草稿）')
+    parser.add_argument('uris',nargs='*',help=_tr('mailto: 链接（仅打开未发送草稿）'))
     parser.add_argument('--config', type=Path)
     parser.add_argument('--data', type=Path)
     parser.add_argument('--install-user', action='store_true')
@@ -1179,18 +1185,18 @@ def main(argv=None):
     parser.add_argument('--screenshot', type=Path, help=argparse.SUPPRESS)
     options = parser.parse_args(argv)
     if sys.platform not in ('linux','win32') or platform.machine().lower() not in ('x86_64','amd64'):
-        parser.error('此版本支持 Linux amd64 或 Windows 11 x64')
+        parser.error(_tr('此版本支持 Linux amd64 或 Windows 11 x64'))
     from .desktop_preferences import parse_mailto
     try:
         for uri in options.uris:parse_mailto(uri)
     except ValueError as error:parser.error(str(error))
     if options.self_test and not options.demo:
-        parser.error('原生界面自测仅允许 --demo，避免操作真实邮箱')
+        parser.error(_tr('原生界面自测仅允许 --demo，避免操作真实邮箱'))
     if options.install_user:
         from .desktop_install import install_user
         executable = os.environ.get('TELEMAIL_LAUNCHER')
         if not executable:
-            parser.error('请使用发行目录中的 TeleMail 可执行程序')
+            parser.error(_tr('请使用发行目录中的 TeleMail 可执行程序'))
         print(install_user(Path(executable).resolve().parent))
         return 0
     os.umask(0o077)

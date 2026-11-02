@@ -1,4 +1,5 @@
 """Bounded saved-contact chooser shared by native mail recipient fields."""
+from .i18n import text as _tr
 import ctypes as C
 from email.headerregistry import Address
 from email.utils import getaddresses
@@ -19,12 +20,12 @@ class RecipientPicker:
     def __init__(self,owner,entry,row):
         self.owner=owner;self.app=owner.app;self.g=g=owner.g;self.entry=entry;self.closed=False;self.serial=0;self.offset=0;self.total=0;self.loading=False;self.items=[];self.row_buttons={};self.alias_popup=None;self.alias_buttons={};self.restore_source=0;self.last_scroll=0;self.directory_query=''
         self.group='recipient-picker-'+str(entry);self.channel=self.group
-        self.button=g.gtk_menu_button_new();icon_action(g,self.button,'从通讯录选择联系人','settings-contacts',16)
+        self.button=g.gtk_menu_button_new();icon_action(g,self.button,_tr('从通讯录选择联系人'),'settings-contacts',16)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.button),b'recipient-picker-button');g.gtk_box_pack_start(row,self.button,0,0,0)
         self.popup=g.gtk_popover_new(self.button);self.style(self.popup,'recipient-picker');g.surfaces.states[self.popup]['width']=340
         self.content=g.gtk_box_new(1,6);g.gtk_container_set_border_width(self.content,8);g.gtk_container_add(self.popup,self.content)
-        heading=g.gtk_label_new('选择联系人'.encode());g.gtk_label_set_xalign(heading,0);self.style(heading,'picker-heading');g.gtk_box_pack_start(self.content,heading,0,1,0)
-        self.search=bind(self.app,'gtk','gtk_search_entry_new',P)();g.gtk_entry_set_placeholder_text(self.search,'搜索姓名或邮箱'.encode());g.gtk_box_pack_start(self.content,self.search,0,1,0)
+        heading=g.gtk_label_new(_tr('选择联系人').encode());g.gtk_label_set_xalign(heading,0);self.style(heading,'picker-heading');g.gtk_box_pack_start(self.content,heading,0,1,0)
+        self.search=bind(self.app,'gtk','gtk_search_entry_new',P)();g.gtk_entry_set_placeholder_text(self.search,_tr('搜索姓名或邮箱').encode());g.gtk_box_pack_start(self.content,self.search,0,1,0)
         self.scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(self.scroll,2,1);g.gtk_scrolled_window_set_propagate_natural_height(self.scroll,1);g.gtk_scrolled_window_set_max_content_height(self.scroll,280);g.gtk_box_pack_start(self.content,self.scroll,0,1,0)
         self.rows=g.gtk_box_new(1,2);g.gtk_container_add(self.scroll,self.rows)
         footer=g.gtk_box_new(0,6);g.gtk_box_pack_start(self.content,footer,0,1,0)
@@ -68,7 +69,7 @@ class RecipientPicker:
     def load(self,offset=0,direction=''):
         if not self.opened():return
         self.serial+=1;serial=self.serial;query=self.g.text(self.search);self.loading=True;g=self.g
-        g.label(self.note,'正在加载…')
+        g.label(self.note,_tr('正在加载…'))
         old_value=bind(self.app,'gtk','gtk_adjustment_get_value',C.c_double,P)(self.adjustment);anchor_id=next(iter(self.row_buttons),'');anchor_y=0
         if direction=='down' and self.items:anchor_id=self.items[min(40,len(self.items)-1)]['id']
         if anchor_id in self.row_buttons:
@@ -87,7 +88,7 @@ class RecipientPicker:
         def ready(result):
             if not self.opened() or serial!=self.serial or query!=g.text(self.search):return
             page,error=result
-            if error:self.loading=False;g.label(self.note,'加载失败，可重新搜索');self.app.message(error);return
+            if error:self.loading=False;g.label(self.note,_tr('加载失败，可重新搜索'));self.app.message(error);return
             if self.alias_popup in g.surfaces.states:g.gtk_widget_destroy(self.alias_popup)
             g.surfaces.retire(self.group+'-aliases')
             self.offset=page['offset'];self.total=page['total'];self.items=page['items'];self.row_buttons={};self.alias_popup=None;self.alias_buttons={};self.directory_query=query
@@ -95,7 +96,7 @@ class RecipientPicker:
             last=''
             for item in self.items:
                 if item['letter']!=last:
-                    last=item['letter'];section=g.gtk_label_new(('带星标联系人' if last=='★' else last).encode());g.gtk_label_set_xalign(section,0);self.style(section,'picker-section');g.gtk_box_pack_start(self.rows,section,0,1,0)
+                    last=item['letter'];section=g.gtk_label_new((_tr('带星标联系人') if last=='★' else last).encode());g.gtk_label_set_xalign(section,0);self.style(section,'picker-section');g.gtk_box_pack_start(self.rows,section,0,1,0)
                 button=g.gtk_button_new();self.style(button,'choice-option');line=g.gtk_box_new(0,9);g.gtk_container_add(button,line)
                 title=item['name'] or item['addresses'][0]
                 avatar=g.gtk_label_new(title[:1].upper().encode());self.style(avatar,'picker-avatar');g.gtk_box_pack_start(line,avatar,0,0,0)
@@ -105,12 +106,12 @@ class RecipientPicker:
                     if role:self.style(label,role)
                     g.gtk_box_pack_start(labels,label,0,1,0)
                 if len(item['addresses'])>1:
-                    more=g.gtk_label_new((str(len(item['addresses']))+' 邮箱 ›').encode());self.style(more,'choice-description');g.gtk_box_pack_start(line,more,0,0,0)
+                    more=g.gtk_label_new((str(len(item['addresses']))+_tr(' 邮箱 ›')).encode());self.style(more,'choice-description');g.gtk_box_pack_start(line,more,0,0,0)
                 self.row_buttons[item['id']]=button;g.gtk_box_pack_start(self.rows,button,0,1,0)
                 g.connect(button,'clicked',lambda *unused,person=item['id'],anchor=button:self.choose(person,anchor),group=self.group+'-rows')
             if not self.items:
-                empty=g.gtk_label_new(('没有匹配的联系人' if query else '通讯录中还没有联系人').encode());self.style(empty,'picker-empty');g.gtk_box_pack_start(self.rows,empty,0,1,0)
-            g.label(self.note,str(self.total)+' 位联系人' if self.total else '本地通讯录')
+                empty=g.gtk_label_new((_tr('没有匹配的联系人') if query else _tr('通讯录中还没有联系人')).encode());self.style(empty,'picker-empty');g.gtk_box_pack_start(self.rows,empty,0,1,0)
+            g.label(self.note,str(self.total)+_tr(' 位联系人') if self.total else _tr('本地通讯录'))
             g.gtk_widget_show_all(self.content);state=g.surfaces.states.get(self.popup)
             if state:g.surfaces.position(state)
             # ==========================================
@@ -154,7 +155,7 @@ class RecipientPicker:
         def ready(detail):
             if not self.opened() or serial!=self.serial:return
             addresses=detail.get('addresses',[])
-            if not addresses:self.g.label(self.note,'此联系人已没有可用邮箱');return
+            if not addresses:self.g.label(self.note,_tr('此联系人已没有可用邮箱'));return
             if len(addresses)==1:self.insert(detail.get('name',''),addresses[0]);return
             self.show_aliases(anchor,detail)
         self.app.local_loader.request(self.channel,lambda:address_book.sender_detail(self.app.service.store,person=person),ready)
@@ -169,7 +170,7 @@ class RecipientPicker:
         g.surfaces.retire(self.group+'-aliases')
         self.alias_popup=g.gtk_popover_new(anchor);self.style(self.alias_popup,'recipient-picker');g.surfaces.beside(self.alias_popup,anchor);g.surfaces.states[self.alias_popup]['width']=300
         box=g.gtk_box_new(1,3);g.gtk_container_set_border_width(box,8);g.gtk_container_add(self.alias_popup,box)
-        title=g.gtk_label_new(('选择邮箱 · '+(detail.get('name') or '联系人')).encode());g.gtk_label_set_xalign(title,0);g.gtk_label_set_ellipsize(title,3);self.style(title,'picker-heading');g.gtk_box_pack_start(box,title,0,1,0)
+        title=g.gtk_label_new((_tr('选择邮箱 · ')+(detail.get('name') or _tr('联系人'))).encode());g.gtk_label_set_xalign(title,0);g.gtk_label_set_ellipsize(title,3);self.style(title,'picker-heading');g.gtk_box_pack_start(box,title,0,1,0)
         self.alias_buttons={}
         for address in detail['addresses']:
             button=g.gtk_button_new_with_label(address.encode());self.style(button,'choice-option');g.gtk_widget_set_tooltip_text(button,address.encode());g.gtk_box_pack_start(box,button,0,1,0);self.alias_buttons[address]=button

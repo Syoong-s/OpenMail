@@ -1,4 +1,5 @@
 """Isolated trusted PDF surfaces; mail HTML keeps its separate inert policy."""
+from .i18n import text as _tr
 import ctypes as C
 import os
 from urllib.parse import urlsplit
@@ -144,7 +145,7 @@ if os.name == 'nt':
             super().realized(*unused)
             if self.handle and self.handle != previous:
                 if not self.lib.md_webview_open_pdf(self.handle, self.pdf_url):
-                    raise RuntimeError('无法打开本机 PDF 阅读器')
+                    raise RuntimeError(_tr('无法打开本机 PDF 阅读器'))
 
         # ==========================================
         # Function: Reflect PDF page, search and scale changes while preserving native clipping.

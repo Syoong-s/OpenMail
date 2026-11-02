@@ -1,4 +1,5 @@
 """Small local state updates that preserve native list rows and rich mail readers."""
+from .i18n import text as _tr
 from .ui_actions import state_action
 from collections import OrderedDict
 import ctypes as C
@@ -131,7 +132,7 @@ class MailUpdatesUI:
                 self.g.disconnect('list-section-headers');self.g.gtk_list_box_set_header_func(self.widget('messages'),None,None,None)
                 for row in self.rows:self.g.gtk_list_box_row_set_header(row,None)
                 self.restore_mail_headers()
-            self.g.label(self.widget('count'),str(self.total)+' 封邮件')
+            self.g.label(self.widget('count'),str(self.total)+_tr(' 封邮件'))
             self.g.gtk_widget_set_visible(self.widget('more'),len(incoming)<self.total if sections is None or self.focus_group else has_more)
             self.refresh_folders(projection['folders'],projection['smart'])
         finally:self.rendering=False
@@ -146,7 +147,7 @@ class MailUpdatesUI:
         for key in ('seen','done'):
             if key not in buttons:continue
             active=bool(message.get(key) or key=='done' and message.get('archived'))
-            state_action(self.g,buttons[key],('标为未读' if active else '标为已读') if key=='seen' else ('移回收件箱' if active else '完成并归档'),'spark-layout-'+key,active,12)
+            state_action(self.g,buttons[key],(_tr('标为未读') if active else _tr('标为已读')) if key=='seen' else (_tr('移回收件箱') if active else _tr('完成并归档')),'spark-layout-'+key,active,12)
             if key=='seen':
                 context=self.g.gtk_widget_get_style_context(buttons[key])
                 (self.g.gtk_style_context_remove_class if active else self.g.gtk_style_context_add_class)(context,b'unread-action')
@@ -164,7 +165,7 @@ class MailUpdatesUI:
             self.g.label(badge,str(count),button=True);self.g.gtk_widget_set_sensitive(badge,visible)
             self.g.gtk_widget_set_no_show_all(badge,not visible);self.g.gtk_widget_set_visible(badge,visible)
             title=getattr(self,'chat_contact_titles',{}).get(key)
-            if title:self.g.label(title,item['title']+('  ·  免打扰' if item.get('muted') else '  ·  '+str(count)+' 未读' if count else ''))
+            if title:self.g.label(title,item['title']+(_tr('  ·  免打扰') if item.get('muted') else '  ·  '+str(count)+_tr(' 未读') if count else ''))
 
     # ==========================================
     # Function: Remove an unavailable ordinary-mail card without disturbing other loaded bodies.
@@ -203,5 +204,5 @@ class MailUpdatesUI:
                 self.sync_mail_menu(self.current)
                 for key in ('seen','done','pin','archive'):
                     active=bool(message[{'pin':'pinned','archive':'archived'}.get(key,key)])
-                    state_action(self.g,self.widget(key),('标为未读' if active else '标为已读') if key=='seen' else ('移回收件箱' if active else '完成并归档') if key in ('done','archive') else ('取消置顶' if active else '置顶'),'spark-layout-'+key,active)
+                    state_action(self.g,self.widget(key),(_tr('标为未读') if active else _tr('标为已读')) if key=='seen' else (_tr('移回收件箱') if active else _tr('完成并归档')) if key in ('done','archive') else (_tr('取消置顶') if active else _tr('置顶')),'spark-layout-'+key,active)
         self.refresh()

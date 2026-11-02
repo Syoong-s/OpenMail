@@ -1,4 +1,5 @@
 """Validated connection settings; credentials resolve from memory or CLI environment."""
+from .i18n import text as _tr
 from dataclasses import dataclass
 import json
 import os
@@ -33,25 +34,25 @@ class Account:
     # ==========================================
     def __post_init__(self):
         if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', self.id):
-            raise ValueError('账户 id 只能包含字母、数字、下划线和短横线')
+            raise ValueError(_tr('账户 id 只能包含字母、数字、下划线和短横线'))
         if '@' not in self.email or any(c in self.email for c in '\r\n'):
-            raise ValueError('账户邮箱格式无效')
+            raise ValueError(_tr('账户邮箱格式无效'))
         if any(c in self.title+self.display_name for c in '\r\n'):
-            raise ValueError('账号名称和发件人名称不能包含换行')
+            raise ValueError(_tr('账号名称和发件人名称不能包含换行'))
         for host in (self.imap_host, self.smtp_host):
             if not host or any(c.isspace() for c in host):
-                raise ValueError('邮件服务器地址无效')
+                raise ValueError(_tr('邮件服务器地址无效'))
         for port in (self.imap_port, self.smtp_port):
             if not isinstance(port, int) or not 1 <= port <= 65535:
-                raise ValueError('邮件服务器端口无效')
+                raise ValueError(_tr('邮件服务器端口无效'))
         if self.imap_security not in ('ssl', 'starttls') or self.smtp_security not in ('ssl', 'starttls'):
-            raise ValueError('连接必须使用 ssl 或 starttls')
+            raise ValueError(_tr('连接必须使用 ssl 或 starttls'))
         if self.auth not in ('password', 'oauth2'):
-            raise ValueError('认证只支持 password 或 oauth2')
+            raise ValueError(_tr('认证只支持 password 或 oauth2'))
         if not self.secret_env or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', self.secret_env):
-            raise ValueError('secret_env 必须是环境变量名称')
+            raise ValueError(_tr('secret_env 必须是环境变量名称'))
         if not self.folders or any(not f or any(c in f for c in '\r\n') for f in self.folders):
-            raise ValueError('必须指定有效的同步文件夹')
+            raise ValueError(_tr('必须指定有效的同步文件夹'))
 
     # ==========================================
     # Function: Resolve the credential without storing or displaying it.
@@ -61,7 +62,7 @@ class Account:
         from .credentials import session_secret
         value = session_secret(self) or os.environ.get(self.secret_env)
         if not value:
-            raise ValueError(f'请在账号设置中登录账户 {self.id}')
+            raise ValueError(_tr('请在账号设置中登录账户 {0}').format(self.id))
         from .credentials import access_secret
         return access_secret(self,value)
 
@@ -80,10 +81,10 @@ class Account:
 def load_accounts(path):
     data = json.loads(Path(path).read_text(encoding='utf-8'))
     if not isinstance(data, dict) or not isinstance(data.get('accounts'), list):
-        raise ValueError('配置必须包含 accounts 数组')
+        raise ValueError(_tr('配置必须包含 accounts 数组'))
     if any(not isinstance(a, dict) or not isinstance(a.get('folders', ['INBOX']), list) for a in data['accounts']):
-        raise ValueError('账户必须是对象，folders 必须是文件夹名称数组')
+        raise ValueError(_tr('账户必须是对象，folders 必须是文件夹名称数组'))
     accounts = [Account(**{**a, 'folders': tuple(a.get('folders', ['INBOX']))}) for a in data['accounts']]
     if len({a.id for a in accounts}) != len(accounts):
-        raise ValueError('账户 id 不可重复')
+        raise ValueError(_tr('账户 id 不可重复'))
     return accounts

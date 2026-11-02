@@ -1,9 +1,10 @@
 """Shared explicit-sender direction and validated per-message reading palettes."""
+from .i18n import text as _tr
 import re
 from .participant_identity import own_identities,is_own_sender
 
 BUBBLE_KEYS=('bubble_color_own','bubble_color_other')
-BUBBLE_LABELS=('我的邮件气泡','他人的邮件气泡')
+BUBBLE_LABELS=(_tr('我的邮件气泡'),_tr('他人的邮件气泡'))
 BUBBLE_DEFAULTS={'dark':('#293c50','#292d34'),'light':('#deebfc','#f5f6f8')}
 
 # ==========================================
@@ -28,7 +29,7 @@ def bubble_colors(values,theme='dark'):
     result={}
     for key,label,default in zip(BUBBLE_KEYS,BUBBLE_LABELS,BUBBLE_DEFAULTS.get(theme,BUBBLE_DEFAULTS['dark'])):
         value=values.get(key,default)
-        if not isinstance(value,str) or not re.fullmatch(r'#[0-9a-fA-F]{6}',value):raise ValueError(label+' 请填写 #RRGGBB 颜色')
+        if not isinstance(value,str) or not re.fullmatch(r'#[0-9a-fA-F]{6}',value):raise ValueError(label+_tr(' 请填写 #RRGGBB 颜色'))
         result[key]=value.lower()
     return result
 

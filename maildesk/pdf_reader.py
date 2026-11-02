@@ -1,4 +1,5 @@
 """Asynchronous PDF.js adapter for the existing native attachment toolbar."""
+from .i18n import text as _tr
 import json
 import math
 from .pdf_resources import PDFSession
@@ -94,7 +95,7 @@ class PDFReader:
     def scale(self, factor):
         factor = float(factor)
         if not math.isfinite(factor) or not .1 <= factor <= 10:
-            raise ValueError('PDF 缩放比例无效')
+            raise ValueError(_tr('PDF 缩放比例无效'))
         self.send({'action': 'scale', 'value': factor})
 
     # ==========================================

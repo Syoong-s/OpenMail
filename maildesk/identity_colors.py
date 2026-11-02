@@ -1,4 +1,5 @@
 """Independent stable sender fills and persistent mail-account outline colors."""
+from .i18n import text as _tr
 from functools import lru_cache
 import colorsys
 import hashlib
@@ -64,7 +65,7 @@ class IdentityColors:
     # Method: Validate the entire hex color before it reaches native CSS.
     # ==========================================
     def set_account_color(self,account,color):
-        if not re.fullmatch(r'#[0-9a-fA-F]{6}',color):raise ValueError('请选择有效的账户颜色')
+        if not re.fullmatch(r'#[0-9a-fA-F]{6}',color):raise ValueError(_tr('请选择有效的账户颜色'))
         colors=self.store.preference('account_colors',{});colors[account]=color.lower();self.store.set_preference('account_colors',colors)
 
     # ==========================================

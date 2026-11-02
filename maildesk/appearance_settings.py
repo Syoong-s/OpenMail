@@ -1,11 +1,12 @@
 """Staged palette/opacity editing inside the single settings workspace."""
+from .i18n import text as _tr
 import ctypes as C
 from .appearance_theme import PRESETS,ROLES,LABELS,palette,preferences,apply
 from .message_style import BUBBLE_KEYS,BUBBLE_LABELS,BUBBLE_DEFAULTS,bubble_colors
 from .ui_typography import FONT_SIZES,DEFAULT_FONT_SIZE,font_size
 
-FIELDS=[('appearance_scheme','界面配色','combo',[('original','沿用当前主题')]+[(key,value[0]) for key,value in PRESETS.items()]+[('custom','自定义')]),('appearance_contrast','对比度（%）','range',(70,150,5)),('attachment_auto_expand','打开附件时自动扩宽窗口（关闭附件栏时还原）','switch',[]),('attachment_open_width','打开附件时增加的宽度（逻辑像素）','range',(280,2000,20)),('panel_opacity','面板背景不透明度（%）','range',(20,100,1)),('window_opacity','整个窗口不透明度（含文字，%）','range',(50,100,1))]+[('color_'+role,LABELS[role],'color',[]) for role in ROLES]+[(key,label,'color',[]) for key,label in zip(BUBBLE_KEYS,BUBBLE_LABELS)]
-FIELDS.insert(0,('ui_font_size','界面字号','combo',[(str(size),str(size)+' px'+('（默认）' if size==DEFAULT_FONT_SIZE else '')) for size in FONT_SIZES]))
+FIELDS=[('appearance_scheme',_tr('界面配色'),'combo',[('original',_tr('沿用当前主题'))]+[(key,value[0]) for key,value in PRESETS.items()]+[('custom',_tr('自定义'))]),('appearance_contrast',_tr('对比度（%）'),'range',(70,150,5)),('attachment_auto_expand',_tr('打开附件时自动扩宽窗口（关闭附件栏时还原）'),'switch',[]),('attachment_open_width',_tr('打开附件时增加的宽度（逻辑像素）'),'range',(280,2000,20)),('panel_opacity',_tr('面板背景不透明度（%）'),'range',(20,100,1)),('window_opacity',_tr('整个窗口不透明度（含文字，%）'),'range',(50,100,1))]+[('color_'+role,LABELS[role],'color',[]) for role in ROLES]+[(key,label,'color',[]) for key,label in zip(BUBBLE_KEYS,BUBBLE_LABELS)]
+FIELDS.insert(0,('ui_font_size',_tr('界面字号'),'combo',[(str(size),str(size)+' px'+(_tr('（默认）') if size==DEFAULT_FONT_SIZE else '')) for size in FONT_SIZES]))
 KEYS=[field[0] for field in FIELDS]
 
 # ==========================================
@@ -58,7 +59,7 @@ class AppearanceSettings:
         controls=list(self.form.ranges.values())+[control for color in self.form.colors for control in [color.hue_range,*color.ranges]]
         if any(control.dragging for control in controls):
             self.timer=self.g.g_timeout_add(100,C.cast(self.callback,C.c_void_p),None);return 0
-        try:apply(self.app,self.values());self.g.label(self.form.note,'外观预览中 · 保存后永久生效；取消将恢复。面板透明度只影响背景，窗口透明度同时影响文字。')
+        try:apply(self.app,self.values());self.g.label(self.form.note,_tr('外观预览中 · 保存后永久生效；取消将恢复。面板透明度只影响背景，窗口透明度同时影响文字。'))
         except ValueError as error:self.g.label(self.form.note,str(error))
         return 0
 

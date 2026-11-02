@@ -1,4 +1,5 @@
 """User-scoped native Windows desktop registration; never edits machine-wide settings."""
+from .i18n import text as _tr
 import base64
 import ctypes as C
 import os
@@ -12,7 +13,7 @@ import sys
 # ==========================================
 def executable():
     value=Path(os.environ.get('TELEMAIL_LAUNCHER',sys.executable)).resolve()
-    if value.suffix.lower()!='.exe' or not value.is_file():raise ValueError('请使用 TeleMail.exe 设置系统集成')
+    if value.suffix.lower()!='.exe' or not value.is_file():raise ValueError(_tr('请使用 TeleMail.exe 设置系统集成'))
     return value
 
 # ==========================================
@@ -50,7 +51,7 @@ def register_application():
     values={r'Software\Classes\TeleMail.Mailto':{'':'TeleMail mail link','URL Protocol':''},
         r'Software\Classes\TeleMail.Mailto\DefaultIcon':{'':str(launcher)+',0'},
         r'Software\Classes\TeleMail.Mailto\shell\open\command':{'':command},
-        r'Software\TeleMail\Capabilities':{'ApplicationName':'TeleMail','ApplicationDescription':'TeleMail 本地邮件客户端'},
+        r'Software\TeleMail\Capabilities':{'ApplicationName':'TeleMail','ApplicationDescription':_tr('TeleMail 本地邮件客户端')},
         r'Software\TeleMail\Capabilities\URLAssociations':{'mailto':'TeleMail.Mailto'},
         r'Software\RegisteredApplications':{'TeleMail':r'Software\TeleMail\Capabilities'}}
     for path,entries in values.items():
@@ -65,7 +66,7 @@ def register_application():
 def install_user(bundle=None):
     if bundle is not None:
         candidate=Path(bundle)/'TeleMail.exe'
-        if not candidate.is_file() or candidate.read_bytes()[:2]!=b'MZ':raise ValueError('请选择完整的 Windows TeleMail 发行目录')
+        if not candidate.is_file() or candidate.read_bytes()[:2]!=b'MZ':raise ValueError(_tr('请选择完整的 Windows TeleMail 发行目录'))
     launcher=register_application()
     folder=Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs'
     folder.mkdir(parents=True,exist_ok=True);shortcut=folder/'TeleMail.lnk'
@@ -85,7 +86,7 @@ def default_mail_client():
     shell=C.WinDLL('shell32').ShellExecuteW
     shell.argtypes=[C.c_void_p,C.c_wchar_p,C.c_wchar_p,C.c_wchar_p,C.c_wchar_p,C.c_int];shell.restype=C.c_void_p
     result=shell(None,'open','ms-settings:defaultapps',None,None,1)
-    if not result or result<=32:raise ValueError('无法打开 Windows 默认应用设置')
+    if not result or result<=32:raise ValueError(_tr('无法打开 Windows 默认应用设置'))
     return True
 
 # ==========================================
@@ -105,7 +106,7 @@ class WindowsInstance:
         self.kernel.CloseHandle.argtypes=[C.c_void_p];self.kernel.CloseHandle.restype=C.c_int
         self.classname='TeleMailActivation.'+app.profile.application_id
         self.mutex=self.kernel.CreateMutexW(None,False,'Local\\'+self.classname)
-        if not self.mutex:raise OSError('无法创建应用实例锁')
+        if not self.mutex:raise OSError(_tr('无法创建应用实例锁'))
         exists=C.get_last_error()==183
         self.user.FindWindowW.argtypes=[C.c_wchar_p,C.c_wchar_p];self.user.FindWindowW.restype=C.c_void_p
         self.user.SendMessageTimeoutW.argtypes=[C.c_void_p,C.c_uint,C.c_size_t,C.c_ssize_t,C.c_uint,C.c_uint,C.POINTER(C.c_size_t)];self.user.SendMessageTimeoutW.restype=C.c_size_t
@@ -120,12 +121,12 @@ class WindowsInstance:
             while not target and time.monotonic()<deadline:
                 target=self.user.FindWindowW(self.classname,None)
                 if not target:time.sleep(.04)
-            if not target:self.close();raise OSError('另一个 TeleMail 实例正在启动，请稍后重试')
+            if not target:self.close();raise OSError(_tr('另一个 TeleMail 实例正在启动，请稍后重试'))
             import json
             payload=C.create_unicode_buffer(json.dumps(getattr(app.options,'uris',[])))
             packet=CopyData(1,C.sizeof(payload),C.cast(payload,C.c_void_p));result=C.c_size_t()
             if not self.user.SendMessageTimeoutW(target,0x4a,0,C.addressof(packet),2,3000,C.byref(result)):
-                self.close();raise OSError('无法激活已打开的 TeleMail，请检查旧进程状态')
+                self.close();raise OSError(_tr('无法激活已打开的 TeleMail，请检查旧进程状态'))
             return
         self.primary=True;self.proc_type=C.WINFUNCTYPE(C.c_ssize_t,C.c_void_p,C.c_uint,C.c_size_t,C.c_ssize_t)
         # ==========================================
@@ -144,7 +145,7 @@ class WindowsInstance:
         definition=WindowClass();definition.proc=C.cast(self.callback,C.c_void_p);definition.instance=self.instance;definition.name=self.classname
         self.user.RegisterClassW(C.byref(definition))
         self.window=self.user.CreateWindowExW(0,self.classname,'TeleMail activation',0,0,0,0,0,None,None,self.instance,None)
-        if not self.window:self.close();raise OSError('无法创建应用激活窗口')
+        if not self.window:self.close();raise OSError(_tr('无法创建应用激活窗口'))
 
     # ==========================================
     # Function: Accept only bounded activation requests for this exact profile.

@@ -1,4 +1,5 @@
 """Scoped ordinary-mail renderer with viewport-owned engines for contact bubbles."""
+from .i18n import text as _tr
 import ctypes as C
 import os
 import re
@@ -41,7 +42,7 @@ class ChatRichSurface(ConversationUI):
     def create_conversation_card(self,row):
         card=super().create_conversation_card(row)
         parent=self.g.gtk_widget_get_parent(card['history_button'])
-        card['original_button']=self.conversation_icon(parent,'打开原邮件','original-mail',lambda:self.reader_owner.chat_open_original(row['id']),card['group'])
+        card['original_button']=self.conversation_icon(parent,_tr('打开原邮件'),'original-mail',lambda:self.reader_owner.chat_open_original(row['id']),card['group'])
         return card
 
     # ==========================================
@@ -56,7 +57,7 @@ class ChatRichSurface(ConversationUI):
     # Method: Use a quiet skeleton until the browser DOM is ready; never overlay an unformatted copy of rich mail.
     # ==========================================
     def history_leaf(self,card,source,parent,readers,images):
-        g=self.g;text=fragment_text(source) or '(无文字正文)'
+        g=self.g;text=fragment_text(source) or _tr('(无文字正文)')
         plain=not card.get('details_parsed',{}).get('html') and not images and not re.search(r'(?:https?://|mailto:|www\.|<a\b|<(?:img|svg|video|audio|iframe)\b)',source,re.I)
         if plain:
             label=self.text_label(text,parent);card['native_text_leaves']=card.get('native_text_leaves',0)+1;g.gtk_widget_show(label);return
@@ -168,7 +169,7 @@ class ChatRichSurface(ConversationUI):
         candidates=[];warm=[]
         for leaf in self.leaves:
             if leaf['reader'] and getattr(leaf['reader'],'failed',False) and not leaf['fallback']:
-                leaf['fallback']=True;g.gtk_widget_set_no_show_all(leaf['preview'],0);g.clear(leaf['preview']);g.gtk_box_pack_start(leaf['preview'],self.text_label(fragment_text(leaf['source']) or '(无文字正文)',None),0,1,0);g.gtk_widget_show_all(leaf['preview'])
+                leaf['fallback']=True;g.gtk_widget_set_no_show_all(leaf['preview'],0);g.clear(leaf['preview']);g.gtk_box_pack_start(leaf['preview'],self.text_label(fragment_text(leaf['source']) or _tr('(无文字正文)'),None),0,1,0);g.gtk_widget_show_all(leaf['preview'])
             if leaf['reader'] and leaf['reader'].document_ready and getattr(leaf['reader'],'layout_ready',True):
                 g.gtk_widget_set_no_show_all(leaf['preview'],1);g.gtk_widget_hide(leaf['preview'])
             if not g.gtk_widget_get_mapped(leaf['host']):continue

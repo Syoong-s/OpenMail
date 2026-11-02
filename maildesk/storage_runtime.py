@@ -1,4 +1,5 @@
 """Native post-shutdown storage migration and ownership-safe desktop restart."""
+from .i18n import text as _tr
 import ctypes as C
 from pathlib import Path
 import os
@@ -13,14 +14,14 @@ import threading
 # ==========================================
 def request_storage_migration(app,plan):
     if getattr(app,'closing',False):
-        app.message('应用正在关闭，未安排迁移');return False
+        app.message(_tr('应用正在关闭，未安排迁移'));return False
     app.pending_storage_migration=plan
     try:app.on_delete(force=True)
     except Exception:
         app.pending_storage_migration=None;raise
     if not app.closing:
         app.pending_storage_migration=None
-        app.message('邮件仍在保存，迁移尚未开始；请稍后重新选择迁移并重新启动')
+        app.message(_tr('邮件仍在保存，迁移尚未开始；请稍后重新选择迁移并重新启动'))
         return False
     return True
 
@@ -38,17 +39,17 @@ class StorageProgress:
         self.events=queue.Queue();self.cancel_event=threading.Event();self.worker=None
         self.finished=bool(error);self.restart=False;self.result=None;self.timer=0
         self.window=g.gtk_window_new(0);self.group='storage-progress-'+str(self.window)
-        g.gtk_window_set_title(self.window,'TeleMail · 储存空间'.encode());g.gtk_window_set_default_size(self.window,580,240)
+        g.gtk_window_set_title(self.window,_tr('TeleMail · 储存空间').encode());g.gtk_window_set_default_size(self.window,580,240)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.window),b'dark')
         g.gtk_window_set_icon_from_file(self.window,str(Path(__file__).parent/'desktop_assets/icon.svg').encode(),None)
         box=g.gtk_box_new(1,16);g.gtk_container_set_border_width(box,24);g.gtk_container_add(self.window,box)
-        self.label=g.gtk_label_new(('迁移未开始：'+str(error) if error else '正在准备复制与校验；原目录保留。').encode())
+        self.label=g.gtk_label_new((_tr('迁移未开始：')+str(error) if error else _tr('正在准备复制与校验；原目录保留。')).encode())
         g.gtk_label_set_xalign(self.label,0);g.gtk_label_set_line_wrap(self.label,1);g.gtk_label_set_max_width_chars(self.label,64)
         g.gtk_box_pack_start(box,self.label,1,1,0)
         self.bar=g.gtk_progress_bar_new();g.gtk_box_pack_start(box,self.bar,0,1,0)
         buttons=g.gtk_box_new(0,8);g.gtk_box_pack_start(box,buttons,0,1,0)
-        self.cancel=g.gtk_button_new_with_label(('关闭' if error else '取消迁移').encode())
-        self.back=g.gtk_button_new_with_label('返回应用'.encode())
+        self.cancel=g.gtk_button_new_with_label((_tr('关闭') if error else _tr('取消迁移')).encode())
+        self.back=g.gtk_button_new_with_label(_tr('返回应用').encode())
         g.gtk_box_pack_start(buttons,self.cancel,0,0,0);g.gtk_box_pack_start(buttons,self.back,0,0,0)
         g.connect(self.cancel,'clicked',self.cancel_or_close,group=self.group)
         g.connect(self.back,'clicked',self.return_to_app,group=self.group)
@@ -68,8 +69,8 @@ class StorageProgress:
         try:
             result=execute_migration(self.plan,self.cancel_event,self.events.put)
             self.events.put(('complete',result))
-        except MigrationCancelled:self.events.put(('error','迁移已取消，原储存位置保持不变。'))
-        except Exception as error:self.events.put(('error','迁移失败，原储存位置保持不变：'+str(error)))
+        except MigrationCancelled:self.events.put(('error',_tr('迁移已取消，原储存位置保持不变。')))
+        except Exception as error:self.events.put(('error',_tr('迁移失败，原储存位置保持不变：')+str(error)))
 
     # ==========================================
     # Function: Translate queued byte/phase progress on the GTK thread.
@@ -83,9 +84,9 @@ class StorageProgress:
             if isinstance(item,tuple):terminal=item;break
             latest=item
         if latest:
-            phases={'scan':'扫描文件','copy':'复制文件','verify':'校验副本','database':'备份邮件数据库','verified':'校验完成','publish':'切换储存位置','complete':'迁移完成'}
+            phases={'scan':_tr('扫描文件'),'copy':_tr('复制文件'),'verify':_tr('校验副本'),'database':_tr('备份邮件数据库'),'verified':_tr('校验完成'),'publish':_tr('切换储存位置'),'complete':_tr('迁移完成')}
             total=latest.get('total',0);completed=latest.get('completed',0)
-            text=phases.get(latest.get('phase'),'正在迁移')
+            text=phases.get(latest.get('phase'),_tr('正在迁移'))
             if total:text+=' · '+str(round(completed/1024/1024,1))+' / '+str(round(total/1024/1024,1))+' MiB'
             path=str(latest.get('path',''))
             if path:text+='\n'+path
@@ -98,7 +99,7 @@ class StorageProgress:
                 self.result=terminal[1];self.restart=True;self.g.g_main_loop_quit(self.loop)
             else:
                 self.g.label(self.label,terminal[1]);self.g.gtk_widget_hide(self.bar)
-                self.g.gtk_button_set_label(self.cancel,'关闭'.encode());self.g.gtk_widget_set_sensitive(self.cancel,1)
+                self.g.gtk_button_set_label(self.cancel,_tr('关闭').encode());self.g.gtk_widget_set_sensitive(self.cancel,1)
                 self.g.gtk_widget_show(self.back)
         return 1
 
@@ -108,7 +109,7 @@ class StorageProgress:
     # ==========================================
     def cancel_or_close(self,*unused):
         if self.finished:self.g.g_main_loop_quit(self.loop);return
-        self.cancel_event.set();self.g.label(self.label,'正在取消；等待当前校验步骤结束…')
+        self.cancel_event.set();self.g.label(self.label,_tr('正在取消；等待当前校验步骤结束…'))
         self.g.gtk_widget_set_sensitive(self.cancel,0)
 
     # ==========================================
@@ -125,7 +126,7 @@ class StorageProgress:
     def return_to_app(self,*unused):
         worker=getattr(getattr(self.app,'service',None),'worker',None)
         if worker and worker.is_alive():
-            self.g.label(self.label,'后台服务仍在结束，尚不能返回。请稍后重试；原位置保持不变。');return
+            self.g.label(self.label,_tr('后台服务仍在结束，尚不能返回。请稍后重试；原位置保持不变。'));return
         self.restart=True;self.g.g_main_loop_quit(self.loop)
 
     # ==========================================
@@ -170,8 +171,8 @@ def restart_desktop(app):
             subprocess.Popen(restart_command(app.profile),start_new_session=True)
             return 0
         except (OSError,ValueError) as error:
-            print('TeleMail: 重新启动失败：'+str(error),file=sys.stderr)
-            if not StorageProgress(app,error='重新启动失败：'+str(error)+'\n点击“返回应用”重试。').run():return 1
+            print(_tr('TeleMail: 重新启动失败：')+str(error),file=sys.stderr)
+            if not StorageProgress(app,error=_tr('重新启动失败：')+str(error)+_tr('\n点击“返回应用”重试。')).run():return 1
 
 # ==========================================
 # Function: Surface unavailable storage before a desktop window can be constructed.
@@ -182,5 +183,5 @@ def show_startup_error(error):
     try:
         user=C.WinDLL('user32',use_last_error=True)
         message=user.MessageBoxW;message.argtypes=[C.c_void_p,C.c_wchar_p,C.c_wchar_p,C.c_uint];message.restype=C.c_int
-        message(None,'无法启动 TeleMail：'+str(error),'TeleMail · 无法打开储存位置',0x10|0x10000)
+        message(None,_tr('无法启动 TeleMail：')+str(error),_tr('TeleMail · 无法打开储存位置'),0x10|0x10000)
     except OSError:pass

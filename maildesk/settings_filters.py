@@ -1,14 +1,15 @@
 """Native global/account filter settings, ordered rule cards and explicit preview/run controls."""
+from .i18n import text as _tr, join_text as _join_ui
 import ctypes as C
 from . import filter_rules
 from .desktop_general import bind,P,I
 from .desktop_forms import Form
 from .ui_actions import icon_action
 
-FIELD_LABELS=[('sender','发件邮箱'),('domain','发件域名'),('to','收件人'),('cc','抄送'),('subject','主题'),('body','正文'),('header','邮件头'),('attachment_name','附件名称'),('attachment_type','附件类型'),('has_attachment','包含附件'),('size_kb','邮件大小（KiB）'),('category','当前分类'),('smart','智能识别'),('seen','已读'),('starred_contact','星标联系人'),('learned','学习匹配分数')]
-CATEGORY_LABELS=[('personal','个人邮件'),('notification','通知'),('newsletter','订阅 / 邮件列表'),('verification','验证码')]
-SMART_LABELS=CATEGORY_LABELS+[('invoice','账单 / 发票 / 收据'),('calendar','日历邀请'),('auto_reply','自动回复')]
-OP_LABELS=[('contains','包含'),('not_contains','不包含'),('is','等于'),('is_not','不等于'),('starts','开头是'),('ends','结尾是'),('matches','通配符 * ? []')]
+FIELD_LABELS=[('sender',_tr('发件邮箱')),('domain',_tr('发件域名')),('to',_tr('收件人')),('cc',_tr('抄送')),('subject',_tr('主题')),('body',_tr('正文')),('header',_tr('邮件头')),('attachment_name',_tr('附件名称')),('attachment_type',_tr('附件类型')),('has_attachment',_tr('包含附件')),('size_kb',_tr('邮件大小（KiB）')),('category',_tr('当前分类')),('smart',_tr('智能识别')),('seen',_tr('已读')),('starred_contact',_tr('星标联系人')),('learned',_tr('学习匹配分数'))]
+CATEGORY_LABELS=[('personal',_tr('个人邮件')),('notification',_tr('通知')),('newsletter',_tr('订阅 / 邮件列表')),('verification',_tr('验证码'))]
+SMART_LABELS=CATEGORY_LABELS+[('invoice',_tr('账单 / 发票 / 收据')),('calendar',_tr('日历邀请')),('auto_reply',_tr('自动回复'))]
+OP_LABELS=[('contains',_tr('包含')),('not_contains',_tr('不包含')),('is',_tr('等于')),('is_not',_tr('不等于')),('starts',_tr('开头是')),('ends',_tr('结尾是')),('matches',_tr('通配符 * ? []'))]
 
 # ==========================================
 # Function: Add an application-native dropdown with the same ownership as its surrounding form.
@@ -34,7 +35,7 @@ def active(g,widget):return (g.gtk_combo_box_get_active_id(widget) or b'').decod
 # ==========================================
 def account_options(app):
     from .local_mail import LOCAL_ACCOUNT,LOCAL_LABEL
-    return [(identity,LOCAL_LABEL if identity==LOCAL_ACCOUNT else app.service.accounts[identity].email if identity in app.service.accounts else '演示邮箱') for identity in app.service.filter_accounts()]
+    return [(identity,LOCAL_LABEL if identity==LOCAL_ACCOUNT else app.service.accounts[identity].email if identity in app.service.accounts else _tr('演示邮箱')) for identity in app.service.filter_accounts()]
 
 # ==========================================
 # Function: Present global/account rules and guarded manual processing in the actual Settings workspace.
@@ -49,16 +50,16 @@ class FilterPage:
         self.app=app;self.form=form;self.g=g=app.g;self.store=app.service.store;self.plan=None;self.busy=False;self.items={};self.buttons={};self.cards={};self.card_views={};self.expanded=set();self.closed=False
         host=g.object(form.builder,'page_filters');self.host=host
         toolbar=g.gtk_box_new(0,7);g.gtk_box_pack_start(host,toolbar,0,1,4)
-        self.scope=combo(app,form,toolbar,'过滤器范围',[('','全局过滤器'),*account_options(app)])
-        self.add=self.button(toolbar,'新建过滤器','action-add',self.edit)
+        self.scope=combo(app,form,toolbar,_tr('过滤器范围'),[('',_tr('全局过滤器')),*account_options(app)])
+        self.add=self.button(toolbar,_tr('新建过滤器'),'action-add',self.edit)
         self.rows=g.gtk_box_new(1,7);g.gtk_box_pack_start(host,self.rows,0,1,5)
         from .filter_manual import ManualRunPanel
         self.manual=ManualRunPanel(self,host,account_options(app))
         actions=g.gtk_box_new(0,6);g.gtk_box_pack_start(host,actions,0,1,3)
-        self.preview_button=self.button(actions,'预览匹配邮件','spark-layout-seen',self.preview)
-        self.run_button=self.button(actions,'运行当前预览中的移动','composer-send',self.run)
-        self.cancel_button=self.button(actions,'停止后续过滤器移动','composer-close',self.cancel)
-        self.preview_label=g.gtk_label_new('尚未预览。自动过滤只执行一次；账号规则先于全局，首条匹配后停止。'.encode());g.gtk_label_set_xalign(self.preview_label,0);g.gtk_label_set_line_wrap(self.preview_label,1);g.gtk_box_pack_start(host,self.preview_label,0,1,6)
+        self.preview_button=self.button(actions,_tr('预览匹配邮件'),'spark-layout-seen',self.preview)
+        self.run_button=self.button(actions,_tr('运行当前预览中的移动'),'composer-send',self.run)
+        self.cancel_button=self.button(actions,_tr('停止后续过滤器移动'),'composer-close',self.cancel)
+        self.preview_label=g.gtk_label_new(_tr('尚未预览。自动过滤只执行一次；账号规则先于全局，首条匹配后停止。').encode());g.gtk_label_set_xalign(self.preview_label,0);g.gtk_label_set_line_wrap(self.preview_label,1);g.gtk_box_pack_start(host,self.preview_label,0,1,6)
         self.history=g.gtk_label_new(b'');g.gtk_label_set_xalign(self.history,0);g.gtk_label_set_line_wrap(self.history,1);g.gtk_box_pack_start(host,self.history,0,1,8)
         for label in (self.preview_label,self.history):bind(app,'gtk','gtk_label_set_line_wrap_mode',None,P,I)(label,2)
         g.connect(self.scope,'changed',lambda *unused:self.render(),group=form.group)
@@ -96,7 +97,7 @@ class FilterPage:
     # Method: Keep all-account runs unambiguous and preserve paths as dropdown IDs.
     # ==========================================
     def account_changed(self):
-        g=self.g;g.gtk_combo_box_text_remove_all(self.run_folder);g.gtk_combo_box_text_append(self.run_folder,b'','所有文件夹'.encode());account=active(g,self.run_account)
+        g=self.g;g.gtk_combo_box_text_remove_all(self.run_folder);g.gtk_combo_box_text_append(self.run_folder,b'',_tr('所有文件夹').encode());account=active(g,self.run_account)
         if account:
             for row in self.store.list_folders(account):
                 if row['selectable']:g.gtk_combo_box_text_append(self.run_folder,row['folder'].encode(),row['folder'].encode())
@@ -115,9 +116,9 @@ class FilterPage:
         for rule in items:
             if rule['account']!=scope:continue
             view=FilterCard(self,rule,names,colors,group);self.card_views[rule['id']]=view;self.cards[rule['id']]=view.box;g.gtk_box_pack_start(self.rows,view.box,0,1,0)
-        if not any(rule['account']==scope for rule in items):g.gtk_box_pack_start(self.rows,g.gtk_label_new('还没有过滤器，点击 ＋ 新建。'.encode()),0,1,8)
-        selected=active(g,self.run_rule);g.gtk_combo_box_text_remove_all(self.run_rule);g.gtk_combo_box_text_append(self.run_rule,b'','全部启用的过滤器'.encode())
-        for rule in items:g.gtk_combo_box_text_append(self.run_rule,rule['id'].encode(),(('全局' if not rule['account'] else names.get(rule['account'],rule['account']))+' · '+rule['name']).encode())
+        if not any(rule['account']==scope for rule in items):g.gtk_box_pack_start(self.rows,g.gtk_label_new(_tr('还没有过滤器，点击 ＋ 新建。').encode()),0,1,8)
+        selected=active(g,self.run_rule);g.gtk_combo_box_text_remove_all(self.run_rule);g.gtk_combo_box_text_append(self.run_rule,b'',_tr('全部启用的过滤器').encode())
+        for rule in items:g.gtk_combo_box_text_append(self.run_rule,rule['id'].encode(),((_tr('全局') if not rule['account'] else names.get(rule['account'],rule['account']))+' · '+rule['name']).encode())
         g.gtk_combo_box_set_active_id(self.run_rule,selected.encode() if selected in self.items else b'')
         self.log_summary();g.gtk_widget_show_all(self.rows);self.invalidate()
 
@@ -145,7 +146,7 @@ class FilterPage:
         if operation=='edit':return self.edit(identity)
         if operation=='learn':return self.learn(identity)
         if operation=='delete':
-            form=Form(self.app,'删除过滤器',[],440);self.g.label(form.note,'仅删除规则和学习样本；已经移动的邮件保留。');form.button('取消',-6);form.button('删除',1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);form.close()
+            form=Form(self.app,_tr('删除过滤器'),[],440);self.g.label(form.note,_tr('仅删除规则和学习样本；已经移动的邮件保留。'));form.button(_tr('取消'),-6);form.button(_tr('删除'),1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);form.close()
             if response!=1:return
         self.busy=True;self.controls();self.app.background(lambda:filter_rules.arrange(self.store,identity,operation),lambda unused:self.saved(),self.failed)
 
@@ -156,7 +157,7 @@ class FilterPage:
     def saved(self):
         self.busy=False
         if self.closed or self.form.closed:return
-        self.render();self.g.label(self.preview_label,'过滤器已保存。已有邮件请先预览，再手动运行。')
+        self.render();self.g.label(self.preview_label,_tr('过滤器已保存。已有邮件请先预览，再手动运行。'))
 
     # ==========================================
     # Function: Report worker failure without presenting a stale preview as executable.
@@ -172,7 +173,7 @@ class FilterPage:
     # Method: Run the shared matcher off GTK and show source, destination and matching reason before enabling execution.
     # ==========================================
     def preview(self):
-        account=active(self.g,self.run_account);folder=active(self.g,self.run_folder);rule=active(self.g,self.run_rule);children=bool(self.g.gtk_switch_get_active(self.subfolders));self.busy=True;self.plan=None;self.controls();self.g.label(self.preview_label,'正在预览已缓存邮件…')
+        account=active(self.g,self.run_account);folder=active(self.g,self.run_folder);rule=active(self.g,self.run_rule);children=bool(self.g.gtk_switch_get_active(self.subfolders));self.busy=True;self.plan=None;self.controls();self.g.label(self.preview_label,_tr('正在预览已缓存邮件…'))
         self.app.background(lambda:self.app.service.preview_filters(account,folder,children,rule),self.preview_ready,self.failed)
 
     # ==========================================
@@ -182,9 +183,9 @@ class FilterPage:
     def preview_ready(self,plan):
         self.busy=False
         if self.closed or self.form.closed:return
-        self.plan=plan;text='已检查 '+str(plan['scanned'])+' 封 · 将移动 '+str(len(plan['entries']))+' 封 · 已在目标 '+str(plan['unchanged'])+' 封'
-        if plan['uncertain']:text+=' · '+str(plan['uncertain'])+' 封移动结果待核对，已跳过'
-        if plan['truncated']:text+='\n本次最多1000封；完成后再次预览可继续。'
+        self.plan=plan;text=_tr('已检查 ')+str(plan['scanned'])+_tr(' 封 · 将移动 ')+str(len(plan['entries']))+_tr(' 封 · 已在目标 ')+str(plan['unchanged'])+_tr(' 封')
+        if plan['uncertain']:text+=' · '+str(plan['uncertain'])+_tr(' 封移动结果待核对，已跳过')
+        if plan['truncated']:text+=_tr('\n本次最多1000封；完成后再次预览可继续。')
         for entry in plan['entries'][:8]:text+='\n'+entry['subject'][:60]+' · '+entry['folder']+' → '+entry['destination']+'\n  '+entry['name']+'：'+entry['reason'][:120]
         self.g.label(self.preview_label,text);self.controls()
 
@@ -194,7 +195,7 @@ class FilterPage:
     # ==========================================
     def run(self):
         if not self.plan:return
-        plan=self.plan;self.plan=None;self.busy=True;self.controls();self.g.gtk_widget_set_sensitive(self.cancel_button,1);self.g.label(self.preview_label,'正在运行预览中的移动…');self.app.background(lambda:self.app.service.run_filter_plan(plan),self.run_ready,self.failed)
+        plan=self.plan;self.plan=None;self.busy=True;self.controls();self.g.gtk_widget_set_sensitive(self.cancel_button,1);self.g.label(self.preview_label,_tr('正在运行预览中的移动…'));self.app.background(lambda:self.app.service.run_filter_plan(plan),self.run_ready,self.failed)
 
     # ==========================================
     # Function: Show exact manual results after provider confirmation and refresh the mailbox.
@@ -204,13 +205,13 @@ class FilterPage:
         self.busy=False
         if not self.app.closing:self.app.refresh()
         if self.closed or self.form.closed:return
-        self.g.label(self.preview_label,('已停止 · ' if result['cancelled'] else '运行完成 · ')+'移动 '+str(result['moved'])+' 封 · 失败 / 待核对 '+str(result['failed'])+' 封 · 跳过 '+str(result['skipped'])+' 封');self.controls();self.log_summary()
+        self.g.label(self.preview_label,(_tr('已停止 · ') if result['cancelled'] else _tr('运行完成 · '))+_tr('移动 ')+str(result['moved'])+_tr(' 封 · 失败 / 待核对 ')+str(result['failed'])+_tr(' 封 · 跳过 ')+str(result['skipped'])+_tr(' 封'));self.controls();self.log_summary()
 
     # ==========================================
     # Function: Cancel future manual moves without interrupting an in-flight provider mutation.
     # Method: Set the service's explicit cancellation flag and retain already confirmed results.
     # ==========================================
-    def cancel(self):self.app.service.filter_cancel_event.set();self.g.label(self.preview_label,'正在停止后续移动；当前操作完成后停止。')
+    def cancel(self):self.app.service.filter_cancel_event.set();self.g.label(self.preview_label,_tr('正在停止后续移动；当前操作完成后停止。'))
 
     # ==========================================
     # Function: Learn a rule's account-specific style from explicitly selected cached examples.
@@ -218,9 +219,9 @@ class FilterPage:
     # ==========================================
     def learn(self,identity):
         rule=self.items[identity];options=[(account,label) for account,label in account_options(self.app) if account in rule['destinations']]
-        if not options:raise ValueError('请先设置目标文件夹')
+        if not options:raise ValueError(_tr('请先设置目标文件夹'))
         selected=rule['account'] or active(self.g,self.run_account);selected=selected if selected in dict(options) else options[0][0]
-        form=Form(self.app,'学习目标文件夹的邮件特征',[('account','训练账号','combo',options)],560);self.learning_form=form;form.value('account',selected);self.g.label(form.note,'仅使用本机缓存：目标文件夹作为正例，其他文件夹作为反例，至少各5封。不会移动邮件或上传内容。学习后请使用“学习匹配分数”条件，并先预览。');form.button('取消',-6);form.button('开始学习',1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);account=form.value('account');form.close()
+        form=Form(self.app,_tr('学习目标文件夹的邮件特征'),[('account',_tr('训练账号'),'combo',options)],560);self.learning_form=form;form.value('account',selected);self.g.label(form.note,_tr('仅使用本机缓存：目标文件夹作为正例，其他文件夹作为反例，至少各5封。不会移动邮件或上传内容。学习后请使用“学习匹配分数”条件，并先预览。'));form.button(_tr('取消'),-6);form.button(_tr('开始学习'),1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);account=form.value('account');form.close()
         if response!=1:return
         self.busy=True;self.controls();self.app.background(lambda:self.app.service.train_filter(identity,account),self.learned,self.failed)
 
@@ -231,7 +232,7 @@ class FilterPage:
     def learned(self,result):
         self.busy=False
         if self.closed or self.form.closed:return
-        self.invalidate();self.g.label(self.preview_label,'学习完成：目标示例 '+str(result['positive'])+' 封，其他示例 '+str(result['negative'])+' 封。请用“学习匹配分数”条件，并先预览验证。')
+        self.invalidate();self.g.label(self.preview_label,_tr('学习完成：目标示例 ')+str(result['positive'])+_tr(' 封，其他示例 ')+str(result['negative'])+_tr(' 封。请用“学习匹配分数”条件，并先预览验证。'))
 
     # ==========================================
     # Function: Show recent successes and actionable failures without duplicating message bodies.
@@ -239,8 +240,8 @@ class FilterPage:
     # ==========================================
     def log_summary(self):
         with self.store.db() as db:rows=db.execute('SELECT * FROM mail_filter_log ORDER BY id DESC LIMIT 6').fetchall()
-        names={'moved':'已移动','failed':'失败','uncertain':'待核对','moving':'正在移动','unchanged':'已在目标'}
-        self.g.label(self.history,'最近运行记录'+''.join('\n'+names.get(row['state'],row['state'])+' · '+row['source']+' → '+row['target']+' · '+row['detail'][:100] for row in rows))
+        names={'moved':_tr('已移动'),'failed':_tr('失败'),'uncertain':_tr('待核对'),'moving':_tr('正在移动'),'unchanged':_tr('已在目标')}
+        self.g.label(self.history,_tr('最近运行记录')+_join_ui('',(('\n'+names.get(row['state'],row['state'])+' · '+row['source']+' → '+row['target']+' · '+row['detail'][:100] for row in rows))))
 
     # ==========================================
     # Function: Release page-specific callbacks when Settings closes.

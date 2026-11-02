@@ -1,4 +1,5 @@
 """Tabbed offline attachment workspace with one active native renderer."""
+from .i18n import text as _tr
 import hashlib
 from pathlib import Path
 from .ui_actions import icon_action
@@ -18,10 +19,10 @@ class DocumentWorkspace:
         self.root=g.gtk_box_new(1,0);g.g_object_ref_sink(self.root);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.root),b'file-workspace')
         self.tabs_row=g.gtk_box_new(0,2);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.tabs_row),b'file-tabs');g.gtk_box_pack_start(self.root,self.tabs_row,0,1,0)
         scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(scroll,1,2);g.gtk_widget_set_size_request(scroll,40,38);g.gtk_box_pack_start(self.tabs_row,scroll,1,1,0);self.tab_host=g.gtk_box_new(0,0);g.gtk_container_add(scroll,self.tab_host)
-        self.add_action(self.tabs_row,'打开本地文件','action-add',lambda:app.open_document());self.add_action(self.tabs_row,'关闭文件栏','composer-close',self.close)
+        self.add_action(self.tabs_row,_tr('打开本地文件'),'action-add',lambda:app.open_document());self.add_action(self.tabs_row,_tr('关闭文件栏'),'composer-close',self.close)
         self.pathbar=g.gtk_box_new(0,5);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.pathbar),b'file-pathbar');g.gtk_box_pack_start(self.root,self.pathbar,0,1,0)
         self.breadcrumb=g.gtk_label_new(b'');g.gtk_label_set_xalign(self.breadcrumb,0);g.gtk_label_set_ellipsize(self.breadcrumb,3);g.gtk_label_set_max_width_chars(self.breadcrumb,30);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.breadcrumb),b'file-breadcrumb');g.gtk_box_pack_start(self.pathbar,self.breadcrumb,1,1,0)
-        self.source_button=self.add_action(self.pathbar,'查看源码 / 返回预览','action-code',self.toggle_source);self.save_button=self.add_action(self.pathbar,'保存原始文件','action-save',self.save)
+        self.source_button=self.add_action(self.pathbar,_tr('查看源码 / 返回预览'),'action-code',self.toggle_source);self.save_button=self.add_action(self.pathbar,_tr('保存原始文件'),'action-save',self.save)
         self.content=g.gtk_box_new(1,0);g.gtk_widget_set_vexpand(self.content,1);g.gtk_box_pack_start(self.root,self.content,1,1,0)
 
     # ==========================================
@@ -57,10 +58,10 @@ class DocumentWorkspace:
     # Method: Hash bounded bytes with name/origin and reject memory growth beyond eight files or60MiB.
     # ==========================================
     def open(self,name,data,on_save=None,media_type='',origin_id='',prepared=None):
-        if len(data)>30*1024*1024:raise ValueError('文件超过30 MiB')
+        if len(data)>30*1024*1024:raise ValueError(_tr('文件超过30 MiB'))
         key=(origin_id,name,hashlib.sha256(data).hexdigest())
         if key in self.tabs:self.activate(key);return self
-        if len(self.tabs)>=8 or sum(len(t['data']) for t in self.tabs.values())+len(data)>60*1024*1024:raise ValueError('最多打开8个文件、合计60 MiB；请先关闭不需要的标签')
+        if len(self.tabs)>=8 or sum(len(t['data']) for t in self.tabs.values())+len(data)>60*1024*1024:raise ValueError(_tr('最多打开8个文件、合计60 MiB；请先关闭不需要的标签'))
         from .document_reader import DocumentPanel
         panel=DocumentPanel(self.app,name,data,on_save,media_type,origin_id,prepared)
         self.tabs[key]={'name':name,'data':data,'save':on_save,'type':media_type,'origin':origin_id,'prepared':prepared};self.install(key,panel);return self
@@ -80,7 +81,7 @@ class DocumentWorkspace:
     # ==========================================
     def install(self,key,panel):
         if self.panel:self.panel.close(False)
-        self.panel=panel;self.active_key=key;self.g.gtk_box_pack_start(self.content,panel.root,1,1,0);self.g.gtk_widget_show_all(panel.root);tab=self.tabs[key];self.g.label(self.breadcrumb,('邮件附件' if tab['origin'] else '本地文件')+' › '+tab['name']);self.g.gtk_widget_set_tooltip_text(self.breadcrumb,tab['name'].encode());self.g.gtk_widget_set_sensitive(self.source_button,bool(panel.text_source));self.redraw_tabs()
+        self.panel=panel;self.active_key=key;self.g.gtk_box_pack_start(self.content,panel.root,1,1,0);self.g.gtk_widget_show_all(panel.root);tab=self.tabs[key];self.g.label(self.breadcrumb,(_tr('邮件附件') if tab['origin'] else _tr('本地文件'))+' › '+tab['name']);self.g.gtk_widget_set_tooltip_text(self.breadcrumb,tab['name'].encode());self.g.gtk_widget_set_sensitive(self.source_button,bool(panel.text_source));self.redraw_tabs()
 
     # ==========================================
     # Function: Render one horizontal row of bounded filename tabs with local close icons.
@@ -93,7 +94,7 @@ class DocumentWorkspace:
             if key==self.active_key:g.gtk_style_context_add_class(g.gtk_widget_get_style_context(row),b'active')
             button=g.gtk_button_new();line=g.gtk_box_new(0,6);g.gtk_container_add(button,line);g.gtk_box_pack_start(line,g.image_file(Path(__file__).parent/'desktop_assets/icons'/('file-'+file_kind(tab['name'],tab['type'])+'.svg'),14),0,0,0)
             label=g.gtk_label_new(tab['name'].encode());g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,18);g.gtk_box_pack_start(line,label,1,1,0);g.gtk_widget_set_tooltip_text(button,tab['name'].encode());g.gtk_box_pack_start(row,button,1,1,0)
-            close=icon_action(g,g.gtk_button_new(),'关闭 '+tab['name'],'composer-close',12);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(close),b'file-tab-close');g.gtk_box_pack_start(row,close,0,0,0);g.gtk_box_pack_start(self.tab_host,row,0,0,0)
+            close=icon_action(g,g.gtk_button_new(),_tr('关闭 ')+tab['name'],'composer-close',12);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(close),b'file-tab-close');g.gtk_box_pack_start(row,close,0,0,0);g.gtk_box_pack_start(self.tab_host,row,0,0,0)
             g.connect(button,'clicked',lambda *unused,k=key:self.app.run_action(lambda:self.activate(k)),group=group);g.connect(close,'clicked',lambda *unused,k=key:self.app.run_action(lambda:self.close_tab(k)),group=group);self.tab_widgets[key]={'row':row,'button':button,'close':close}
         g.gtk_widget_show_all(self.tab_host)
 
@@ -113,7 +114,7 @@ class DocumentWorkspace:
     # Method: Reuse the current reader and retain its format/page state.
     # ==========================================
     def toggle_source(self):
-        if self.panel:self.panel.toggle_source();self.g.gtk_widget_set_tooltip_text(self.source_button,('返回预览' if self.panel.source_mode else '查看源码').encode())
+        if self.panel:self.panel.toggle_source();self.g.gtk_widget_set_tooltip_text(self.source_button,(_tr('返回预览') if self.panel.source_mode else _tr('查看源码')).encode())
 
     # ==========================================
     # Function: Save the exact original file bytes on explicit user action.
@@ -122,7 +123,7 @@ class DocumentWorkspace:
     def save(self):
         tab=self.tabs[self.active_key]
         if tab['save']:return tab['save']()
-        path=self.g.choose(self.app.window,'保存原始文件',tab['name'])
+        path=self.g.choose(self.app.window,_tr('保存原始文件'),tab['name'])
         if path:Path(path).write_bytes(tab['data'])
 
     # ==========================================

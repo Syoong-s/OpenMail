@@ -1,4 +1,5 @@
 """Loopback-only HTTP UI with same-origin mutations and inert message rendering."""
+from .i18n import text as _tr
 from email import policy
 from email.parser import BytesParser
 from http.cookies import SimpleCookie
@@ -135,7 +136,7 @@ class Handler(BaseHTTPRequestHandler):
                 index = int(query.get('index', ['-1'])[0])
                 descriptor = next((a for a in message['parsed']['attachments'] if a['index'] == index), None)
                 if descriptor is None:
-                    raise KeyError('附件不存在')
+                    raise KeyError(_tr('附件不存在'))
                 msg = BytesParser(policy=policy.default).parsebytes(message['raw'])
                 part = list(msg.walk())[index]
                 self.respond(attachment_content(part), 'application/octet-stream', headers={'Content-Disposition': "attachment; filename*=UTF-8''" + quote(descriptor['name'], safe='')})
@@ -159,13 +160,13 @@ class Handler(BaseHTTPRequestHandler):
         service = self.server.service
         try:
             if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
-                raise ValueError('请求格式必须是 JSON')
+                raise ValueError(_tr('请求格式必须是 JSON'))
             size = int(self.headers.get('Content-Length', '0'))
             if not 0 < size <= MAX_REQUEST:
-                raise ValueError('请求大小无效或超过限制')
+                raise ValueError(_tr('请求大小无效或超过限制'))
             data = json.loads(self.rfile.read(size))
             if not isinstance(data, dict):
-                raise ValueError('请求内容必须是对象')
+                raise ValueError(_tr('请求内容必须是对象'))
             if self.path == '/api/sync':
                 service.request_sync()
                 self.json({'ok': True})
@@ -181,7 +182,7 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == '/api/import':
                 account = 'demo' if service.demo else data.get('account')
                 if account != 'demo' and account not in service.accounts:
-                    raise ValueError('请选择导入账户')
+                    raise ValueError(_tr('请选择导入账户'))
                 import hashlib
                 raw = base64.b64decode(data['base64'], validate=True)
                 identity = service.store.ingest(account, '@import', 'local', hashlib.sha256(raw).hexdigest(), raw)

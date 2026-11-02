@@ -4,6 +4,7 @@ Construct freely, then call all database methods through LocalLoader workers.
 Each refresh indexes at most 256 missing metadata rows and reports incomplete
 coverage. Existing immutable parsed messages are indexed once per own-set scope.
 """
+from .i18n import text as _tr
 import hashlib
 import json
 import shlex
@@ -413,11 +414,11 @@ class ContactConversations:
     # ==========================================
     def _search(self, query):
         if len(query) > 2000:
-            raise ValueError('搜索条件过长')
+            raise ValueError(_tr('搜索条件过长'))
         try:
             tokens = shlex.split(query)
         except ValueError:
-            raise ValueError('搜索引号尚未闭合') from None
+            raise ValueError(_tr('搜索引号尚未闭合')) from None
         clauses, values = [], []
         for token in tokens:
             negative = token.startswith('-')
@@ -522,10 +523,10 @@ class ContactConversations:
         title = peers[0]['name'] or peers[0]['address'] if peers else ''
         if 'person_name' in row.keys() and row['person_name']:title=row['person_name']
         if envelope['kind'] == 'sent' and not member['address']:
-            title = '我发出的多收件人邮件 · ' + (author['address'] or '本邮箱')
+            title = _tr('我发出的多收件人邮件 · ') + (author['address'] or _tr('本邮箱'))
         else:
-            title = title or {'self': '自己', 'unknown': '未知发件人'}.get(envelope['kind'], '未知发件人')
-        author_name = '我' if envelope['outgoing'] else author['name'] or author['address'] or '未知发件人'
+            title = title or {'self': _tr('自己'), 'unknown': _tr('未知发件人')}.get(envelope['kind'], _tr('未知发件人'))
+        author_name = _tr('我') if envelope['outgoing'] else author['name'] or author['address'] or _tr('未知发件人')
         route = {**envelope['route'], 'account': row['account'], 'message': row['id'],
                  'in_reply_to': row['message_id'], 'subject': row['subject']}
         if envelope['kind']=='sent' and member['address']:

@@ -1,10 +1,11 @@
 """Local, durable inbox layouts inspired by Spark's public mode contracts."""
+from .i18n import text as _tr
 from copy import deepcopy
 from datetime import datetime
 import uuid
 
-MODES = {'focused':'聚焦列表', 'smart':'未读卡片', 'classic':'简洁列表', 'conversations':'对话列表'}
-TITLES = {'priority':'优先','personal':'个人','verification':'验证码','notification':'通知','newsletter':'动向','pinned':'已置顶','seen':'已读邮件','today':'今天','earlier':'更早'}
+MODES = {'focused':_tr('聚焦列表'), 'smart':_tr('未读卡片'), 'classic':_tr('简洁列表'), 'conversations':_tr('对话列表')}
+TITLES = {'priority':_tr('优先'),'personal':_tr('个人'),'verification':_tr('验证码'),'notification':_tr('通知'),'newsletter':_tr('动向'),'pinned':_tr('已置顶'),'seen':_tr('已读邮件'),'today':_tr('今天'),'earlier':_tr('更早')}
 
 # ==========================================
 # Function: Manage independent inbox definitions in the local preference store.
@@ -27,16 +28,19 @@ class InboxViews:
     # Method: Reject unknown modes and use explicit per-card defaults.
     # ==========================================
     def definition(self, mode, name='', identity=None):
-        if mode not in MODES: raise ValueError('未知收件箱视图')
+        if mode not in MODES: raise ValueError(_tr('未知收件箱视图'))
         return {'id':identity or uuid.uuid4().hex, 'mode':mode, 'name':name.strip() or MODES[mode], 'accounts':[],
                 'grouping':'category', 'limit':5, 'action':'seen', 'disabled':[], 'collapsed':[], 'cards':{}}
 
     # ==========================================
     # Function: Return isolated copies of saved definitions.
-    # Method: Avoid mutating database settings through shared dictionaries.
+    # Method: Copy saved definitions and localize only unchanged built-in titles, preserving custom names and stored identities.
     # ==========================================
     def all(self):
-        return deepcopy(self.store.preference('inbox_views', []))
+        rows=deepcopy(self.store.preference('inbox_views', []))
+        for row in rows:
+            if row.get('id') in MODES and row.get('name')==MODES[row['id']]:row['name']=MODES[row['id']]
+        return rows
 
     # ==========================================
     # Function: Resolve the last selected inbox safely.
@@ -52,20 +56,20 @@ class InboxViews:
     # ==========================================
     def save(self, value):
         clean=self.definition(value['mode'],value['name'],value['id'])
-        if len(clean['name'])>60: raise ValueError('视图名称最多 60 个字符')
+        if len(clean['name'])>60: raise ValueError(_tr('视图名称最多 60 个字符'))
         clean['accounts']=list(dict.fromkeys(str(v) for v in value.get('accounts',[])))
         clean['grouping']=value.get('grouping','category')
-        if clean['grouping'] not in ('category','sender','domain','account'): raise ValueError('未知分组方式')
+        if clean['grouping'] not in ('category','sender','domain','account'): raise ValueError(_tr('未知分组方式'))
         clean['limit']=int(value.get('limit',5))
-        if clean['limit'] not in (3,5,10,0): raise ValueError('卡片显示数量无效')
+        if clean['limit'] not in (3,5,10,0): raise ValueError(_tr('卡片显示数量无效'))
         clean['action']=value.get('action','seen')
-        if clean['action'] not in ('none','seen','done','trash'): raise ValueError('未知卡片操作')
+        if clean['action'] not in ('none','seen','done','trash'): raise ValueError(_tr('未知卡片操作'))
         for key in ('disabled','collapsed'): clean[key]=list(dict.fromkeys(str(v) for v in value.get(key,[])))[:500]
         clean['cards']={}
         for key,card in value.get('cards',{}).items():
-            if not isinstance(card,dict):raise ValueError('卡片设置无效')
+            if not isinstance(card,dict):raise ValueError(_tr('卡片设置无效'))
             limit=int(card.get('limit',clean['limit']));action=card.get('action',clean['action']);grouping=card.get('grouping',clean['grouping'])
-            if limit not in (3,5,10,0) or action not in ('none','seen','done','trash') or grouping not in ('category','sender','domain','account'):raise ValueError('卡片设置无效')
+            if limit not in (3,5,10,0) or action not in ('none','seen','done','trash') or grouping not in ('category','sender','domain','account'):raise ValueError(_tr('卡片设置无效'))
             clean['cards'][str(key)]={'enabled':bool(card.get('enabled',True)),'limit':limit,'action':action,'grouping':grouping,'accounts':list(dict.fromkeys(str(v) for v in card.get('accounts',[])))}
         rows=self.all(); index=next((i for i,row in enumerate(rows) if row['id']==clean['id']),len(rows))
         if index==len(rows):rows.append(clean)
@@ -79,7 +83,7 @@ class InboxViews:
     # ==========================================
     def delete(self, identity):
         rows=[r for r in self.all() if r['id']!=identity]
-        if not rows: raise ValueError('至少保留一个收件箱视图')
+        if not rows: raise ValueError(_tr('至少保留一个收件箱视图'))
         self.store.set_preference('inbox_views',rows)
         self.store.set_preference('active_inbox_view',self.active()['id'])
 
@@ -91,7 +95,7 @@ class InboxViews:
         view=definition or self.active()
         rows=[row for row in items if not view['accounts'] or row['account'] in view['accounts']]
         rows.sort(key=lambda row:(-row['timestamp'],row['id']))
-        if view['mode']=='classic': return [{'key':'all','title':'所有邮件','items':rows,'shown':rows,'collapsed':False}]
+        if view['mode']=='classic': return [{'key':'all','title':_tr('所有邮件'),'items':rows,'shown':rows,'collapsed':False}]
         groups={}
         priority_enabled=self.store.preference('priority_enabled',True)
         grouping_options={key:self.store.preference('group_'+key,view['grouping']) for key in ('notification','newsletter','verification')}

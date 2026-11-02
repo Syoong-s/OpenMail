@@ -1,4 +1,5 @@
 """Compact native filter cards with independent switches, disclosure and visual account routes."""
+from .i18n import text as _tr
 import ctypes as C
 from html import escape
 
@@ -34,8 +35,8 @@ def condition_text(condition):
     field=condition['field'];value=condition.get('value','');operator=condition.get('op','is')
     if field=='smart':value=dict(SMART_LABELS).get(value,value)
     elif field=='category':value=dict(CATEGORY_LABELS).get(value,value)
-    elif isinstance(value,bool):value='是' if value else '否'
-    suffix=' KiB' if field=='size_kb' else ' 分' if field=='learned' else ''
+    elif isinstance(value,bool):value=_tr('是') if value else _tr('否')
+    suffix=' KiB' if field=='size_kb' else _tr(' 分') if field=='learned' else ''
     op={'is':'＝','is_not':'≠','gt':'>','lt':'<','gte':'≥','lte':'≤'}.get(operator,dict(OP_LABELS).get(operator,operator))
     return dict(FIELD_LABELS).get(field,field)+' '+op+' '+str(value)+suffix
 
@@ -66,14 +67,14 @@ class FilterCard:
         self.header=style(g,g.gtk_box_new(0,6),'filter-card-header');g.gtk_box_pack_start(self.box,self.header,0,1,0)
         self.switch=bind(page.app,'gtk','gtk_switch_new',P)();g.gtk_switch_set_active(self.switch,int(rule['enabled']))
         g.gtk_widget_set_valign(self.switch,3);g.gtk_widget_set_halign(self.switch,1)
-        g.gtk_widget_set_tooltip_text(self.switch,('启用 / 暂停过滤器：'+rule['name']).encode());g.gtk_box_pack_start(self.header,self.switch,0,0,0)
+        g.gtk_widget_set_tooltip_text(self.switch,(_tr('启用 / 暂停过滤器：')+rule['name']).encode());g.gtk_box_pack_start(self.header,self.switch,0,0,0)
         self.expand=style(g,g.gtk_button_new(),'filter-card-disclosure');g.gtk_widget_set_hexpand(self.expand,1)
         titlebox=g.gtk_box_new(0,7);g.gtk_container_add(self.expand,titlebox)
         self.name=label(g,rule['name'],'filter-card-name',42);g.gtk_box_pack_start(titlebox,self.name,1,1,0)
         self.arrow=style(g,g.image_file(ICONS/'filter-chevron-down.svg',14),'filter-card-chevron');g.gtk_widget_set_valign(self.arrow,3);g.gtk_widget_set_size_request(self.arrow,14,14);g.gtk_box_pack_start(titlebox,self.arrow,0,0,0)
         g.gtk_box_pack_start(self.header,self.expand,1,1,0)
         self.actions=style(g,g.gtk_box_new(0,2),'filter-card-actions');g.gtk_box_pack_start(self.header,self.actions,0,0,0)
-        for op,title,icon in [('edit','编辑','folder-edit'),('duplicate','复制','action-copy'),('up','上移','action-up'),('down','下移','action-down'),('learn','从目标文件夹学习','action-code'),('delete','删除','spark-layout-trash')]:
+        for op,title,icon in [('edit',_tr('编辑'),'folder-edit'),('duplicate',_tr('复制'),'action-copy'),('up',_tr('上移'),'action-up'),('down',_tr('下移'),'action-down'),('learn',_tr('从目标文件夹学习'),'action-code'),('delete',_tr('删除'),'spark-layout-trash')]:
             button=g.gtk_button_new();icon_action(g,button,title,icon,12);g.gtk_box_pack_start(self.actions,button,0,0,0);page.buttons[(identity,op)]=button
             if op=='delete':style(g,button,'filter-delete')
             g.connect(button,'clicked',lambda *unused,operation=op:page.app.run_action(lambda:page.operation(identity,operation)),group=group)
@@ -94,10 +95,10 @@ class FilterCard:
     # ==========================================
     def summary(self,rule):
         g=self.g;line=g.gtk_box_new(0,8);g.gtk_box_pack_start(self.details,line,0,1,0)
-        logic=('∩ 全部匹配' if rule['mode']=='all' else '∪ 任一匹配')+' · '+str(len(rule['conditions']))+' 条'
+        logic=(_tr('∩ 全部匹配') if rule['mode']=='all' else _tr('∪ 任一匹配'))+' · '+str(len(rule['conditions']))+_tr(' 条')
         g.gtk_box_pack_start(line,chip(g,logic,'settings-filters','filter-logic'),0,0,0)
-        scope={'all':'所有文件夹','include':'选定文件夹','exclude':'排除选定文件夹'}[rule['source_mode']]
-        if rule['subfolders'] and rule['source_mode']!='all':scope+=' · 含子文件夹'
+        scope={'all':_tr('所有文件夹'),'include':_tr('选定文件夹'),'exclude':_tr('排除选定文件夹')}[rule['source_mode']]
+        if rule['subfolders'] and rule['source_mode']!='all':scope+=_tr(' · 含子文件夹')
         g.gtk_box_pack_start(line,chip(g,scope,'spark-layout-folder'),0,0,0)
         flow=g.gtk_flow_box_new();g.gtk_flow_box_set_selection_mode(flow,0);g.gtk_flow_box_set_min_children_per_line(flow,1);g.gtk_flow_box_set_max_children_per_line(flow,3)
         g.gtk_flow_box_set_column_spacing(flow,6);g.gtk_flow_box_set_row_spacing(flow,6);style(g,flow,'filter-conditions')
@@ -115,7 +116,7 @@ class FilterCard:
         g.gtk_box_pack_start(identity,dot,0,0,0);g.gtk_box_pack_start(identity,label(g,name,'filter-account-name',30),1,1,0)
         g.gtk_widget_set_size_request(identity,170,32);g.gtk_widget_set_hexpand(identity,1)
         paths=rule['sources'].get(account,[])
-        source='全部文件夹' if rule['source_mode']=='all' or (rule['source_mode']=='exclude' and not paths) else ('排除 ' if rule['source_mode']=='exclude' else '')+('、'.join(paths) or '无匹配来源')
+        source=_tr('全部文件夹') if rule['source_mode']=='all' or (rule['source_mode']=='exclude' and not paths) else (_tr('排除 ') if rule['source_mode']=='exclude' else '')+('、'.join(paths) or _tr('无匹配来源'))
         if rule['subfolders'] and rule['source_mode']!='all':source+=' / …'
         source_widget=chip(g,source,'spark-layout-folder','filter-source',22);target_widget=chip(g,target,'spark-layout-folder','filter-target',28)
         attach=bind(self.page.app,'gtk','gtk_grid_attach',None,P,P,I,I,I,I)
@@ -130,7 +131,7 @@ class FilterCard:
         opened=self.rule['id'] in self.page.expanded;g=self.g
         g.gtk_revealer_set_reveal_child(self.revealer,int(opened))
         bind(self.page.app,'gtk','gtk_image_set_from_file',None,P,C.c_char_p)(self.arrow,str(ICONS/('filter-chevron-up.svg' if opened else 'filter-chevron-down.svg')).encode())
-        g.gtk_widget_set_tooltip_text(self.expand,(('收起' if opened else '展开')+'过滤器：'+self.rule['name']).encode())
+        g.gtk_widget_set_tooltip_text(self.expand,((_tr('收起') if opened else _tr('展开'))+_tr('过滤器：')+self.rule['name']).encode())
         context=g.gtk_widget_get_style_context(self.box)
         (g.gtk_style_context_add_class if opened else g.gtk_style_context_remove_class)(context,b'filter-expanded')
 

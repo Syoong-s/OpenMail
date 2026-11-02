@@ -1,4 +1,5 @@
 """Application service coordinating protocol adapters, cache and background work."""
+from .i18n import text as _tr
 import base64
 import binascii
 import threading
@@ -83,7 +84,7 @@ class MailService(OrganizationService):
                 while not self.stop_event.is_set() and self.process_one():
                     pass
             except Exception:
-                self.status['worker_error'] = '本地发件队列处理失败，请检查磁盘和数据目录；处理中任务不会自动重发'
+                self.status['worker_error'] = _tr('本地发件队列处理失败，请检查磁盘和数据目录；处理中任务不会自动重发')
             self.sync_event.wait(1)
 
     # ==========================================
@@ -108,11 +109,11 @@ class MailService(OrganizationService):
                         if result.get('filters',{}).get('pending'):self.sync_event.set()
                         if result.get('interrupted'):interrupted=True;break
                     except Exception:
-                        self.status['accounts'][account.id] = {'ok': False, 'error': '同步失败，请检查网络、TLS、服务器设置或在账号设置中更新登录'}
+                        self.status['accounts'][account.id] = {'ok': False, 'error': _tr('同步失败，请检查网络、TLS、服务器设置或在账号设置中更新登录')}
                 from .desktop_preferences import cached_attachments
                 try:
                     if not interrupted:cached_attachments(self.store,should_yield=self.sync_should_yield)
-                except (OSError,ValueError):self.status['attachment_cache_error']='附件缓存失败，请检查本机存储；原始邮件保留'
+                except (OSError,ValueError):self.status['attachment_cache_error']=_tr('附件缓存失败，请检查本机存储；原始邮件保留')
                 if not interrupted:self.status['last_sync'] = time.time()
             finally:
                 self.status['syncing'] = False
@@ -161,11 +162,11 @@ class MailService(OrganizationService):
     # ==========================================
     def update(self, identity, changes):
         if not changes or set(changes) - {'seen', 'pinned', 'priority', 'archived', 'category', 'learn_sender'}:
-            raise ValueError('无效邮件操作')
+            raise ValueError(_tr('无效邮件操作'))
         if 'category' in changes and changes['category'] not in CATEGORIES:
-            raise ValueError('分类无效')
+            raise ValueError(_tr('分类无效'))
         if any(key in changes and not isinstance(changes[key], bool) for key in ('seen','pinned','priority','archived','learn_sender')):
-            raise ValueError('状态值必须为布尔值')
+            raise ValueError(_tr('状态值必须为布尔值'))
         from .mail_mutations import flags
         for key in ('seen','pinned','priority'):
             if key in changes:flags(self,[identity],key,changes[key])
@@ -180,47 +181,47 @@ class MailService(OrganizationService):
     def compose(self, payload, send=False):
         account_id = payload.get('account', '')
         if self.demo and send:
-            raise ValueError('演示模式不能向外发送邮件；请使用真实账户配置启动')
+            raise ValueError(_tr('演示模式不能向外发送邮件；请使用真实账户配置启动'))
         if account_id==LOCAL_ACCOUNT and send:
-            raise ValueError('本地草稿不能发送，请先选择已配置的邮箱账户')
+            raise ValueError(_tr('本地草稿不能发送，请先选择已配置的邮箱账户'))
         if account_id not in self.accounts and not (account_id==LOCAL_ACCOUNT and not self.demo) and not (self.demo and account_id == 'demo'):
-            raise ValueError('请先选择有效账户')
+            raise ValueError(_tr('请先选择有效账户'))
         draft = {key: payload.get(key, '') for key in ('to', 'cc', 'bcc', 'subject', 'body', 'html', 'in_reply_to', 'references')}
         for value in draft.values():
             if not isinstance(value, str):
-                raise ValueError('邮件字段必须为文字')
+                raise ValueError(_tr('邮件字段必须为文字'))
         for key in ('reply_source','scheduled_at','chat_key','chat_route'):
             if key in payload:
-                if not isinstance(payload[key],str):raise ValueError('编辑器元数据无效')
+                if not isinstance(payload[key],str):raise ValueError(_tr('编辑器元数据无效'))
                 draft[key]=payload[key]
         if 'reply_history' in payload:
             from .reply_history import validated
             draft['reply_history']=validated(payload['reply_history'])
         if 'editor_baseline' in payload:
             baseline=payload['editor_baseline']
-            if not isinstance(baseline,dict) or set(baseline)-{'to','cc','bcc','subject','body'} or any(not isinstance(value,str) for value in baseline.values()):raise ValueError('草稿默认内容标记无效')
+            if not isinstance(baseline,dict) or set(baseline)-{'to','cc','bcc','subject','body'} or any(not isinstance(value,str) for value in baseline.values()):raise ValueError(_tr('草稿默认内容标记无效'))
             draft['editor_baseline']=dict(baseline)
         reminder=float(payload.get('remind_at') or 0)
-        if reminder and (not 0<=reminder<=time.time()+366*86400 or (send and reminder<=time.time())):raise ValueError('提醒时间必须在未来一年内')
+        if reminder and (not 0<=reminder<=time.time()+366*86400 or (send and reminder<=time.time())):raise ValueError(_tr('提醒时间必须在未来一年内'))
         draft['remind_at']=reminder
         draft['done_after_send']=bool(payload.get('done_after_send',self.store.preference('done_after_reply',False)))
         draft['request_receipt']=bool(payload.get('request_receipt',self.store.preference('request_receipt',False)))
         attachments = []
         stored = payload.get('attachments', [])
         if not isinstance(stored, list) or len(stored) > 20:
-            raise ValueError('每封邮件最多 20 个附件')
+            raise ValueError(_tr('每封邮件最多 20 个附件'))
         for item in stored:
             if not isinstance(item.get('name'), str) or not isinstance(item.get('base64'), str):
-                raise ValueError('附件格式无效')
+                raise ValueError(_tr('附件格式无效'))
             try:
                 data = base64.b64decode(item['base64'], validate=True)
             except (ValueError, binascii.Error):
-                raise ValueError('附件编码无效') from None
+                raise ValueError(_tr('附件编码无效')) from None
             attachments.append({'name': Path(item['name']).name, 'data': data})
         due = float(payload.get('due') or time.time())
         if not 0 <= due <= time.time() + 366 * 86400:
-            raise ValueError('定时发送日期无效，最多提前一年')
-        if send and reminder and reminder<=due:raise ValueError('未回复提醒时间应晚于发送时间')
+            raise ValueError(_tr('定时发送日期无效，最多提前一年'))
+        if send and reminder and reminder<=due:raise ValueError(_tr('未回复提醒时间应晚于发送时间'))
         message, targets = (None, None)
         if send:
             from email.utils import formataddr
@@ -230,7 +231,7 @@ class MailService(OrganizationService):
             prepared=outgoing_options(self.store,account,draft)
             message, targets = compose(sender, {**prepared, 'attachments': attachments}, make_msgid())
         if sum(len(a['data']) for a in attachments) > MAX_MESSAGE_BYTES:
-            raise ValueError('附件过大')
+            raise ValueError(_tr('附件过大'))
         identity = self.store.save_draft(account_id, {**draft, 'attachments': stored}, payload.get('id'))
         if send:
             self.store.enqueue(identity, message.as_bytes(), targets, str(message['Message-ID']), due)
@@ -249,7 +250,7 @@ class MailService(OrganizationService):
             return False
         account = self.accounts.get(job['account'])
         if account is None:
-            self.store.finish(job['id'], 'failed', '账户不在当前配置中，邮件未投递')
+            self.store.finish(job['id'], 'failed', _tr('账户不在当前配置中，邮件未投递'))
             return True
         try:
             refused = transport.deliver(account, job['raw'], json.loads(job['envelope']))
@@ -257,12 +258,12 @@ class MailService(OrganizationService):
             self.store.finish(job['id'], 'uncertain' if error.uncertain else 'failed', str(error))
             return True
         except Exception:
-            self.store.finish(job['id'], 'uncertain', '发送结果待确认，请核对服务商已发送邮件')
+            self.store.finish(job['id'], 'uncertain', _tr('发送结果待确认，请核对服务商已发送邮件'))
             return True
         # Record SMTP acceptance before auxiliary cache/APPEND work, which cannot resend.
         state = 'partial' if refused else 'sent'
-        error = '部分收件人被拒绝；其余已接受。请核对收件人后另建邮件' if refused else ''
-        self.store.finish(job['id'], state, error, '保存副本中')
+        error = _tr('部分收件人被拒绝；其余已接受。请核对收件人后另建邮件') if refused else ''
+        self.store.finish(job['id'], state, error, _tr('保存副本中'))
         try:
             sent_id=self.store.ingest(account.id, '@sent', 'local', job['id'], job['raw'], seen=True)
             draft=json.loads(job['draft'])
@@ -276,7 +277,7 @@ class MailService(OrganizationService):
                         if row['folder']!='@sent':self.move_message(row['id'],special='archive')
             copy_status = transport.append_sent(account, job['raw'])
         except Exception:
-            copy_status = '邮件已投递，但副本保存失败；请核对服务商已发送文件夹'
+            copy_status = _tr('邮件已投递，但副本保存失败；请核对服务商已发送文件夹')
         self.store.finish(job['id'], state, error, copy_status)
         return True
 
@@ -318,8 +319,8 @@ class MailService(OrganizationService):
     def save_filter(self,value):
         from .filter_rules import validate,save
         rule=validate(value);accounts=self.filter_accounts();available={(row['account'],row['folder']) for row in self.store.list_folders() if row['selectable']}
-        if rule['account'] and rule['account'] not in accounts:raise ValueError('过滤器账号已移除')
-        if any(account not in accounts or (account,path) not in available for account,path in rule['destinations'].items()):raise ValueError('请选择当前账号中存在且可选择的目标文件夹')
+        if rule['account'] and rule['account'] not in accounts:raise ValueError(_tr('过滤器账号已移除'))
+        if any(account not in accounts or (account,path) not in available for account,path in rule['destinations'].items()):raise ValueError(_tr('请选择当前账号中存在且可选择的目标文件夹'))
         return save(self.store,rule)
 
     # ==========================================
@@ -346,5 +347,5 @@ class MailService(OrganizationService):
         from .filter_rules import rules
         from .filter_smart import train
         rule=next((rule for rule in rules(self.store) if rule['id']==identity),None)
-        if rule is None or account not in self.filter_accounts():raise ValueError('请选择现有过滤器和账号')
+        if rule is None or account not in self.filter_accounts():raise ValueError(_tr('请选择现有过滤器和账号'))
         return train(self.store,rule,account)

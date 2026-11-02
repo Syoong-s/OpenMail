@@ -1,4 +1,5 @@
 """Compact sender-composition summaries and stable per-message quick actions."""
+from .i18n import text as _tr, join_text as _join_ui
 from pathlib import Path
 from .desktop_focus_cache import FocusPreviewUI,summary_title
 
@@ -38,12 +39,15 @@ class FocusUI(FocusPreviewUI):
 
     # ==========================================
     # Function: Render a single horizontal category composition row.
-    # Method: Make the complete title, avatar and sender surface one native navigation button.
+    # Method: Make each retained card one navigation button with a subtle semantic category accent.
     # ==========================================
     def summary_row(self,section):
         g=self.g;row=g.gtk_list_box_row_new();box=g.gtk_box_new(1,6);line=g.gtk_box_new(0,7)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(row),b'focus-summary')
+        category=section['key'].split(':')[0]
+        if category in ('pinned','verification','notification','newsletter'):g.gtk_style_context_add_class(g.gtk_widget_get_style_context(row),('focus-'+category).encode())
         button=g.gtk_button_new();title=g.gtk_label_new(summary_title(section).encode())
+        g.gtk_style_context_add_class(g.gtk_widget_get_style_context(title),b'focus-title')
         g.gtk_label_set_xalign(title,0);g.gtk_box_pack_start(box,title,0,1,0)
         g.connect(button,'clicked',lambda *unused,key=section['key']:self.open_focus_group(key),group='focus-summaries')
         self.summary_rows[section['key']]={'row':row,'button':button,'title':title,'line':line,'section':section}
@@ -66,7 +70,7 @@ class FocusUI(FocusPreviewUI):
             g.gtk_style_context_add_class(g.gtk_widget_get_style_context(avatar),b'summary-avatar')
             self.apply_avatar(avatar,item['sender'],item['account'],avatar_state)
             g.gtk_box_pack_start(line,avatar,0,0,0)
-        names='、'.join(item.get('sender_name') or item['sender'].split('@')[0] for item in section['recent_senders'])
+        names=_join_ui('、',((item.get('sender_name') or item['sender'].split('@')[0] for item in section['recent_senders'])))
         label=g.gtk_label_new(names.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),b'mail-preview');g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,22)
         g.gtk_box_pack_start(line,label,1,1,0);g.gtk_widget_show_all(line)
 
@@ -77,12 +81,12 @@ class FocusUI(FocusPreviewUI):
     def row_actions(self,identity,item=None):
         g=self.g;box=g.gtk_box_new(1,0);buttons={};item=item or {}
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(box),b'row-action-column')
-        for action,title,icon in [('done','完成','done'),('seen','已读 / 未读','seen'),('trash','移到废纸篓','trash')]:
+        for action,title,icon in [('done',_tr('完成'),'done'),('seen',_tr('已读 / 未读'),'seen'),('trash',_tr('移到废纸篓'),'trash')]:
             button=g.gtk_button_new();g.gtk_button_set_image(button,g.image_file(Path(__file__).parent/'desktop_assets/icons'/('spark-layout-'+icon+'.svg'),12));g.gtk_button_set_always_show_image(button,1)
             g.gtk_widget_set_tooltip_text(button,title.encode());g.gtk_widget_set_size_request(button,14,17)
             g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'row-quick-action')
             if action=='seen' and not item.get('seen',True):
-                g.gtk_button_set_image(button,None);g.gtk_button_set_label(button,'●'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'unread-action');g.gtk_widget_set_tooltip_text(button,'标为已读'.encode())
+                g.gtk_button_set_image(button,None);g.gtk_button_set_label(button,'●'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'unread-action');g.gtk_widget_set_tooltip_text(button,_tr('标为已读').encode())
             g.connect(button,'clicked',lambda *unused,target=identity,code=action:self.run_action(lambda:self.quick_action(target,code)),group='list-row-'+identity)
             g.gtk_box_pack_start(box,button,0,0,0);buttons[action]=button
         self.quick_buttons[identity]=buttons

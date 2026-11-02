@@ -1,4 +1,5 @@
 """Small operating-system boundary shared by the Linux and native Windows clients."""
+from .i18n import text as _tr
 import ctypes as C
 import hashlib
 import tempfile
@@ -64,7 +65,7 @@ def prepare_windows():
 def prepare_pixbuf_cache(root):
     modules=sorted((root/'lib/gdk-pixbuf-2.0/2.10.0/loaders').glob('*.dll'))
     helper=root/'bin/gdk-pixbuf-query-loaders.exe'
-    if not modules or not helper.is_file():raise RuntimeError('应用图像运行库不完整，请保留完整 runtime 目录')
+    if not modules or not helper.is_file():raise RuntimeError(_tr('应用图像运行库不完整，请保留完整 runtime 目录'))
     identity=hashlib.sha256(b'pixbuf-relative-v2\0'+str(root).encode())
     for module in modules:
         info=module.stat();identity.update((module.name+str(info.st_size)+str(info.st_mtime_ns)).encode())
@@ -74,7 +75,7 @@ def prepare_pixbuf_cache(root):
     if not cache.is_file():
         result=subprocess.run([str(helper),*[str(module.relative_to(root)) for module in modules]],cwd=root,capture_output=True,timeout=30,creationflags=0x08000000)
         if result.returncode or any(module.name.encode() not in result.stdout for module in modules):
-            raise RuntimeError('应用图像加载器初始化失败')
+            raise RuntimeError(_tr('应用图像加载器初始化失败'))
         descriptor,temporary=tempfile.mkstemp(prefix='.loaders-',dir=folder)
         try:
             with os.fdopen(descriptor,'wb') as output:output.write(result.stdout)
@@ -94,7 +95,7 @@ def load_library(name):
         root=runtime_root()
         for candidate in (root/'bin'/alias,root/alias):
             if candidate.is_file():return C.CDLL(str(candidate))
-        raise RuntimeError('缺少应用私有运行库：'+str(root/'bin'/alias))
+        raise RuntimeError(_tr('缺少应用私有运行库：')+str(root/'bin'/alias))
     return C.CDLL(alias)
 
 # ==========================================
@@ -128,12 +129,12 @@ def lock_instance(file):
 # ==========================================
 def open_uri(uri,windows=None):
     if any(ord(char)<32 for char in uri) or urlsplit(uri).scheme.lower() not in ('https','http','mailto'):
-        raise ValueError('不支持的外部链接')
+        raise ValueError(_tr('不支持的外部链接'))
     if WINDOWS if windows is None else windows:
         shell=C.WinDLL('shell32',use_last_error=True).ShellExecuteW
         shell.argtypes=[C.c_void_p,C.c_wchar_p,C.c_wchar_p,C.c_wchar_p,C.c_wchar_p,C.c_int];shell.restype=C.c_void_p
         result=shell(None,'open',uri,None,None,1)
-        if not result or result<=32:raise OSError('无法打开链接')
+        if not result or result<=32:raise OSError(_tr('无法打开链接'))
     else:subprocess.Popen(['gio','open',uri],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
 # ==========================================
@@ -155,7 +156,7 @@ def protect_data(data,entropy,decrypt=False):
     function.argtypes=[C.POINTER(Blob),C.c_void_p,C.POINTER(Blob),C.c_void_p,C.c_void_p,C.c_uint32,C.POINTER(Blob)]
     function.restype=C.c_int
     if not function(C.byref(source),None,C.byref(bound),None,None,1,C.byref(output)):
-        raise ValueError('Windows 本机凭据认证失败，请重新登录')
+        raise ValueError(_tr('Windows 本机凭据认证失败，请重新登录'))
     kernel=C.WinDLL('kernel32',use_last_error=True);kernel.LocalFree.argtypes=[C.c_void_p];kernel.LocalFree.restype=C.c_void_p
     try:return C.string_at(output.data,output.size)
     finally:kernel.LocalFree(output.data)

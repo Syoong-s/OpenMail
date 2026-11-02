@@ -1,4 +1,5 @@
 """Persistent focused cards, independent of slow mailbox/body projections."""
+from .i18n import text as _tr
 from collections import OrderedDict
 import ctypes as C
 from .inbox_views import TITLES
@@ -20,7 +21,7 @@ def projection_policy(store):
 def summary_title(section):
     count=section.get('count',len(section.get('items',())))
     unread=section.get('unread',0)
-    return section['title']+('   …' if count is None else '   '+str(count))+(f' · {unread} 未读' if unread else '')+'  ›'
+    return section['title']+('   …' if count is None else '   '+str(count))+(_tr(' · {0} 未读').format(unread) if unread else '')+'  ›'
 
 # ==========================================
 # Function: Keep focused cards available before expensive mailbox work completes.
@@ -52,7 +53,7 @@ class FocusPreviewUI:
         self.focus_preview_current=key
         self.render_focus_summaries(sections,key,loading=key not in cache)
         if entering:
-            self.g.label(self.widget('count'),str(cached['total'])+' 封邮件' if cached else '正在载入邮件…')
+            self.g.label(self.widget('count'),str(cached['total'])+_tr(' 封邮件') if cached else _tr('正在载入邮件…'))
             self.g.label(self.widget('view_subtitle'),definition['name'])
             self.g.gtk_widget_hide(self.widget('focus_back'));self.g.gtk_widget_hide(self.widget('more'))
             self.g.gtk_widget_set_no_show_all(self.widget('messages'),1);self.g.gtk_widget_hide(self.widget('messages'))

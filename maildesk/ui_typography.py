@@ -1,4 +1,5 @@
 """Application font sizes independent of control geometry and system display scaling."""
+from .i18n import text as _tr
 from pathlib import Path
 import re
 
@@ -32,7 +33,7 @@ def apply_font(app,value,force=False):
     if size==getattr(app,'ui_font_size',None) and not force:return
     g=app.g;old=getattr(app,'ui_font_provider',None);provider=old or g.gtk_css_provider_new()
     source=font_stylesheet(BASE_CSS,size).encode()
-    if not g.gtk_css_provider_load_from_data(provider,source,len(source),None):raise ValueError('界面字号样式无法载入')
+    if not g.gtk_css_provider_load_from_data(provider,source,len(source),None):raise ValueError(_tr('界面字号样式无法载入'))
     if not old:g.gtk_style_context_add_provider_for_screen(g.gdk_screen_get_default(),provider,600)
     app.ui_font_provider=provider;app.ui_font_size=size
     if not getattr(app,'ui_font_dpi_connected',False):

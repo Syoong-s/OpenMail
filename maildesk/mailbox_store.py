@@ -1,4 +1,5 @@
 """Folder hierarchy, saved searches and durable personal mail organization."""
+from .i18n import text as _tr
 import json
 from contextlib import contextmanager
 from copy import deepcopy
@@ -62,7 +63,7 @@ class OrganizationStore:
         from .composer_options import rule_sender
         from .classifier import CATEGORIES
         sender=rule_sender(sender)
-        if category not in (*CATEGORIES,'remove'):raise ValueError('邮件分类无效')
+        if category not in (*CATEGORIES,'remove'):raise ValueError(_tr('邮件分类无效'))
         with self.db() as db:
             if category=='remove':db.execute('DELETE FROM sender_rules WHERE account=? AND sender=?',(account,sender))
             else:db.execute('INSERT INTO sender_rules VALUES(?,?,?) ON CONFLICT(account,sender) DO UPDATE SET category=excluded.category',(account,sender,category))
@@ -115,14 +116,14 @@ class OrganizationStore:
     # ==========================================
     def folder_options(self, account, folder, **changes):
         if not changes or set(changes)-{'favorite','color','subscribed'}:
-            raise ValueError('文件夹设置无效')
+            raise ValueError(_tr('文件夹设置无效'))
         if 'color' in changes and changes['color'] not in ('','blue','purple','green','orange','red'):
-            raise ValueError('文件夹颜色无效')
+            raise ValueError(_tr('文件夹颜色无效'))
         with self.db() as db:
             for key,value in changes.items():
                 result=db.execute(f'UPDATE folders SET {key}=? WHERE account=? AND folder=? AND present=1',(value,account,folder))
                 if result.rowcount!=1:
-                    raise ValueError('文件夹不存在')
+                    raise ValueError(_tr('文件夹不存在'))
 
     # ==========================================
     # Function: Preserve cached messages and folder favorites after a successful rename.
@@ -217,7 +218,7 @@ class OrganizationStore:
     def set_preference(self, key, value):
         encoded=json.dumps(value,ensure_ascii=False)
         if len(encoded)>100000:
-            raise ValueError('设置内容过长')
+            raise ValueError(_tr('设置内容过长'))
         with self.db() as db:
             db.execute('INSERT INTO preferences VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,encoded))
         snapshot=getattr(self._preference_scope,'values',None)
@@ -231,7 +232,7 @@ class OrganizationStore:
         from .search import search_terms
         search_terms(query)
         if not name.strip() or not query.strip():
-            raise ValueError('请填写智能文件夹名称和搜索条件')
+            raise ValueError(_tr('请填写智能文件夹名称和搜索条件'))
         identity=identity or uuid.uuid4().hex
         with self.db() as db:
             db.execute('INSERT INTO smart_folders VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,account=excluded.account,query=excluded.query',(identity,name.strip()[:100],account,query))
@@ -259,28 +260,28 @@ class OrganizationStore:
     # ==========================================
     def organize(self, identity, **changes):
         if not changes or set(changes)-{'snoozed_until','reminder','aside','done','trashed','spam','labels','sender_policy'}:
-            raise ValueError('整理操作无效')
+            raise ValueError(_tr('整理操作无效'))
         message=self.get(identity)
         with self.db() as db:
             for key,value in changes.items():
                 if key=='labels':
                     labels=list(dict.fromkeys(v.strip() for v in value if isinstance(v,str) and v.strip()))
                     if len(labels)>20 or any(len(v)>60 for v in labels):
-                        raise ValueError('标签最多 20 个，每个不超过 60 字')
+                        raise ValueError(_tr('标签最多 20 个，每个不超过 60 字'))
                     db.execute('DELETE FROM message_labels WHERE message=?',(identity,))
                     db.executemany('INSERT INTO message_labels VALUES(?,?)',[(identity,label) for label in labels])
                 elif key=='sender_policy':
                     domain=value.startswith('domain:') if isinstance(value,str) else False
                     if domain:value=value.split(':',1)[1]
                     if value not in ('new','accepted','blocked','priority'):
-                        raise ValueError('发件人筛选状态无效')
+                        raise ValueError(_tr('发件人筛选状态无效'))
                     db.execute('INSERT INTO sender_policy VALUES(?,?,?) ON CONFLICT(account,sender) DO UPDATE SET policy=excluded.policy',(message['account'],('@'+message['sender'].rsplit('@',1)[-1]) if domain else message['sender'],value))
                 else:
                     if key in ('reminder','snoozed_until'):
                         if not isinstance(value,(int,float)) or not 0<=value<=time.time()+366*86400:
-                            raise ValueError('日期必须在一年以内')
+                            raise ValueError(_tr('日期必须在一年以内'))
                     elif not isinstance(value,bool):
-                        raise ValueError('状态必须为布尔值')
+                        raise ValueError(_tr('状态必须为布尔值'))
                     db.execute(f'UPDATE messages SET {key}=? WHERE id=?',(value,identity))
         return self.get(identity)
 
@@ -290,7 +291,7 @@ class OrganizationStore:
     # ==========================================
     def save_template(self, name, subject, body, identity=None):
         if not name.strip() or len(body)>100000:
-            raise ValueError('模板需要名称，正文不超过 100000 字')
+            raise ValueError(_tr('模板需要名称，正文不超过 100000 字'))
         identity=identity or uuid.uuid4().hex
         with self.db() as db:
             db.execute('INSERT INTO templates VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,subject=excluded.subject,body=excluded.body',(identity,name.strip()[:100],subject,body))
@@ -312,10 +313,10 @@ class OrganizationStore:
     # ==========================================
     def arrange_template(self, identity, operation):
         rows=self.templates();index=next((i for i,row in enumerate(rows) if row['id']==identity),None)
-        if index is None:raise ValueError('模板不存在')
+        if index is None:raise ValueError(_tr('模板不存在'))
         if operation=='duplicate':
-            row=rows[index];return self.save_template(row['name']+' · 副本',row['subject'],row['body'])
-        if operation not in ('up','down'):raise ValueError('模板操作无效')
+            row=rows[index];return self.save_template(row['name']+_tr(' · 副本'),row['subject'],row['body'])
+        if operation not in ('up','down'):raise ValueError(_tr('模板操作无效'))
         target=max(0,min(len(rows)-1,index+(-1 if operation=='up' else 1)))
         rows[index],rows[target]=rows[target],rows[index]
         self.set_preference('template_order',[row['id'] for row in rows]);return identity
@@ -335,5 +336,5 @@ class OrganizationStore:
     def delete_draft(self, identity):
         with self.db() as db:
             row=db.execute('SELECT state FROM jobs WHERE id=?',(identity,)).fetchone()
-            if row and row['state']!='draft':raise ValueError('只能删除未排队的草稿，请先撤销发送')
+            if row and row['state']!='draft':raise ValueError(_tr('只能删除未排队的草稿，请先撤销发送'))
             db.execute("DELETE FROM jobs WHERE id=? AND state='draft'",(identity,))

@@ -1,4 +1,5 @@
 """Native standalone/embedded composer, local scheduling and personal editing policies."""
+from .i18n import text as _tr, join_text as _join_ui
 import base64
 import ctypes as C
 from datetime import datetime
@@ -23,14 +24,14 @@ class Composer(ComposerLayout,Form):
     # ==========================================
     def __init__(self, app, draft=None):
         draft = draft or {}
-        accounts = [('demo','demo@example.com')] if app.profile.demo else [(a.id,a.email) for a in app.service.accounts.values()]+[(LOCAL_ACCOUNT,'本地草稿（未选择发件账户）')]
-        fields = [('account','发件账户','combo',accounts)]
-        fields += [(key,label,'text',[]) for key,label in [('to','收件人'),('cc','抄送'),('bcc','密送'),('subject','主题')]]
-        fields += [('body','正文','body',[]),('due','发送计划','text',[]),('followup','未回复提醒','text',[])]
+        accounts = [('demo','demo@example.com')] if app.profile.demo else [(a.id,a.email) for a in app.service.accounts.values()]+[(LOCAL_ACCOUNT,_tr('本地草稿（未选择发件账户）'))]
+        fields = [('account',_tr('发件账户'),'combo',accounts)]
+        fields += [(key,label,'text',[]) for key,label in [('to',_tr('收件人')),('cc',_tr('抄送')),('bcc',_tr('密送')),('subject',_tr('主题'))]]
+        fields += [('body',_tr('正文'),'body',[]),('due',_tr('发送计划'),'text',[]),('followup',_tr('未回复提醒'),'text',[])]
         embedded=not app.service.store.preference('composer_new_window',False)
         self.inline=embedded and bool(draft.get('reply_source')) and app.service.store.preference('reply_window_size','compact')=='compact'
         self.floating=False;self.detached=False;self.surface_window=None;self.inline_card=None
-        if embedded and not app.close_document():raise ValueError('请先保存当前草稿')
+        if embedded and not app.close_document():raise ValueError(_tr('请先保存当前草稿'))
         self.init_layout(app,fields,accounts,embedded)
         self.identity = draft.get('id') or uuid.uuid4().hex
         self.attachments = list(draft.get('attachments', []))
@@ -61,8 +62,8 @@ class Composer(ComposerLayout,Form):
         if app.service.store.preference('suggest_recipients',True):
             from .composer_completion import RecipientCompletion
             self.completions=[RecipientCompletion(self,self.fields[key][0]) for key in ('to','cc','bcc')]
-        self.g.gtk_entry_set_placeholder_text(self.fields['due'][0], '可选，例如 2026-10-20 14:30（本地时间）'.encode())
-        self.g.label(self.note, '附件：' + '、'.join(a['name'] for a in self.attachments) if self.attachments else '草稿保存在本机。演示模式禁止外发。' if app.profile.demo else '草稿保存在本机；定时发送要求应用保持运行。')
+        self.g.gtk_entry_set_placeholder_text(self.fields['due'][0], _tr('可选，例如 2026-10-20 14:30（本地时间）').encode())
+        self.g.label(self.note, _tr('附件：') + _join_ui('、',((a['name'] for a in self.attachments))) if self.attachments else _tr('草稿保存在本机。演示模式禁止外发。') if app.profile.demo else _tr('草稿保存在本机；定时发送要求应用保持运行。'))
         from .reply_history import ReplyHistoryView,validated
         self.reply['reply_history']=validated(draft.get('reply_history'))
         self.history_view=ReplyHistoryView(self,self.content,self.reply['reply_history']);self.g.gtk_box_reorder_child(self.content,self.history_view.root,4)
@@ -89,7 +90,7 @@ class Composer(ComposerLayout,Form):
         if not embedded and not draft.get('reply_source'):self.g.gtk_window_maximize(self.window)
         self.g.gtk_widget_show_all(self.window)
         self.size_surface();self.scroll_into_view();app.composer=self;app.update_reply_draft_cards()
-        self.set_draft_state('saved' if draft.get('id') else 'dirty','本机草稿 · 已保存' if draft.get('id') else '正在撰写 · 草稿仅保存在本机')
+        self.set_draft_state('saved' if draft.get('id') else 'dirty',_tr('本机草稿 · 已保存') if draft.get('id') else _tr('正在撰写 · 草稿仅保存在本机'))
         for key in ('account','to','cc','bcc','subject','due','followup'):
             self.g.connect(self.fields[key][0],'changed',self.draft_changed,group=self.group)
         self.g.connect(self.g.gtk_text_view_get_buffer(self.fields['body'][0]),'changed',self.draft_changed,group=self.group)
@@ -149,7 +150,7 @@ class Composer(ComposerLayout,Form):
         self.surface_window=g.gtk_window_new(0)
         from .windows_frame import bind_window_frame
         bind_window_frame(self.app,self.surface_window,self.group)
-        g.gtk_window_set_title(self.surface_window,('TeleMail · '+(self.value('subject') or '撰写邮件')).encode())
+        g.gtk_window_set_title(self.surface_window,('TeleMail · '+(self.value('subject') or _tr('撰写邮件'))).encode())
         g.gtk_window_set_default_size(self.surface_window,760,640);g.gtk_window_set_application(self.surface_window,self.app.application)
         from .desktop_preferences import resolved_theme
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.surface_window),resolved_theme(self.app).encode())
@@ -208,7 +209,7 @@ class Composer(ComposerLayout,Form):
                 try:base=datetime.fromisoformat(self.value('due'))
                 except ValueError:base=datetime.now()
                 current=(base+timedelta(days=self.app.service.store.preference('followup_days',3))).isoformat(timespec='minutes')
-            value=choose_schedule(self.app,'稍后发送' if response==11 else '未回复提醒',current)
+            value=choose_schedule(self.app,_tr('稍后发送') if response==11 else _tr('未回复提醒'),current)
             if value is not None:self.value(field,value)
             if response==11 and value:self.response(window,2,unused)
             return
@@ -226,10 +227,10 @@ class Composer(ComposerLayout,Form):
         if response==6:
             self.remove_attachment();return
         if response == 3:
-            filename = self.g.choose(self.app.window if self.embedded else self.window, '添加附件')
+            filename = self.g.choose(self.app.window if self.embedded else self.window, _tr('添加附件'))
             if filename:
                 if filename.stat().st_size > MAX_MESSAGE_BYTES or len(self.attachments) >= 20:
-                    self.g.label(self.note, '附件最多 20 个，单封邮件总大小上限 30 MiB')
+                    self.g.label(self.note, _tr('附件最多 20 个，单封邮件总大小上限 30 MiB'))
                     return
                 self.attachments.append({'name': filename.name, 'base64': base64.b64encode(filename.read_bytes()).decode()})
                 self.refresh_chips();self.size_surface();self.draft_changed()
@@ -263,7 +264,7 @@ class Composer(ComposerLayout,Form):
         self.busy = False
         self.close()
         self.app.composer = None
-        self.app.message('邮件已排队，可在“草稿 / 发件箱”中撤销发送' if result['state'] == 'queued' else '草稿已保存')
+        self.app.message(_tr('邮件已排队，可在“草稿 / 发件箱”中撤销发送') if result['state'] == 'queued' else _tr('草稿已保存'))
         self.app.refresh()
 
     # ==========================================
@@ -283,9 +284,9 @@ class Composer(ComposerLayout,Form):
     # ==========================================
     def remove_attachment(self):
         if not self.attachments:
-            self.g.label(self.note,'没有附件');return
-        form=Form(self.app,'移除附件',[('attachment','附件','combo',[(str(i),a['name']) for i,a in enumerate(self.attachments)])],540)
-        form.value('attachment','0');form.button('取消',-6);form.button('移除',1)
+            self.g.label(self.note,_tr('没有附件'));return
+        form=Form(self.app,_tr('移除附件'),[('attachment',_tr('附件'),'combo',[(str(i),a['name']) for i,a in enumerate(self.attachments)])],540)
+        form.value('attachment','0');form.button(_tr('取消'),-6);form.button(_tr('移除'),1)
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);index=form.value('attachment');form.close()
         if response==1:
             del self.attachments[int(index)]
@@ -297,10 +298,10 @@ class Composer(ComposerLayout,Form):
     # ==========================================
     def template_dialog(self):
         templates=self.app.service.store.templates()
-        form=Form(self.app,'邮件模板',[('template','选择模板','combo',[('new','保存当前邮件为新模板')]+[(r['id'],r['name']) for r in templates]),('name','模板名称','text',[])],620)
+        form=Form(self.app,_tr('邮件模板'),[('template',_tr('选择模板'),'combo',[('new',_tr('保存当前邮件为新模板'))]+[(r['id'],r['name']) for r in templates]),('name',_tr('模板名称'),'text',[])],620)
         form.value('template','new');form.value('name',self.value('subject'))
-        form.button('关闭',-6);form.button('删除',3);form.button('保存当前内容',2);form.button('应用模板',1)
-        self.g.label(form.note,'保存会使用当前编辑器的主题和正文；应用模板会替换主题和正文。')
+        form.button(_tr('关闭'),-6);form.button(_tr('删除'),3);form.button(_tr('保存当前内容'),2);form.button(_tr('应用模板'),1)
+        self.g.label(form.note,_tr('保存会使用当前编辑器的主题和正文；应用模板会替换主题和正文。'))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);identity=form.value('template');name=form.value('name');form.close()
         if response==1:
             item=next((r for r in templates if r['id']==identity),None)
@@ -311,8 +312,8 @@ class Composer(ComposerLayout,Form):
                     'date':datetime.now().strftime('%Y-%m-%d'),'recipient':self.value('to')}
                 content,missing=render_template(item,values)
                 if missing:
-                    variables=Form(self.app,'填写模板变量',[('var'+str(i),name,'text',[]) for i,name in enumerate(missing)],620)
-                    variables.button('取消',-6);variables.button('应用模板',1);self.g.gtk_widget_show_all(variables.window)
+                    variables=Form(self.app,_tr('填写模板变量'),[('var'+str(i),name,'text',[]) for i,name in enumerate(missing)],620)
+                    variables.button(_tr('取消'),-6);variables.button(_tr('应用模板'),1);self.g.gtk_widget_show_all(variables.window)
                     answer=self.g.gtk_dialog_run(variables.window)
                     if answer==1:values.update({name:variables.value('var'+str(i)) for i,name in enumerate(missing)})
                     variables.close()
@@ -335,7 +336,7 @@ class Composer(ComposerLayout,Form):
     # Method: Reuse the bounded autosave timer and retain errors until the user makes another edit.
     # ==========================================
     def draft_changed(self,*unused):
-        if not self.closed and not self.busy:self.set_draft_state('dirty','正在撰写 · 等待保存到本机')
+        if not self.closed and not self.busy:self.set_draft_state('dirty',_tr('正在撰写 · 等待保存到本机'))
 
     # ==========================================
     # Function: Persist removal of the attached history from the full editor's draft.
@@ -358,23 +359,23 @@ class Composer(ComposerLayout,Form):
         from .draft_content import has_draft_content
         if not has_draft_content(payload):
             try:self.app.service.store.delete_draft(self.identity)
-            except (ValueError,OSError,sqlite3.Error) as error:self.set_draft_state('error','空白草稿清理未完成：'+str(error));return False
-            self.last_snapshot='';self.set_draft_state('empty','空白草稿不会保存')
+            except (ValueError,OSError,sqlite3.Error) as error:self.set_draft_state('error',_tr('空白草稿清理未完成：')+str(error));return False
+            self.last_snapshot='';self.set_draft_state('empty',_tr('空白草稿不会保存'))
             self.app.update_reply_draft_cards();return True
         if self.value('followup').strip():
             try:payload['remind_at']=datetime.fromisoformat(self.value('followup')).timestamp()
             except ValueError:pass
         snapshot=json.dumps(payload,sort_keys=True)
         if snapshot==self.last_snapshot:
-            self.set_draft_state('saved','已保存到本机');return True
+            self.set_draft_state('saved',_tr('已保存到本机'));return True
         try:
             self.app.service.compose(payload)
             self.last_snapshot=snapshot
-            self.set_draft_state('saved','已保存到本机 · '+datetime.now().strftime('%H:%M:%S'))
+            self.set_draft_state('saved',_tr('已保存到本机 · ')+datetime.now().strftime('%H:%M:%S'))
             self.app.update_reply_draft_cards()
             return True
         except (ValueError,OSError,sqlite3.Error) as error:
-            self.set_draft_state('error','自动保存未完成：'+str(error))
+            self.set_draft_state('error',_tr('自动保存未完成：')+str(error))
             return False
 
     # ==========================================
@@ -382,8 +383,8 @@ class Composer(ComposerLayout,Form):
     # Method: Keep the editor open on cancellation and remove only its stable draft ID.
     # ==========================================
     def discard(self):
-        form=Form(self.app,'放弃草稿',[],480);form.button('保留',-6);form.button('放弃草稿',1)
-        self.g.label(form.note,'将删除当前未发送的草稿内容。')
+        form=Form(self.app,_tr('放弃草稿'),[],480);form.button(_tr('保留'),-6);form.button(_tr('放弃草稿'),1)
+        self.g.label(form.note,_tr('将删除当前未发送的草稿内容。'))
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);form.close()
         if response==1:
             self.app.service.store.delete_draft(self.identity);self.close();self.app.composer=None;self.app.refresh()
@@ -403,9 +404,9 @@ class Composer(ComposerLayout,Form):
             self.applied_signature=new;self.signature_account=self.value('account')
         if hasattr(self,'account_label'):
             account=next((a for a in self.app.service.accounts.values() if a.id==self.value('account')),None)
-            self.g.label(self.account_label,account.email if account else '演示账户' if self.app.profile.demo else '选择发件账户')
+            self.g.label(self.account_label,account.email if account else _tr('演示账户') if self.app.profile.demo else _tr('选择发件账户'))
         allowed=not self.app.profile.demo and self.value('account') in self.app.service.accounts and not self.busy
         self.g.gtk_widget_set_sensitive(self.send_button,int(allowed))
         self.g.gtk_widget_set_sensitive(self.later_button,int(allowed))
         if self.value('account')==LOCAL_ACCOUNT:
-            self.g.label(self.note,'本地草稿保存在此电脑。发送前请添加并选择邮箱账户。')
+            self.g.label(self.note,_tr('本地草稿保存在此电脑。发送前请添加并选择邮箱账户。'))

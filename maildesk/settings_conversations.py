@@ -1,4 +1,5 @@
 """Staged native settings for which cloud/local folders feed contact conversations."""
+from .i18n import text as _tr
 import ctypes as C
 from .desktop_general import bind,P
 from .conversation_folders import inventory,load,recommended,normalized,save
@@ -16,16 +17,16 @@ class ConversationFolderSettings:
     def __init__(self,app,form):
         self.app=app;self.form=form;self.g=app.g;self.policy=load(app.service.store);self.checks={};self.rows=[];self.headings={};self.loading=True;self.closed=False;self.bulk=False
         g=self.g;host=g.object(form.builder,'page_conversations');self.host=host
-        line=g.gtk_box_new(0,12);g.gtk_box_pack_start(host,line,0,1,0);label=g.gtk_label_new('汇总范围'.encode());g.gtk_label_set_xalign(label,0);g.gtk_box_pack_start(line,label,1,1,0)
-        self.mode=g.gtk_combo_box_text_new();g.gtk_combo_box_text_append(self.mode,b'default','默认文件夹'.encode());g.gtk_combo_box_text_append(self.mode,b'custom','自定义文件夹'.encode());g.gtk_combo_box_set_active_id(self.mode,self.policy['mode'].encode());g.gtk_box_pack_start(line,self.mode,0,0,0)
+        line=g.gtk_box_new(0,12);g.gtk_box_pack_start(host,line,0,1,0);label=g.gtk_label_new(_tr('汇总范围').encode());g.gtk_label_set_xalign(label,0);g.gtk_box_pack_start(line,label,1,1,0)
+        self.mode=g.gtk_combo_box_text_new();g.gtk_combo_box_text_append(self.mode,b'default',_tr('默认文件夹').encode());g.gtk_combo_box_text_append(self.mode,b'custom',_tr('自定义文件夹').encode());g.gtk_combo_box_set_active_id(self.mode,self.policy['mode'].encode());g.gtk_box_pack_start(line,self.mode,0,0,0)
         from .native_choices import NativeChoice
-        self.choice=NativeChoice(g,self.mode,'汇总范围','conversation-folder-mode');form.choices.append(self.choice)
-        self.note=g.gtk_label_new('默认汇总收件箱、已发送和普通文件夹，排除垃圾邮件、已删除及草稿。自定义范围可选择这些文件夹；只显示已同步或导入本机的邮件。'.encode());g.gtk_label_set_line_wrap(self.note,1);g.gtk_label_set_xalign(self.note,0);g.gtk_label_set_max_width_chars(self.note,66);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.note),b'settings-description');g.gtk_box_pack_start(host,self.note,0,1,8)
-        self.search=bind(app,'gtk','gtk_search_entry_new',P)();g.gtk_entry_set_placeholder_text(self.search,'搜索文件夹'.encode());g.gtk_box_pack_start(host,self.search,0,1,4)
-        controls=g.gtk_box_new(0,6);self.controls=controls;g.gtk_box_pack_start(host,controls,0,1,4);self.all=g.gtk_button_new_with_label('全选'.encode());self.none=g.gtk_button_new_with_label('清空'.encode())
+        self.choice=NativeChoice(g,self.mode,_tr('汇总范围'),'conversation-folder-mode');form.choices.append(self.choice)
+        self.note=g.gtk_label_new(_tr('默认汇总收件箱、已发送和普通文件夹，排除垃圾邮件、已删除及草稿。自定义范围可选择这些文件夹；只显示已同步或导入本机的邮件。').encode());g.gtk_label_set_line_wrap(self.note,1);g.gtk_label_set_xalign(self.note,0);g.gtk_label_set_max_width_chars(self.note,66);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.note),b'settings-description');g.gtk_box_pack_start(host,self.note,0,1,8)
+        self.search=bind(app,'gtk','gtk_search_entry_new',P)();g.gtk_entry_set_placeholder_text(self.search,_tr('搜索文件夹').encode());g.gtk_box_pack_start(host,self.search,0,1,4)
+        controls=g.gtk_box_new(0,6);self.controls=controls;g.gtk_box_pack_start(host,controls,0,1,4);self.all=g.gtk_button_new_with_label(_tr('全选').encode());self.none=g.gtk_button_new_with_label(_tr('清空').encode())
         for button in (self.all,self.none):g.gtk_box_pack_start(controls,button,0,0,0)
-        g.gtk_widget_set_tooltip_text(self.all,'选择当前搜索结果中的文件夹'.encode());g.gtk_widget_set_tooltip_text(self.none,'取消当前搜索结果中的选择'.encode())
-        self.count=g.gtk_label_new('正在读取文件夹…'.encode());g.gtk_label_set_xalign(self.count,0);g.gtk_box_pack_start(controls,self.count,1,1,8)
+        g.gtk_widget_set_tooltip_text(self.all,_tr('选择当前搜索结果中的文件夹').encode());g.gtk_widget_set_tooltip_text(self.none,_tr('取消当前搜索结果中的选择').encode())
+        self.count=g.gtk_label_new(_tr('正在读取文件夹…').encode());g.gtk_label_set_xalign(self.count,0);g.gtk_box_pack_start(controls,self.count,1,1,8)
         self.list=g.gtk_box_new(1,2);g.gtk_box_pack_start(host,self.list,0,1,0)
         g.connect(self.mode,'changed',self.mode_changed,group=form.group);g.connect(self.search,'search-changed',self.filter,group=form.group)
         g.connect(self.all,'clicked',lambda *unused:self.select_all(True),group=form.group);g.connect(self.none,'clicked',lambda *unused:self.select_all(False),group=form.group)
@@ -36,7 +37,7 @@ class ConversationFolderSettings:
     # Method: Keep cloud folder paths exact and translate only known internal local buckets.
     # ==========================================
     def title(self,folder):
-        return {'@sent':'已发送（本机副本）','@draft':'草稿（本机）','@drafts':'草稿（本机）','@local-cache':'本机邮件'}.get(folder,folder)
+        return {'@sent':_tr('已发送（本机副本）'),'@draft':_tr('草稿（本机）'),'@drafts':_tr('草稿（本机）'),'@local-cache':_tr('本机邮件')}.get(folder,folder)
 
     # ==========================================
     # Function: Render all folder choices in account groups after background inventory completes.
@@ -48,11 +49,11 @@ class ConversationFolderSettings:
         for item in items:
             key=(item['account'],item['folder'])
             if account!=item['account']:
-                account=item['account'];entry=self.app.service.accounts.get(account);name=(entry.title or entry.email) if entry else '本地文件夹' if account==LOCAL_ACCOUNT else account
+                account=item['account'];entry=self.app.service.accounts.get(account);name=(entry.title or entry.email) if entry else _tr('本地文件夹') if account==LOCAL_ACCOUNT else account
                 heading=g.gtk_label_new(name.encode());g.gtk_label_set_xalign(heading,0);g.gtk_widget_set_margin_top(heading,16);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(heading),b'directory-section');g.gtk_box_pack_start(self.list,heading,0,1,0);self.headings[account]=heading
             row=g.gtk_box_new(0,10);g.gtk_widget_set_margin_start(row,6);g.gtk_widget_set_margin_top(row,4);g.gtk_widget_set_margin_bottom(row,4)
             check=bind(self.app,'gtk','gtk_check_button_new_with_label',P,C.c_char_p)(self.title(item['folder']).encode());label=g.gtk_bin_get_child(check);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,38);g.gtk_widget_set_tooltip_text(check,item['folder'].encode());g.gtk_toggle_button_set_active(check,key in chosen if self.policy['mode']=='custom' else recommended(item));g.gtk_widget_set_hexpand(check,1);g.gtk_box_pack_start(row,check,1,1,0);self.checks[key]=check
-            detail='暂不可用 · 保留选择' if not item['present'] else ('本机' if account==LOCAL_ACCOUNT or item['folder'].startswith('@') else '云端')+' · '+str(item['cached'])+' 封已缓存'
+            detail=_tr('暂不可用 · 保留选择') if not item['present'] else (_tr('本机') if account==LOCAL_ACCOUNT or item['folder'].startswith('@') else _tr('云端'))+' · '+str(item['cached'])+_tr(' 封已缓存')
             label=g.gtk_label_new(detail.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),b'mail-preview');g.gtk_box_pack_start(row,label,0,0,0);g.gtk_box_pack_start(self.list,row,0,1,0);self.rows.append((row,item,check))
             g.connect(check,'toggled',self.count_selected,group=self.form.group)
         self.loading=False;g.gtk_widget_show_all(self.list);self.mode_changed();self.filter()
@@ -100,7 +101,7 @@ class ConversationFolderSettings:
     def count_selected(self,*unused):
         if self.loading or self.bulk:return
         count=sum(bool(self.g.gtk_toggle_button_get_active(check)) for check in self.checks.values())
-        self.g.label(self.count,('已选择 '+str(count)+' 个文件夹；保存后生效') if count else '未选择文件夹，对话列表将为空')
+        self.g.label(self.count,(_tr('已选择 ')+str(count)+_tr(' 个文件夹；保存后生效')) if count else _tr('未选择文件夹，对话列表将为空'))
 
     # ==========================================
     # Function: Validate staged folder state while the parent settings dialog can still report errors.
@@ -109,7 +110,7 @@ class ConversationFolderSettings:
     def value(self):
         mode=(self.g.gtk_combo_box_get_active_id(self.mode) or b'default').decode()
         if self.loading:
-            if mode!=self.policy['mode']:raise ValueError('文件夹仍在加载，请稍候保存')
+            if mode!=self.policy['mode']:raise ValueError(_tr('文件夹仍在加载，请稍候保存'))
             return self.policy
         return normalized({'mode':mode,'folders':[{'account':account,'folder':folder} for (account,folder),check in self.checks.items() if self.g.gtk_toggle_button_get_active(check)]})
 

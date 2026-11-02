@@ -1,4 +1,5 @@
 """Continuous bounded local people directory with persistent same-client details."""
+from .i18n import text as _tr, join_text as _join_ui
 import ctypes as C
 from . import address_book
 from .desktop_general import bind,P,I
@@ -20,15 +21,15 @@ class ContactsPage:
         g.connect(host,'unmap',self.page_hidden,group=form.group)
         toolbar=g.gtk_box_new(0,8);self.toolbar=toolbar;self.style(toolbar,'directory-toolbar');g.gtk_box_pack_start(host,toolbar,0,1,0)
         self.search=bind(app,'gtk','gtk_search_entry_new',P)();g.gtk_box_pack_start(toolbar,self.search,1,1,0)
-        g.gtk_widget_set_tooltip_text(self.search,'搜索姓名或邮箱 · 支持重音与 Unicode'.encode())
-        self.select_button=self.icon_button(toolbar,'多选联系人','action-select',self.toggle_select)
-        self.new_button=self.icon_button(toolbar,'新建联系人','action-add',self.new)
-        self.count=g.gtk_label_new('正在加载本地通讯录…'.encode());g.gtk_label_set_xalign(self.count,0);self.style(self.count,'directory-count');g.gtk_box_pack_start(host,self.count,0,1,3)
+        g.gtk_widget_set_tooltip_text(self.search,_tr('搜索姓名或邮箱 · 支持重音与 Unicode').encode())
+        self.select_button=self.icon_button(toolbar,_tr('多选联系人'),'action-select',self.toggle_select)
+        self.new_button=self.icon_button(toolbar,_tr('新建联系人'),'action-add',self.new)
+        self.count=g.gtk_label_new(_tr('正在加载本地通讯录…').encode());g.gtk_label_set_xalign(self.count,0);self.style(self.count,'directory-count');g.gtk_box_pack_start(host,self.count,0,1,3)
         self.bulk=g.gtk_box_new(0,8);self.style(self.bulk,'directory-bulk');g.gtk_widget_set_no_show_all(self.bulk,1);g.gtk_box_pack_start(host,self.bulk,0,1,0)
-        self.icon_button(self.bulk,'合并到所选目标…','contacts-merge',self.bulk_merge);self.icon_button(self.bulk,'删除所选…','spark-layout-trash',self.bulk_delete)
-        self.icon_button(self.bulk,'设为带星标联系人','contact-starred',lambda:self.bulk_star(True));self.icon_button(self.bulk,'取消联系人星标','contact-unstarred',lambda:self.bulk_star(False))
+        self.icon_button(self.bulk,_tr('合并到所选目标…'),'contacts-merge',self.bulk_merge);self.icon_button(self.bulk,_tr('删除所选…'),'spark-layout-trash',self.bulk_delete)
+        self.icon_button(self.bulk,_tr('设为带星标联系人'),'contact-starred',lambda:self.bulk_star(True));self.icon_button(self.bulk,_tr('取消联系人星标'),'contact-unstarred',lambda:self.bulk_star(False))
         self.bulk_policy_buttons={}
-        for key,title,icon in [('muted','免打扰','contact-muted'),('blocked','屏蔽','action-block'),('pinned','置顶','spark-layout-pin')]:
+        for key,title,icon in [('muted',_tr('免打扰'),'contact-muted'),('blocked',_tr('屏蔽'),'action-block'),('pinned',_tr('置顶'),'spark-layout-pin')]:
             self.bulk_policy_buttons[key]=self.icon_button(self.bulk,title,icon,lambda flag=key:self.bulk_policy(flag))
         self.bulk_count=g.gtk_label_new(b'');g.gtk_label_set_xalign(self.bulk_count,1);g.gtk_box_pack_start(self.bulk,self.bulk_count,1,1,0)
         columns=g.gtk_box_new(0,5);g.gtk_box_pack_start(host,columns,1,1,0)
@@ -36,9 +37,9 @@ class ContactsPage:
         self.rows=g.gtk_box_new(1,2);g.gtk_container_add(scroll,self.rows);g.gtk_box_pack_start(columns,scroll,1,1,0)
         rail=bind(app,'gtk','gtk_grid_new',P)();self.rail=rail;self.rail_columns=1;self.index_font=None;self.active_letter='';self.style(rail,'directory-index')
         bind(app,'gtk','gtk_grid_set_row_homogeneous',None,P,I)(rail,1);bind(app,'gtk','gtk_grid_set_column_homogeneous',None,P,I)(rail,1)
-        index_scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(index_scroll,2,3);g.gtk_widget_set_size_request(index_scroll,25,-1);g.gtk_container_add(index_scroll,rail);g.gtk_box_pack_start(columns,index_scroll,0,0,0);g.gtk_widget_set_tooltip_text(index_scroll,'字母索引 · 当前浏览分组'.encode())
+        index_scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(index_scroll,2,3);g.gtk_widget_set_size_request(index_scroll,25,-1);g.gtk_container_add(index_scroll,rail);g.gtk_box_pack_start(columns,index_scroll,0,0,0);g.gtk_widget_set_tooltip_text(index_scroll,_tr('字母索引 · 当前浏览分组').encode())
         for letter in '★ABCDEFGHIJKLMNOPQRSTUVWXYZ#':
-            button=g.gtk_button_new_with_label(letter.encode());self.letter_buttons[letter]=button;g.gtk_widget_set_tooltip_text(button,('跳转到 '+letter).encode())
+            button=g.gtk_button_new_with_label(letter.encode());self.letter_buttons[letter]=button;g.gtk_widget_set_tooltip_text(button,(_tr('跳转到 ')+letter).encode())
             g.connect(button,'clicked',lambda *unused,value=letter:self.app.run_action(lambda:self.jump(value)),group=form.group)
         attach=bind(app,'gtk','gtk_grid_attach',None,P,P,I,I,I,I)
         for index,button in enumerate(self.letter_buttons.values()):attach(rail,button,0,index,1,1)
@@ -49,24 +50,24 @@ class ContactsPage:
         editor=g.gtk_box_new(1,10);self.editor=editor;g.gtk_container_set_border_width(editor,15);g.gtk_container_add(self.drawer,editor)
         heading=g.gtk_box_new(0,10);g.gtk_box_pack_start(editor,heading,0,1,0)
         self.editor_avatar=g.gtk_label_new(b'+');self.style(self.editor_avatar,'directory-avatar');g.gtk_box_pack_start(heading,self.editor_avatar,0,0,0)
-        self.editor_title=g.gtk_label_new('联系人详情'.encode());self.style(self.editor_title,'directory-name');g.gtk_box_pack_start(heading,self.editor_title,1,1,0)
-        self.editor_close=self.icon_button(heading,'关闭','composer-close',self.dismiss_editor)
-        self.name=self.entry(editor,'显示姓名')
-        label=g.gtk_label_new('邮箱地址 · 每行一个'.encode());g.gtk_label_set_xalign(label,0);g.gtk_box_pack_start(editor,label,0,1,0)
+        self.editor_title=g.gtk_label_new(_tr('联系人详情').encode());self.style(self.editor_title,'directory-name');g.gtk_box_pack_start(heading,self.editor_title,1,1,0)
+        self.editor_close=self.icon_button(heading,_tr('关闭'),'composer-close',self.dismiss_editor)
+        self.name=self.entry(editor,_tr('显示姓名'))
+        label=g.gtk_label_new(_tr('邮箱地址 · 每行一个').encode());g.gtk_label_set_xalign(label,0);g.gtk_box_pack_start(editor,label,0,1,0)
         self.addresses=bind(app,'gtk','gtk_text_view_new',P)();bind(app,'gtk','gtk_text_view_set_wrap_mode',None,P,I)(self.addresses,3)
         addresses_scroll=g.gtk_scrolled_window_new(None,None);g.gtk_widget_set_size_request(addresses_scroll,-1,100);g.gtk_scrolled_window_set_policy(addresses_scroll,2,1);g.gtk_container_add(addresses_scroll,self.addresses);g.gtk_box_pack_start(editor,addresses_scroll,0,1,0)
         self.policy_box=g.gtk_box_new(1,3);g.gtk_box_pack_start(editor,self.policy_box,0,1,0)
-        for key,title,hint in [('muted','免打扰','保留对话，关闭此联系人的弹窗与未读圆点'),('pinned','置顶','优先显示在对话列表的置顶区域'),('blocked','屏蔽','从对话列表隐藏并关闭通知，保留原邮件'),('starred','带星标联系人','在通讯录和选择收件人时优先显示，并在清理缓存时保留')]:
+        for key,title,hint in [('muted',_tr('免打扰'),_tr('保留对话，关闭此联系人的弹窗与未读圆点')),('pinned',_tr('置顶'),_tr('优先显示在对话列表的置顶区域')),('blocked',_tr('屏蔽'),_tr('从对话列表隐藏并关闭通知，保留原邮件')),('starred',_tr('带星标联系人'),_tr('在通讯录和选择收件人时优先显示，并在清理缓存时保留'))]:
             check=bind(app,'gtk','gtk_check_button_new_with_label',P,C.c_char_p)(title.encode());self.policy_checks[key]=check;g.gtk_widget_set_tooltip_text(check,hint.encode());g.gtk_box_pack_start(self.policy_box,check,0,1,0)
             g.connect(check,'toggled',self.policy_changed,group=form.group)
-        self.policy_note=g.gtk_label_new('开关立即保存 · 新联系人请先保存邮箱'.encode());g.gtk_label_set_xalign(self.policy_note,0);self.style(self.policy_note,'directory-count');g.gtk_box_pack_start(self.policy_box,self.policy_note,0,1,0);g.gtk_widget_set_sensitive(self.policy_box,0)
+        self.policy_note=g.gtk_label_new(_tr('开关立即保存 · 新联系人请先保存邮箱').encode());g.gtk_label_set_xalign(self.policy_note,0);self.style(self.policy_note,'directory-count');g.gtk_box_pack_start(self.policy_box,self.policy_note,0,1,0);g.gtk_widget_set_sensitive(self.policy_box,0)
         actions=g.gtk_box_new(0,7);g.gtk_box_pack_start(editor,actions,0,1,0)
-        save=self.button(actions,'保存',self.save);self.style(save,'suggested-action')
-        self.icon_button(actions,'写邮件','reader-reply',self.compose);self.icon_button(actions,'删除联系人','spark-layout-trash',self.delete)
-        self.split_address=self.entry(editor,'单个邮箱地址 · 用于拆分或写邮件')
-        self.button(editor,'拆分此邮箱',self.split)
-        self.editor_hint=g.gtk_label_new('关闭保留本次未保存编辑；切换联系人最多保留 40 份。'.encode());g.gtk_label_set_line_wrap(self.editor_hint,1);g.gtk_label_set_max_width_chars(self.editor_hint,28);self.style(self.editor_hint,'directory-count');g.gtk_box_pack_start(editor,self.editor_hint,0,1,0)
-        self.note=g.gtk_label_new('记录来信发件人和已发送邮件的收件人 · 设置仅保存在本机'.encode());g.gtk_label_set_line_wrap(self.note,1);g.gtk_label_set_xalign(self.note,0);self.style(self.note,'directory-count');g.gtk_box_pack_start(host,self.note,0,1,3)
+        save=self.button(actions,_tr('保存'),self.save);self.style(save,'suggested-action')
+        self.icon_button(actions,_tr('写邮件'),'reader-reply',self.compose);self.icon_button(actions,_tr('删除联系人'),'spark-layout-trash',self.delete)
+        self.split_address=self.entry(editor,_tr('单个邮箱地址 · 用于拆分或写邮件'))
+        self.button(editor,_tr('拆分此邮箱'),self.split)
+        self.editor_hint=g.gtk_label_new(_tr('关闭保留本次未保存编辑；切换联系人最多保留 40 份。').encode());g.gtk_label_set_line_wrap(self.editor_hint,1);g.gtk_label_set_max_width_chars(self.editor_hint,28);self.style(self.editor_hint,'directory-count');g.gtk_box_pack_start(editor,self.editor_hint,0,1,0)
+        self.note=g.gtk_label_new(_tr('记录来信发件人和已发送邮件的收件人 · 设置仅保存在本机').encode());g.gtk_label_set_line_wrap(self.note,1);g.gtk_label_set_xalign(self.note,0);self.style(self.note,'directory-count');g.gtk_box_pack_start(host,self.note,0,1,3)
         g.connect(self.search,'search-changed',self.search_changed,group=form.group);g.connect(self.name,'changed',self.name_changed,group=form.group)
         if self.details_only:
             g.gtk_widget_set_no_show_all(self.editor_close,1);g.gtk_widget_hide(self.editor_close)
@@ -204,11 +205,11 @@ class ContactsPage:
             self.items={item['id']:item for item in page['items']};self.total=page['total'];self.offset=page['offset'];self.directory_query=query;self.row_widgets={}
             for identity,item in self.items.items():
                 if identity in self.canonical_details:self.canonical_details[identity]=item
-            g.label(self.count,str(self.total)+' 位联系人'+(' · 正在补全历史联系人' if not status['complete'] else ' · 本地通讯录'))
+            g.label(self.count,str(self.total)+_tr(' 位联系人')+(_tr(' · 正在补全历史联系人') if not status['complete'] else _tr(' · 本地通讯录')))
             last=''
             for item in page['items']:
                 if item['letter']!=last:
-                    last=item['letter'];section=g.gtk_label_new(('带星标联系人' if last=='★' else last).encode());g.gtk_label_set_xalign(section,0);self.style(section,'directory-section');g.gtk_box_pack_start(self.rows,section,0,1,0)
+                    last=item['letter'];section=g.gtk_label_new((_tr('带星标联系人') if last=='★' else last).encode());g.gtk_label_set_xalign(section,0);self.style(section,'directory-section');g.gtk_box_pack_start(self.rows,section,0,1,0)
                 row=g.gtk_box_new(0,7);self.row_widgets[item['id']]=row;self.style(row,'directory-row');g.gtk_box_pack_start(self.rows,row,0,1,0)
                 if self.selecting:
                     check=bind(self.app,'gtk','gtk_check_button_new',P)();g.gtk_toggle_button_set_active(check,int(item['id'] in self.selected));g.gtk_box_pack_start(row,check,0,0,0)
@@ -221,10 +222,10 @@ class ContactsPage:
                 for value,role in [(title,'directory-name'),(item['addresses'][0],'directory-email')]:
                     label=g.gtk_label_new(value.encode());g.gtk_label_set_xalign(label,0);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,24);self.style(label,role);g.gtk_box_pack_start(text,label,0,1,0)
                 if len(item['addresses'])>1:
-                    badge=g.gtk_label_new((str(len(item['addresses']))+' 邮箱').encode());self.style(badge,'directory-badge');g.gtk_box_pack_start(body,badge,0,0,0)
-                g.gtk_widget_set_tooltip_text(button,(title+'\n'+', '.join(item['addresses'])).encode());g.connect(button,'clicked',lambda *unused,value=item:self.choose(value),group=group)
+                    badge=g.gtk_label_new((str(len(item['addresses']))+_tr(' 邮箱')).encode());self.style(badge,'directory-badge');g.gtk_box_pack_start(body,badge,0,0,0)
+                g.gtk_widget_set_tooltip_text(button,(title+'\n'+_join_ui(', ',(item['addresses']))).encode());g.connect(button,'clicked',lambda *unused,value=item:self.choose(value),group=group)
                 star=g.gtk_button_new();from .ui_actions import icon_action
-                icon_action(g,star,'取消联系人星标' if item['starred'] else '设为带星标联系人','contact-starred' if item['starred'] else 'contact-unstarred',17);g.gtk_box_pack_start(row,star,0,0,0)
+                icon_action(g,star,_tr('取消联系人星标') if item['starred'] else _tr('设为带星标联系人'),'contact-starred' if item['starred'] else 'contact-unstarred',17);g.gtk_box_pack_start(row,star,0,0,0)
                 g.connect(star,'clicked',lambda *unused,person=item['id'],enabled=not bool(item['starred']):self.set_stars((person,),enabled),group=group)
             for value,button in self.letter_buttons.items():g.gtk_widget_set_sensitive(button,int(value in page['letters']))
             g.gtk_widget_show_all(self.host);self.update_bulk()
@@ -277,7 +278,7 @@ class ContactsPage:
         if active and self.selecting:
             if identity not in self.selected and len(self.selected)>=100:
                 if widget:self.g.gtk_toggle_button_set_active(widget,0)
-                self.g.label(self.note,'每次最多选择 100 位联系人');return False
+                self.g.label(self.note,_tr('每次最多选择 100 位联系人'));return False
             self.selected.add(identity)
         else:self.selected.discard(identity)
         self.update_bulk()
@@ -295,13 +296,13 @@ class ContactsPage:
     # ==========================================
     def update_bulk(self):
         from .ui_actions import icon_action
-        icon_action(self.g,self.select_button,'完成多选' if self.selecting else '多选联系人','spark-layout-done' if self.selecting else 'action-select',17)
-        self.g.label(self.bulk_count,str(len(self.selected))+' 位已选')
+        icon_action(self.g,self.select_button,_tr('完成多选') if self.selecting else _tr('多选联系人'),'spark-layout-done' if self.selecting else 'action-select',17)
+        self.g.label(self.bulk_count,str(len(self.selected))+_tr(' 位已选'))
         from .ui_actions import state_action
         chosen=[self.items[person] for person in self.selected if person in self.items]
-        for key,title,icon in [('muted','免打扰','contact-muted'),('blocked','屏蔽','action-block'),('pinned','置顶','spark-layout-pin')]:
+        for key,title,icon in [('muted',_tr('免打扰'),'contact-muted'),('blocked',_tr('屏蔽'),'action-block'),('pinned',_tr('置顶'),'spark-layout-pin')]:
             active=bool(chosen) and len(chosen)==len(self.selected) and all(item.get(key) for item in chosen)
-            state_action(self.g,self.bulk_policy_buttons[key],('取消' if active else '')+title,icon,active,17)
+            state_action(self.g,self.bulk_policy_buttons[key],(_tr('取消') if active else '')+title,icon,active,17)
         if self.selecting:
             self.g.gtk_widget_set_no_show_all(self.bulk,0);self.g.gtk_widget_show_all(self.bulk);self.g.gtk_widget_set_no_show_all(self.bulk,1)
         else:self.g.gtk_widget_hide(self.bulk)
@@ -312,8 +313,8 @@ class ContactsPage:
     # ==========================================
     def set_stars(self,people,enabled):
         people=tuple(people)
-        if not people:raise ValueError('请先选择联系人')
-        self.mutate(lambda:address_book.star_many(self.store,people,enabled),'已设为带星标联系人。' if enabled else '已取消联系人星标。',restart=True)
+        if not people:raise ValueError(_tr('请先选择联系人'))
+        self.mutate(lambda:address_book.star_many(self.store,people,enabled),_tr('已设为带星标联系人。') if enabled else _tr('已取消联系人星标。'),restart=True)
 
     # ==========================================
     # Function: Apply the explicit toolbar star state to the current immutable selection.
@@ -329,24 +330,24 @@ class ContactsPage:
     def bulk_policy(self,key):
         from .contact_policies import toggle_many
         people=tuple(self.selected)
-        if not people:raise ValueError('请先选择联系人')
-        self.mutate(lambda:toggle_many(self.store,people,key),'联系人设置已更新。',refresh_target=bool(self.person),keep_selection=True)
+        if not people:raise ValueError(_tr('请先选择联系人'))
+        self.mutate(lambda:toggle_many(self.store,people,key),_tr('联系人设置已更新。'),refresh_target=bool(self.person),keep_selection=True)
 
     # ==========================================
     # Function: Confirm the currently chosen stable merge target before any local transaction.
     # Method: Show target name and source count with a separate explicit action in the drawer.
     # ==========================================
     def bulk_merge(self):
-        if not self.person or not self.selected-{self.person}:raise ValueError('请先点开合并目标联系人，并勾选来源联系人')
+        if not self.person or not self.selected-{self.person}:raise ValueError(_tr('请先点开合并目标联系人，并勾选来源联系人'))
         target=self.person;sources=tuple(self.selected-{target})
         # ==========================================
         # Function: Submit only the target and sources displayed by the confirmation.
         # Method: Reject target navigation and keep the immutable source identities.
         # ==========================================
         def submit():
-            if self.person!=target:raise ValueError('合并目标已变更，请重新确认')
-            self.mutate(lambda:address_book.merge_many(self.store,target,sources),'所选联系人已合并到当前目标。',refresh_target=True)
-        self.confirm_bulk('将 '+str(len(sources))+' 位联系人合并到「'+self.g.text(self.name)+'」',submit)
+            if self.person!=target:raise ValueError(_tr('合并目标已变更，请重新确认'))
+            self.mutate(lambda:address_book.merge_many(self.store,target,sources),_tr('所选联系人已合并到当前目标。'),refresh_target=True)
+        self.confirm_bulk(_tr('将 ')+str(len(sources))+_tr(' 位联系人合并到「')+self.g.text(self.name)+'」',submit)
 
     # ==========================================
     # Function: Confirm and delete only the explicitly checked local people.
@@ -354,14 +355,14 @@ class ContactsPage:
     # ==========================================
     def bulk_delete(self):
         people=tuple(self.selected)
-        if not people:raise ValueError('请先选择要删除的联系人')
+        if not people:raise ValueError(_tr('请先选择要删除的联系人'))
         # ==========================================
         # Function: Delete a bounded explicit selection on the existing mutation worker.
         # Method: Retain ordinary remove suppression semantics for every selected person.
         # ==========================================
         def remove():
-            self.mutate(lambda:address_book.remove_many(self.store,people),'所选联系人已删除；相关地址已停止自动收集。',reset=self.person in people)
-        self.confirm_bulk('删除所选 '+str(len(people))+' 位联系人？此操作将停止自动收集这些地址。',remove)
+            self.mutate(lambda:address_book.remove_many(self.store,people),_tr('所选联系人已删除；相关地址已停止自动收集。'),reset=self.person in people)
+        self.confirm_bulk(_tr('删除所选 ')+str(len(people))+_tr(' 位联系人？此操作将停止自动收集这些地址。'),remove)
 
     # ==========================================
     # Function: Require a separate contextual confirmation for destructive bulk intent.
@@ -372,7 +373,7 @@ class ContactsPage:
         if old:self.g.gtk_widget_destroy(old)
         popup=self.g.gtk_popover_new(self.select_button);self.confirmation=popup;host=self.g.gtk_box_new(1,10);self.g.gtk_container_set_border_width(host,15);self.g.gtk_container_add(popup,host)
         label=self.g.gtk_label_new(title.encode());self.g.gtk_label_set_line_wrap(label,1);self.g.gtk_label_set_max_width_chars(label,30);self.g.gtk_box_pack_start(host,label,0,1,0)
-        self.icon_button(host,'确认此操作','spark-layout-done',lambda:(self.g.gtk_popover_popdown(popup),callback()));self.icon_button(host,'取消','composer-close',lambda:self.g.gtk_popover_popdown(popup));self.g.gtk_widget_show_all(popup)
+        self.icon_button(host,_tr('确认此操作'),'spark-layout-done',lambda:(self.g.gtk_popover_popdown(popup),callback()));self.icon_button(host,_tr('取消'),'composer-close',lambda:self.g.gtk_popover_popdown(popup));self.g.gtk_widget_show_all(popup)
 
     # ==========================================
     # Function: Reset the continuous directory after debounced Unicode search.
@@ -400,14 +401,14 @@ class ContactsPage:
         item=self.canonical_details.get(item['id'],item)
         self.editor_selection+=1
         self.editor_name_base=item['name'];self.editor_addresses_base=set(item['addresses'])
-        self.person=item['id'];self.g.text(self.name,item['name']);self.g.text(self.addresses,'\n'.join(item['addresses']),view=True);self.g.text(self.split_address,'')
+        self.person=item['id'];self.g.text(self.name,item['name']);self.g.text(self.addresses,_join_ui('\n',(item['addresses'])),view=True);self.g.text(self.split_address,'')
         saved=self.editor_sessions.get(self.person)
         if saved:
             name,addresses,split,name_base,addresses_base=saved
             self.g.text(self.name,name if name!=name_base else item['name']);self.g.text(self.addresses,addresses,view=True);self.g.text(self.split_address,split);self.reconcile_addresses(item['addresses'],addresses_base)
         if self.person in self.pending_memberships:self.editor_addresses_base=set(self.pending_memberships[self.person]['submitted'])
         self.show_policies(item)
-        self.g.label(self.editor_avatar,(item['name'] or item['addresses'][0])[:1].upper());self.g.label(self.editor_title,(item['name'] or item['addresses'][0]) if self.details_only else '联系人详情');self.show_editor()
+        self.g.label(self.editor_avatar,(item['name'] or item['addresses'][0])[:1].upper());self.g.label(self.editor_title,(item['name'] or item['addresses'][0]) if self.details_only else _tr('联系人详情'));self.show_editor()
 
     # ==========================================
     # Function: Start a new independent local person without inferring equal-name membership.
@@ -421,7 +422,7 @@ class ContactsPage:
         saved=self.editor_sessions.get('__new__')
         if saved:self.g.text(self.name,saved[0]);self.g.text(self.addresses,saved[1],view=True);self.g.text(self.split_address,saved[2])
         self.show_policies({})
-        self.g.label(self.editor_avatar,'+');self.g.label(self.editor_title,'新建联系人');self.show_editor()
+        self.g.label(self.editor_avatar,'+');self.g.label(self.editor_title,_tr('新建联系人'));self.show_editor()
 
     # ==========================================
     # Function: Open one explicit stable contact directly from the chat header.
@@ -447,7 +448,7 @@ class ContactsPage:
         try:
             for key,check in self.policy_checks.items():self.g.gtk_toggle_button_set_active(check,int(bool(values.get(key,False))))
         finally:self.policy_loading=False
-        self.g.gtk_widget_set_sensitive(self.policy_box,bool(self.person));self.g.label(self.policy_note,'开关立即保存' if self.person else '请先保存新联系人的邮箱')
+        self.g.gtk_widget_set_sensitive(self.policy_box,bool(self.person));self.g.label(self.policy_note,_tr('开关立即保存') if self.person else _tr('请先保存新联系人的邮箱'))
 
     # ==========================================
     # Function: Queue the latest complete policy values for an explicitly selected contact.
@@ -456,7 +457,7 @@ class ContactsPage:
     def policy_changed(self,*unused):
         if self.policy_loading or not self.person or self.form.closed:return
         values={key:bool(self.g.gtk_toggle_button_get_active(check)) for key,check in self.policy_checks.items()}
-        self.policy_overrides[self.person]=values;self.policy_pending[self.person]=values;self.g.label(self.policy_note,'正在保存…');self.flush_policies()
+        self.policy_overrides[self.person]=values;self.policy_pending[self.person]=values;self.g.label(self.policy_note,_tr('正在保存…'));self.flush_policies()
 
     # ==========================================
     # Function: Commit queued policy switches off the native input thread.
@@ -477,7 +478,7 @@ class ContactsPage:
                 for person,values in changes.items():
                     if person in self.items:self.items[person].update(values)
                 self.update_bulk()
-            if not self.form.closed and self.person in changes:self.g.label(self.policy_note,'开关已保存' if not self.policy_pending else '正在保存…')
+            if not self.form.closed and self.person in changes:self.g.label(self.policy_note,_tr('开关已保存') if not self.policy_pending else _tr('正在保存…'))
             self.flush_policies()
         # ==========================================
         # Function: Keep a failed policy edit visible and retryable without pretending it was saved.
@@ -485,7 +486,7 @@ class ContactsPage:
         # ==========================================
         def failed(error):
             self.policy_busy=False
-            if not self.form.closed:self.g.label(self.policy_note,'保存失败，请重新切换后重试')
+            if not self.form.closed:self.g.label(self.policy_note,_tr('保存失败，请重新切换后重试'))
             if not self.app.closing:self.app.show_error(error)
         from .contact_policies import save_many
         self.app.background(lambda:save_many(self.store,changes),ready,failed)
@@ -512,10 +513,10 @@ class ContactsPage:
     def reconcile_text(self,authored,committed,baseline):
         current={line.strip().casefold() for line in authored.splitlines() if line.strip()}
         wanted=(set(committed)-(baseline-current)) | (current-baseline)
-        retained=''.join(line for line in authored.splitlines(keepends=True) if not line.strip() or line.strip().casefold() in wanted)
+        retained=_join_ui('',((line for line in authored.splitlines(keepends=True) if not line.strip() or line.strip().casefold() in wanted)))
         present={line.strip().casefold() for line in retained.splitlines() if line.strip()}
         missing=[address for address in committed if address in wanted and address not in present]
-        if missing:retained+=('' if not retained or retained.endswith('\n') else '\n')+'\n'.join(missing)
+        if missing:retained+=('' if not retained or retained.endswith('\n') else '\n')+_join_ui('\n',(missing))
         return retained
 
     # ==========================================
@@ -536,7 +537,7 @@ class ContactsPage:
     # Method: Save any active docked draft first, then reload current conversations after completion.
     # ==========================================
     def mutate(self,operation,message,reset=False,refresh_target=False,save_base=False,restart=False,keep_selection=False):
-        if self.mutating or self.policy_busy or self.policy_pending:raise ValueError("正在保存联系人设置，请稍候")
+        if self.mutating or self.policy_busy or self.policy_pending:raise ValueError(_tr("正在保存联系人设置，请稍候"))
         composer=getattr(self.app,'chat_composer',None)
         if composer and not composer.autosave(force=True):return
         target=self.person;selection=self.editor_selection;name_revision=self.name_revision;submitted_name=self.g.text(self.name)
@@ -612,15 +613,15 @@ class ContactsPage:
     # ==========================================
     def save(self):
         person=self.person;name=self.g.text(self.name);addresses=self.g.text(self.addresses,view=True).splitlines()
-        self.mutate(lambda:address_book.save(self.store,person,name,addresses),'联系人已保存；移除的地址将停止自动收集。',refresh_target=True,save_base=True)
+        self.mutate(lambda:address_book.save(self.store,person,name,addresses),_tr('联系人已保存；移除的地址将停止自动收集。'),refresh_target=True,save_base=True)
 
     # ==========================================
     # Function: Delete the selected person and durably suppress all its current mailboxes.
     # Method: Preserve cached mail and existing drafts as separate local records.
     # ==========================================
     def delete(self):
-        if not self.person:raise ValueError('请先选择一位联系人')
-        person=self.person;self.mutate(lambda:address_book.remove(self.store,person),'联系人已删除；这些地址不会因历史或新来信自动重建。',reset=True)
+        if not self.person:raise ValueError(_tr('请先选择一位联系人'))
+        person=self.person;self.mutate(lambda:address_book.remove(self.store,person),_tr('联系人已删除；这些地址不会因历史或新来信自动重建。'),reset=True)
 
     # ==========================================
     # Function: Merge checked source people into the explicitly selected target.
@@ -628,8 +629,8 @@ class ContactsPage:
     # ==========================================
     def merge(self):
         target=self.person;sources=tuple(self.selected-{target})
-        if not target or not sources:raise ValueError('请在左侧勾选来源联系人，并在右侧选择合并目标')
-        self.mutate(lambda:address_book.merge_many(self.store,target,sources),'已合并；对话按此人分组，旧草稿仍可在“草稿与发件箱”恢复。',refresh_target=True)
+        if not target or not sources:raise ValueError(_tr('请在左侧勾选来源联系人，并在右侧选择合并目标'))
+        self.mutate(lambda:address_book.merge_many(self.store,target,sources),_tr('已合并；对话按此人分组，旧草稿仍可在“草稿与发件箱”恢复。'),refresh_target=True)
 
     # ==========================================
     # Function: Split a specifically entered alias back into an independent person.
@@ -637,8 +638,8 @@ class ContactsPage:
     # ==========================================
     def split(self):
         person=self.person;address=self.g.text(self.split_address).strip()
-        if not person:raise ValueError('请先选择一位联系人')
-        self.mutate(lambda:address_book.split(self.store,person,address),'该邮箱已拆分为独立联系人。',reset=True,refresh_target=True)
+        if not person:raise ValueError(_tr('请先选择一位联系人'))
+        self.mutate(lambda:address_book.split(self.store,person,address),_tr('该邮箱已拆分为独立联系人。'),reset=True,refresh_target=True)
 
     # ==========================================
     # Function: Compose to one explicitly chosen mailbox from the current editor.
@@ -647,7 +648,7 @@ class ContactsPage:
     def compose(self):
         addresses=[value.strip() for value in self.g.text(self.addresses,view=True).splitlines() if value.strip()]
         chosen=self.g.text(self.split_address).strip() or (addresses[0] if len(addresses)==1 else '')
-        if chosen not in addresses:raise ValueError('多邮箱联系人请在“单个邮箱地址”中填写本次收件邮箱')
+        if chosen not in addresses:raise ValueError(_tr('多邮箱联系人请在“单个邮箱地址”中填写本次收件邮箱'))
         self.app.open_composer({'to':chosen})
 
 # ==========================================
@@ -655,13 +656,13 @@ class ContactsPage:
 # Method: Host the same editor in one owned native Form and resolve the stable person on the local worker.
 # ==========================================
 def contact_details_dialog(app,person):
-    if not person:raise ValueError('此对话没有可编辑的独立联系人')
+    if not person:raise ValueError(_tr('此对话没有可编辑的独立联系人'))
     existing=getattr(app,'contact_details_form',None)
     if existing and not existing.closed:
         existing.contacts_page.open_person(person);app.g.gtk_window_present(existing.window);return
     from .desktop_forms import Form
     layout='<interface><object class="GtkBox" id="form"><property name="orientation">vertical</property><child><object class="GtkBox" id="page_contacts"><property name="orientation">vertical</property></object></child><child><object class="GtkLabel" id="note"/></child></object></interface>'
-    form=Form(app,'联系人详情',[],390,layout=layout);app.contact_details_form=form
+    form=Form(app,_tr('联系人详情'),[],390,layout=layout);app.contact_details_form=form
     page=ContactsPage(app,form,details_only=True);form.contacts_page=page
     try:
         app.g.gtk_widget_show_all(form.window);page.open_person(person);app.g.gtk_dialog_run(form.window)

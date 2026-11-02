@@ -1,10 +1,11 @@
 """Local send-later date presets, validation and native calendar selection."""
+from .i18n import text as _tr
 import ctypes as C
 from datetime import datetime,timedelta
 import time
 
-PRESETS=[('today','今天稍后'),('tonight','今晚'),('tomorrow','明天上午'),('tomorrow_evening','明晚'),
-         ('weekend','周末'),('next_week','下周'),('month','一个月后')]
+PRESETS=[('today',_tr('今天稍后')),('tonight',_tr('今晚')),('tomorrow',_tr('明天上午')),('tomorrow_evening',_tr('明晚')),
+         ('weekend',_tr('周末')),('next_week',_tr('下周')),('month',_tr('一个月后'))]
 
 # ==========================================
 # Function: Resolve a local schedule preset using user-selected morning/evening times.
@@ -24,7 +25,7 @@ def preset_time(key, store, now=None):
     elif key=='weekend':result=at(now.date()+timedelta(days=(5-now.weekday())%7),morning)
     elif key=='next_week':result=at(now.date()+timedelta(days=7-now.weekday()),morning)
     elif key=='month':result=at(now.date()+timedelta(days=30),morning)
-    else:raise ValueError('未知时间预设')
+    else:raise ValueError(_tr('未知时间预设'))
     if result<=now:result+=timedelta(days=7 if key=='weekend' else 1)
     return result
 
@@ -37,20 +38,20 @@ def schedule_timestamp(value, now=None):
     selected=datetime.fromisoformat(value.strip()) if isinstance(value,str) else value
     stamp=selected.timestamp()
     if selected.tzinfo is None and datetime.fromtimestamp(stamp).replace(microsecond=0)!=selected.replace(microsecond=0):
-        raise ValueError('这个本地时间不存在，请重新选择')
-    if stamp<=now:raise ValueError('请选择未来的发送时间')
-    if stamp>now+366*86400:raise ValueError('发送时间最多提前一年')
+        raise ValueError(_tr('这个本地时间不存在，请重新选择'))
+    if stamp<=now:raise ValueError(_tr('请选择未来的发送时间'))
+    if stamp>now+366*86400:raise ValueError(_tr('发送时间最多提前一年'))
     return stamp
 
 # ==========================================
 # Function: Select a schedule with quick presets, a native calendar and editable local time.
 # Method: Return only after explicit confirmation, keeping invalid choices open for correction.
 # ==========================================
-def choose_schedule(app, title='稍后发送', current='', clear=True):
+def choose_schedule(app, title=_tr('稍后发送'), current='', clear=True):
     from .desktop_forms import Form
     g=app.g;enabled=app.service.store.preference('schedule_enabled',[key for key,_ in PRESETS])
-    options=[(key,label) for key,label in PRESETS if key in enabled]+[('custom','自定日期和时间')]
-    form=Form(app,title,[('preset','快捷时间','combo',options),('when','日期和时间','text',[])],580)
+    options=[(key,label) for key,label in PRESETS if key in enabled]+[('custom',_tr('自定日期和时间'))]
+    form=Form(app,title,[('preset',_tr('快捷时间'),'combo',options),('when',_tr('日期和时间'),'text',[])],580)
     calendar=g.gtk_calendar_new();g.gtk_box_pack_start(g.gtk_dialog_get_content_area(form.window),calendar,0,1,6)
     form.calendar=calendar;form.value('when',current or preset_time('tomorrow',app.service.store).isoformat(timespec='minutes'))
     updating=[False]
@@ -82,10 +83,10 @@ def choose_schedule(app, title='稍后发送', current='', clear=True):
     g.connect(form.fields['preset'][0],'changed',selected,group=form.group)
     g.connect(calendar,'day-selected',day_selected,group=form.group)
     form.value('preset','custom' if current or 'tomorrow' not in enabled else 'tomorrow')
-    form.button('取消',-6)
-    if clear:form.button('清除计划',2)
-    form.button('确认时间',1)
-    g.label(form.note,'使用此系统本地时间。客户端运行时投递；关闭后保留计划，下次启动处理已到期邮件。')
+    form.button(_tr('取消'),-6)
+    if clear:form.button(_tr('清除计划'),2)
+    form.button(_tr('确认时间'),1)
+    g.label(form.note,_tr('使用此系统本地时间。客户端运行时投递；关闭后保留计划，下次启动处理已到期邮件。'))
     g.gtk_widget_show_all(form.window)
     try:
         while True:

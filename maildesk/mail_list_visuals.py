@@ -1,4 +1,5 @@
 """Compact row metadata, avatar bubbles and durable state indicators shared by native mail lists."""
+from .i18n import text as _tr
 from .ui_actions import ICONS
 
 # ==========================================
@@ -42,7 +43,7 @@ def avatar_bubble(g,avatar,count,unread=False,title=''):
 # ==========================================
 def row_markers(g,item):
     box=g.gtk_box_new(0,4);g.gtk_widget_set_valign(box,3);widgets={}
-    for key,title,icon,enabled in [('priority','优先','spark-layout-priority-active',item.get('priority')),('pinned','已置顶','spark-layout-pin-active',item.get('pinned')),('attachments','含附件','mail-attachment',item.get('attachments_count',0))]:
+    for key,title,icon,enabled in [('priority',_tr('优先'),'spark-layout-priority-active',item.get('priority')),('pinned',_tr('已置顶'),'spark-layout-pin-active',item.get('pinned')),('attachments',_tr('含附件'),'mail-attachment',item.get('attachments_count',0))]:
         if not enabled:continue
         image=g.image_file(ICONS/(icon+'.svg'),13);g.gtk_widget_set_tooltip_text(image,title.encode());g.gtk_box_pack_start(box,image,0,0,0);widgets[key]=image
     return box,widgets

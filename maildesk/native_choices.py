@@ -1,14 +1,15 @@
 """Compact native choice chips backed by existing GtkComboBoxText controllers."""
+from .i18n import text as _tr
 import ctypes as C
 from pathlib import Path
 
 ICONS=Path(__file__).parent/'desktop_assets/icons'
 DESCRIPTIONS={
-    'reply_window_size':{'compact':'在邮件下方继续对话','full':'使用完整编辑空间'},
-    'layout_mode':{'fullScreen':'专注查看当前列表或邮件','splitView':'同时显示列表和邮件内容','switchInsideInbox':'在当前收件箱中切换阅读'},
-    'theme':{'dark':'深色背景与柔和对比','light':'明亮的阅读和设置界面','system':'与系统的外观保持一致'},
-    'gatekeeper_mode':{'explicit':'先审阅新发件人，再接收邮件','inThread':'在来信中决定是否接受','off':'直接接收所有发件人'},
-    'inbox_mode_setting':{'focused':'按优先程度和类别整理','smart':'优先处理未读邮件','classic':'按时间顺序查看所有邮件'}}
+    'reply_window_size':{'compact':_tr('在邮件下方继续对话'),'full':_tr('使用完整编辑空间')},
+    'layout_mode':{'fullScreen':_tr('专注查看当前列表或邮件'),'splitView':_tr('同时显示列表和邮件内容'),'switchInsideInbox':_tr('在当前收件箱中切换阅读')},
+    'theme':{'dark':_tr('深色背景与柔和对比'),'light':_tr('明亮的阅读和设置界面'),'system':_tr('与系统的外观保持一致')},
+    'gatekeeper_mode':{'explicit':_tr('先审阅新发件人，再接收邮件'),'inThread':_tr('在来信中决定是否接受'),'off':_tr('直接接收所有发件人')},
+    'inbox_mode_setting':{'focused':_tr('按优先程度和类别整理'),'smart':_tr('优先处理未读邮件'),'classic':_tr('按时间顺序查看所有邮件')}}
 
 # ==========================================
 # Function: Match the public GtkTreeIter layout used by combo text models.
@@ -29,7 +30,7 @@ class NativeChoice:
     def __init__(self,g,combo,title='',key=''):
         self.g=g;self.combo=combo;self.title=title;self.key=key;self.group='choice-'+str(combo);self.closed=False
         parent=g.gtk_widget_get_parent(combo)
-        if not parent:raise ValueError('下拉选项缺少所属行')
+        if not parent:raise ValueError(_tr('下拉选项缺少所属行'))
         children=g.gtk_container_get_children(parent);cursor=children;position=0
         while cursor and cursor.contents.data!=combo:position+=1;cursor=cursor.contents.next
         g.g_list_free(children);expand,fill,padding,pack=C.c_int(),C.c_int(),C.c_uint(),C.c_int();g.gtk_box_query_child_packing(parent,combo,C.byref(expand),C.byref(fill),C.byref(padding),C.byref(pack))
@@ -65,7 +66,7 @@ class NativeChoice:
     # ==========================================
     def sync(self):
         if self.closed:return
-        identity=(self.g.gtk_combo_box_get_active_id(self.combo) or b'').decode();caption=next((text for key,text in self.items() if key==identity),'请选择')
+        identity=(self.g.gtk_combo_box_get_active_id(self.combo) or b'').decode();caption=next((text for key,text in self.items() if key==identity),_tr('请选择'))
         self.g.gtk_label_set_text(self.label,caption.encode());self.g.gtk_widget_set_tooltip_text(self.button,((self.title+' · ') if self.title else '') .encode()+caption.encode())
         self.g.surfaces.orig['gtk_widget_set_sensitive'](self.button,self.g.gtk_widget_get_sensitive(self.combo))
 

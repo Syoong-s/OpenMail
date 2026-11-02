@@ -1,4 +1,5 @@
 """User-scoped native system integration and native appearance/lifecycle helpers."""
+from .i18n import text as _tr
 import ctypes as C
 import os
 from pathlib import Path
@@ -34,13 +35,13 @@ class GeneralUI:
             self.windows_tray=WindowsTray(self)
         if os.name!='nt' and self.legacy_tray_supported() and all(hasattr(gtk,name) for name in ('gtk_status_icon_new_from_file','gtk_status_icon_is_embedded')):
             self.tray_icon=bind(self,'gtk','gtk_status_icon_new_from_file',P,S)(str(Path(__file__).parent/'desktop_assets/icon.svg').encode())
-            bind(self,'gtk','gtk_status_icon_set_tooltip_text',None,P,S)(self.tray_icon,'TeleMail · 点击恢复；右键显示恢复和退出菜单'.encode())
+            bind(self,'gtk','gtk_status_icon_set_tooltip_text',None,P,S)(self.tray_icon,_tr('TeleMail · 点击恢复；右键显示恢复和退出菜单').encode())
             bind(self,'gtk','gtk_status_icon_set_visible',None,P,I)(self.tray_icon,1)
             self.g.connect(self.tray_icon,'activate',lambda *unused:self.restore_window(),group='general')
             self.g.connect(self.tray_icon,'popup-menu',self.tray_popup,count=4,types=[P,C.c_uint,C.c_uint,P],group='general')
             self.g.connect(self.tray_icon,'notify::embedded',lambda *unused:self.tray_host_changed(),count=3,group='general')
         # Native back/toggle controls remain available when a single-pane layout hides the list.
-        self.layout_button=self.g.gtk_button_new_with_label('切换邮件 / 列表'.encode())
+        self.layout_button=self.g.gtk_button_new_with_label(_tr('切换邮件 / 列表').encode())
         self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(self.layout_button),b'quiet')
         bind(self,'gtk','gtk_header_bar_pack_end',None,P,P)(self.widget('header'),self.layout_button)
         self.g.connect(self.layout_button,'clicked',lambda *unused:self.toggle_layout(),group='general')
@@ -142,7 +143,7 @@ class GeneralUI:
         self.g.disconnect('tray-menu')
         if old:self.g.gtk_widget_destroy(old)
         menu=bind(self,'gtk','gtk_menu_new',P)();self.tray_menu=menu
-        for title,callback in [('打开 TeleMail',self.restore_window),('退出 TeleMail',lambda:self.on_delete(force=True))]:
+        for title,callback in [(_tr('打开 TeleMail'),self.restore_window),(_tr('退出 TeleMail'),lambda:self.on_delete(force=True))]:
             item=bind(self,'gtk','gtk_menu_item_new_with_label',P,S)(title.encode())
             bind(self,'gtk','gtk_menu_shell_append',None,P,P)(menu,item)
             self.g.connect(item,'activate',lambda *unused,fn=callback:fn(),group='tray-menu')
@@ -171,7 +172,7 @@ class GeneralUI:
         self.g.gtk_widget_set_visible(self.widget('reader'),separate or split or show_reader)
         if getattr(self,'layout_button',None):
             self.g.gtk_widget_set_visible(self.layout_button,not split)
-            self.g.label(self.layout_button,'← 返回邮件列表' if show_reader else '显示选中邮件',button=True)
+            self.g.label(self.layout_button,_tr('← 返回邮件列表') if show_reader else _tr('显示选中邮件'),button=True)
             self.g.gtk_widget_set_sensitive(self.layout_button,active or show_reader)
 
     # ==========================================
@@ -191,7 +192,7 @@ class GeneralUI:
         if getattr(self,'closing',False):return
         draft=parse_mailto(uri)
         if self.composer and not self.composer.closed:
-            self.open_composer();self.message('已有邮件正在编辑；请先保存或关闭，再打开邮件链接');return
+            self.open_composer();self.message(_tr('已有邮件正在编辑；请先保存或关闭，再打开邮件链接'));return
         self.open_composer(draft);self.apply_layout()
 
     # ==========================================

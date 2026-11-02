@@ -1,4 +1,5 @@
 """Persisted account/folder selection shared by every contact conversation projection."""
+from .i18n import text as _tr
 import json
 
 PREFERENCE='conversation_folder_scope'
@@ -15,9 +16,9 @@ def normalized(value):
     for item in value.get('folders',[]) if isinstance(value.get('folders'),list) else []:
         if isinstance(item,dict) and isinstance(item.get('account'),str) and isinstance(item.get('folder'),str) and item['account'] and item['folder']:
             chosen.add((item['account'],item['folder']))
-    if len(chosen)>4096:raise ValueError('选择的对话文件夹过多')
+    if len(chosen)>4096:raise ValueError(_tr('选择的对话文件夹过多'))
     result={'mode':'custom','folders':[{'account':account,'folder':folder} for account,folder in sorted(chosen)]}
-    if len(json.dumps(result,ensure_ascii=False))>100000:raise ValueError('选择的文件夹信息过长，请减少选择后再保存')
+    if len(json.dumps(result,ensure_ascii=False))>100000:raise ValueError(_tr('选择的文件夹信息过长，请减少选择后再保存'))
     return result
 
 # ==========================================

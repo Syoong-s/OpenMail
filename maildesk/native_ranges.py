@@ -1,4 +1,5 @@
 """Plain numeric entry synchronized with the authoritative native settings scale."""
+from .i18n import text as _tr
 
 # ==========================================
 # Function: Keep every settings slider and its right-aligned numeric entry synchronized.
@@ -13,7 +14,7 @@ class NumericRange:
         self.g,self.scale=g,scale;self.dragging=False
         g.gtk_scale_set_draw_value(scale,0);g.gtk_scale_set_digits(scale,0)
         self.number=g.gtk_entry_new();g.gtk_entry_set_width_chars(self.number,5);g.gtk_entry_set_max_length(self.number,8);g.gtk_entry_set_alignment(self.number,1);g.gtk_entry_set_input_purpose(self.number,2)
-        g.gtk_widget_set_hexpand(self.number,0);g.gtk_widget_set_valign(self.number,3);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.number),b'range-number');g.gtk_widget_set_tooltip_text(self.number,(title+' · 输入数值后按 Enter 或点击其他位置').encode());g.gtk_box_pack_start(parent,self.number,0,0,0)
+        g.gtk_widget_set_hexpand(self.number,0);g.gtk_widget_set_valign(self.number,3);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.number),b'range-number');g.gtk_widget_set_tooltip_text(self.number,(title+_tr(' · 输入数值后按 Enter 或点击其他位置')).encode());g.gtk_box_pack_start(parent,self.number,0,0,0)
         g.connect(self.number,'activate',lambda *unused:self.commit(),group=group)
         g.connect(self.number,'focus-out-event',lambda *unused:(self.commit(),False)[1],count=3,returns=True,group=group)
         g.connect(scale,'value-changed',lambda *unused:self.redraw(),group=group)

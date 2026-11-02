@@ -1,4 +1,5 @@
 """Modern native provider picker and explicit, verified account sign-in wizard."""
+from .i18n import text as _tr, join_text as _join_ui
 import ctypes as C
 from dataclasses import asdict
 import queue
@@ -37,8 +38,8 @@ CSS=b'''
 def signin_xml(fields):
     from xml.sax.saxutils import escape
     rows=''
-    for key,title,subtitle in [('gmail','Gmail','使用 Google 浏览器安全登录'),('outlook','Outlook / Hotmail','Microsoft 个人邮箱'),
-                                ('microsoft365','Microsoft 365','工作或学校邮箱'),('other','其他邮箱','IMAP / SMTP · 密码或授权码')]:
+    for key,title,subtitle in [('gmail','Gmail',_tr('使用 Google 浏览器安全登录')),('outlook','Outlook / Hotmail',_tr('Microsoft 个人邮箱')),
+                                ('microsoft365','Microsoft 365',_tr('工作或学校邮箱')),('other',_tr('其他邮箱'),_tr('IMAP / SMTP · 密码或授权码'))]:
         mark={'gmail':'G','outlook':'O','microsoft365':'M','other':'@'}[key]
         rows+=f'''<child><object class="GtkButton" id="provider_{key}"><style><class name="signin-card"/></style><child><object class="GtkBox"><property name="spacing">16</property><child><object class="GtkLabel"><property name="label">{mark}</property><property name="width-request">32</property><style><class name="signin-title"/></style></object></child><child><object class="GtkBox"><property name="orientation">vertical</property><property name="spacing">5</property><child><object class="GtkLabel"><property name="label">{escape(title)}</property><property name="xalign">0</property></object></child><child><object class="GtkLabel"><property name="label">{escape(subtitle)}</property><property name="xalign">0</property><style><class name="signin-subtitle"/></style></object></child></object></child><child><object class="GtkImage"><property name="icon-name">go-next-symbolic</property><property name="halign">end</property><property name="hexpand">True</property></object></child></object></child></object></child>'''
     # Separate identity fields from server and OAuth configuration without nesting a body editor.
@@ -72,17 +73,17 @@ class SignInWizard(Form):
         self.allow_metadata=allow_metadata
         self.stage='providers';self.generation=0;self.cancel_event=threading.Event();self.events=queue.Queue()
         self.receipt=None;self.candidate=None;self.candidate_secret='';self.result=None;self.metadata_only=False
-        fields=[('email','邮箱地址','text',[]),('title','账号名称','text',[]),('display_name','发件人名称','text',[]),
-                ('method','登录方式','combo',[]),('secret','密码 / 授权码','secret',[]),('remember','在本机记住登录','check',[]),
-                ('username','登录用户名','text',[]),('imap_host','IMAP 服务器','text',[]),('imap_port','IMAP 端口','text',[]),
-                ('imap_security','IMAP 加密','combo',[('ssl','SSL / TLS'),('starttls','STARTTLS')]),
-                ('smtp_host','SMTP 服务器','text',[]),('smtp_port','SMTP 端口','text',[]),
-                ('smtp_security','SMTP 加密','combo',[('ssl','SSL / TLS'),('starttls','STARTTLS')]),
-                ('folders','同步文件夹','text',[]),('sent_folder','已发送文件夹','text',[]),
-                ('client_id','OAuth Client ID','text',[]),('client_secret','Google 客户端密钥','secret',[])]
-        super().__init__(app,'添加邮箱 · TeleMail',fields,620,layout=signin_xml(fields))
+        fields=[('email',_tr('邮箱地址'),'text',[]),('title',_tr('账号名称'),'text',[]),('display_name',_tr('发件人名称'),'text',[]),
+                ('method',_tr('登录方式'),'combo',[]),('secret',_tr('密码 / 授权码'),'secret',[]),('remember',_tr('在本机记住登录'),'check',[]),
+                ('username',_tr('登录用户名'),'text',[]),('imap_host',_tr('IMAP 服务器'),'text',[]),('imap_port',_tr('IMAP 端口'),'text',[]),
+                ('imap_security',_tr('IMAP 加密'),'combo',[('ssl','SSL / TLS'),('starttls','STARTTLS')]),
+                ('smtp_host',_tr('SMTP 服务器'),'text',[]),('smtp_port',_tr('SMTP 端口'),'text',[]),
+                ('smtp_security',_tr('SMTP 加密'),'combo',[('ssl','SSL / TLS'),('starttls','STARTTLS')]),
+                ('folders',_tr('同步文件夹'),'text',[]),('sent_folder',_tr('已发送文件夹'),'text',[]),
+                ('client_id','OAuth Client ID','text',[]),('client_secret',_tr('Google 客户端密钥'),'secret',[])]
+        super().__init__(app,_tr('添加邮箱 · TeleMail'),fields,620,layout=signin_xml(fields))
         self.stack=self.g.object(self.builder,'signin_stack')
-        self.back_button=self.button('返回',2);self.cancel_button=self.button('取消',-6);self.next_button=self.button('继续',1)
+        self.back_button=self.button(_tr('返回'),2);self.cancel_button=self.button(_tr('取消'),-6);self.next_button=self.button(_tr('继续'),1)
         self.provider_buttons={key:self.g.object(self.builder,'provider_'+key) for key in PROVIDERS}
         context=self.g.gtk_widget_get_style_context(self.window);self.g.gtk_style_context_add_class(context,b'signin-dialog')
         context=self.g.gtk_widget_get_style_context(self.next_button);self.g.gtk_style_context_add_class(context,b'suggested-action')
@@ -107,13 +108,13 @@ class SignInWizard(Form):
         self.stage=stage;self.g.gtk_stack_set_visible_child_name(self.stack,stage.encode())
         self.g.gtk_widget_set_sensitive(self.back_button,stage in ('details','success'))
         self.g.gtk_widget_set_sensitive(self.next_button,stage in ('details','success'))
-        action=('保存更改' if self.metadata_only else '确认登录' if self.previous else '完成添加') if stage=='success' else '连接邮箱'
+        action=(_tr('保存更改') if self.metadata_only else _tr('确认登录') if self.previous else _tr('完成添加')) if stage=='success' else _tr('连接邮箱')
         self.g.gtk_button_set_label(self.next_button,action.encode())
         if stage=='success':
             self.g.label(self.g.object(self.builder,'success_note'),
-                         '确认后保存资料，保留已有登录。' if self.metadata_only else
-                         '点击“'+action+'”后才会保存已验证的登录并开始同步。')
-        titles={'providers':'连接你的邮箱','details':PROVIDERS[self.provider]['name'],'checking':'正在验证邮箱','success':'准备就绪'}
+                         _tr('确认后保存资料，保留已有登录。') if self.metadata_only else
+                         _tr('点击“')+action+_tr('”后才会保存已验证的登录并开始同步。'))
+        titles={'providers':_tr('连接你的邮箱'),'details':PROVIDERS[self.provider]['name'],'checking':_tr('正在验证邮箱'),'success':_tr('准备就绪')}
         self.g.label(self.g.object(self.builder,'heading'),titles[stage])
         if stage=='checking':self.g.gtk_spinner_start(self.g.object(self.builder,'spinner'))
         else:self.g.gtk_spinner_stop(self.g.object(self.builder,'spinner'))
@@ -126,12 +127,12 @@ class SignInWizard(Form):
         self.provider=provider;values=asdict(self.previous) if existing and self.previous else PROVIDERS[provider]
         for key in ('email','title','display_name','username','imap_host','imap_port','imap_security','smtp_host','smtp_port','smtp_security','sent_folder'):
             self.value(key,str(values.get(key,'')))
-        self.value('folders',', '.join(values.get('folders',['INBOX'])))
+        self.value('folders',_join_ui(', ',(values.get('folders',['INBOX']))))
         self.value('secret','');self.value('client_id','');self.value('client_secret','')
         combo=self.fields['method'][0];self.g.gtk_combo_box_text_remove_all(combo)
-        methods=([('browser','通过 Google 浏览器确认登录'),('password','应用专用密码 / 授权码')] if provider=='gmail' else
-                 [('browser','通过 Microsoft 浏览器确认登录')] if provider in ('outlook','microsoft365') else
-                 [('password','密码 / 邮箱授权码'),('token','已有 OAuth2 访问令牌')])
+        methods=([('browser',_tr('通过 Google 浏览器确认登录')),('password',_tr('应用专用密码 / 授权码'))] if provider=='gmail' else
+                 [('browser',_tr('通过 Microsoft 浏览器确认登录'))] if provider in ('outlook','microsoft365') else
+                 [('password',_tr('密码 / 邮箱授权码')),('token',_tr('已有 OAuth2 访问令牌'))])
         for key,title in methods:self.g.gtk_combo_box_text_append(combo,key.encode(),title.encode())
         selected='browser' if provider!='other' else 'password'
         if existing and self.previous and self.previous.auth=='password' and provider in ('gmail','other'):selected='password'
@@ -142,7 +143,7 @@ class SignInWizard(Form):
             elif provider=='other':selected='token'
         self.value('method',selected);self.update_method()
         self.show_stage('details');self.g.gtk_expander_set_expanded(self.g.object(self.builder,'advanced'),provider=='other')
-        self.g.label(self.note,'凭据不会在验证及最终确认前写入账号或凭据文件。')
+        self.g.label(self.note,_tr('凭据不会在验证及最终确认前写入账号或凭据文件。'))
 
     # ==========================================
     # Function: Show applicable credentials and explain authentic browser configuration.
@@ -161,19 +162,19 @@ class SignInWizard(Form):
         for key in ('client_id','client_secret'):
             row=self.g.gtk_widget_get_parent(self.fields[key][0]);visible=browser and (key=='client_id' or self.provider=='gmail')
             self.g.gtk_widget_set_visible(row,visible);self.g.gtk_widget_set_no_show_all(row,not visible)
-        note=('将打开系统浏览器，在 Google / Microsoft 页面确认授权。TeleMail 不读取网站登录密码。' if browser else
-              'Gmail 请开启两步验证并创建应用专用密码；普通 Google 密码无法用于 IMAP。' if self.provider=='gmail' else
-              '密码仅用于加密的 IMAP / SMTP 认证；优先使用邮箱提供商的授权码。' if method=='password' else
-              '手动访问令牌兼容模式：不含刷新授权，令牌到期后需要重新登录。')
+        note=(_tr('将打开系统浏览器，在 Google / Microsoft 页面确认授权。TeleMail 不读取网站登录密码。') if browser else
+              _tr('Gmail 请开启两步验证并创建应用专用密码；普通 Google 密码无法用于 IMAP。') if self.provider=='gmail' else
+              _tr('密码仅用于加密的 IMAP / SMTP 认证；优先使用邮箱提供商的授权码。') if method=='password' else
+              _tr('手动访问令牌兼容模式：不含刷新授权，令牌到期后需要重新登录。'))
         self.g.label(self.g.object(self.builder,'method_note'),note)
-        self.g.label(self.g.object(self.builder,'oauth_note'),'此本地应用未内置公共 OAuth 注册。请导入自己的 Google 桌面客户端，或填写 Microsoft 公共客户端 ID（启用 http://localhost/oauth/callback 桌面回调，端口动态）。未配置时无法浏览器登录。')
+        self.g.label(self.g.object(self.builder,'oauth_note'),_tr('此本地应用未内置公共 OAuth 注册。请导入自己的 Google 桌面客户端，或填写 Microsoft 公共客户端 ID（启用 http://localhost/oauth/callback 桌面回调，端口动态）。未配置时无法浏览器登录。'))
 
     # ==========================================
     # Function: Load a user-selected Google installed-client registration privately.
     # Method: Use the native file chooser and keep client secrets only in this form.
     # ==========================================
     def import_google(self):
-        native=self.g.gtk_file_chooser_native_new('导入 Google 桌面客户端 JSON'.encode(),self.window,0,'导入'.encode(),'取消'.encode())
+        native=self.g.gtk_file_chooser_native_new(_tr('导入 Google 桌面客户端 JSON').encode(),self.window,0,_tr('导入').encode(),_tr('取消').encode())
         try:
             if self.g.gtk_native_dialog_run(native)!=-3:return
             pointer=self.g.gtk_file_chooser_get_filename(native)
@@ -182,8 +183,8 @@ class SignInWizard(Form):
             finally:self.g.g_free(pointer)
             values=import_google_client(path)
             self.value('client_id',values['client_id']);self.value('client_secret',values['client_secret'])
-            self.g.label(self.note,'已载入桌面应用配置。连接后将在浏览器中请求你的授权。')
-        except Exception:self.g.label(self.note,'无法读取 Google 桌面应用配置，请检查 JSON 文件。')
+            self.g.label(self.note,_tr('已载入桌面应用配置。连接后将在浏览器中请求你的授权。'))
+        except Exception:self.g.label(self.note,_tr('无法读取 Google 桌面应用配置，请检查 JSON 文件。'))
         finally:self.g.gtk_native_dialog_destroy(native)
 
     # ==========================================
@@ -200,7 +201,7 @@ class SignInWizard(Form):
         values.setdefault('secret_env','TELEMAIL_'+values['id'].replace('-','_').upper())
         candidate=Account(**values)
         if any(item.id!=candidate.id and item.email.casefold()==candidate.email.casefold() for item in self.app.profile.accounts()):
-            raise LoginError('这个邮箱已经添加，请在账号设置中更新原账号的登录')
+            raise LoginError(_tr('这个邮箱已经添加，请在账号设置中更新原账号的登录'))
         return candidate
 
     # ==========================================
@@ -214,23 +215,23 @@ class SignInWizard(Form):
             if self.metadata_only:
                 # No changed connection or credential: edit metadata while retaining trusted login.
                 self.candidate=candidate;self.receipt=None
-                self.g.label(self.g.object(self.builder,'success_title'),'更新账户资料')
-                self.g.label(self.g.object(self.builder,'verified_identity'),candidate.email+'\n连接设置未变，将保留原有登录。')
+                self.g.label(self.g.object(self.builder,'success_title'),_tr('更新账户资料'))
+                self.g.label(self.g.object(self.builder,'verified_identity'),candidate.email+_tr('\n连接设置未变，将保留原有登录。'))
                 self.show_stage('success');return
             client_id=self.value('client_id').strip();client_secret=self.value('client_secret')
             authority=oauth_provider(self.provider)
             if method=='browser':
                 from .account_login import validate_client
                 validate_client(authority,client_id,client_secret)
-            elif not secret:raise LoginError('请填写密码或邮箱授权码')
+            elif not secret:raise LoginError(_tr('请填写密码或邮箱授权码'))
         except (ValueError,TypeError):
-            self.g.label(self.note,'请检查邮箱、服务器和端口；浏览器登录需要有效的 OAuth Client ID。')
+            self.g.label(self.note,_tr('请检查邮箱、服务器和端口；浏览器登录需要有效的 OAuth Client ID。'))
             if self.value('method')=='browser':self.g.gtk_expander_set_expanded(self.g.object(self.builder,'advanced'),1)
             return
         self.generation+=1;generation=self.generation;self.cancel_event=threading.Event();cancel=self.cancel_event
         self.candidate=candidate;self.receipt=None;self.candidate_secret=''
-        for key,title in [('browser_status','准备安全连接'),('imap_status','○  收件服务 · 等待验证'),('smtp_status','○  发件服务 · 等待验证')]:self.g.label(self.g.object(self.builder,key),title)
-        self.g.label(self.note,'可随时取消；只有两项验证都成功并点击完成才会保存。');self.show_stage('checking')
+        for key,title in [('browser_status',_tr('准备安全连接')),('imap_status',_tr('○  收件服务 · 等待验证')),('smtp_status',_tr('○  发件服务 · 等待验证'))]:self.g.label(self.g.object(self.builder,key),title)
+        self.g.label(self.note,_tr('可随时取消；只有两项验证都成功并点击完成才会保存。'));self.show_stage('checking')
         # ==========================================
         # Function: Publish only safe stage names and validated results to the UI.
         # Method: Keep network calls and authorization secrets entirely in the worker.
@@ -242,7 +243,7 @@ class SignInWizard(Form):
                 receipt=verify_login(candidate,value,cancel,progress)
                 self.events.put((generation,'success',(receipt,value)))
             except LoginError as error:self.events.put((generation,'error',str(error)))
-            except Exception:self.events.put((generation,'error','连接验证未完成，请检查网络、服务器与认证设置后重试。'))
+            except Exception:self.events.put((generation,'error',_tr('连接验证未完成，请检查网络、服务器与认证设置后重试。')))
         threading.Thread(target=work,name='maildesk-sign-in',daemon=True).start()
 
     # ==========================================
@@ -257,21 +258,21 @@ class SignInWizard(Form):
             if generation!=self.generation or self.cancel_event.is_set():continue
             if kind=='progress':
                 stage,status=value
-                if stage=='browser':self.g.label(self.g.object(self.builder,'browser_status'),'请在浏览器中登录并确认授权，然后返回此窗口')
+                if stage=='browser':self.g.label(self.g.object(self.builder,'browser_status'),_tr('请在浏览器中登录并确认授权，然后返回此窗口'))
                 else:
-                    title='收件服务' if stage=='imap' else '发件服务'
-                    self.g.label(self.g.object(self.builder,stage+'_status'),('✓  ' if status=='verified' else '◌  ')+title+(' · 已验证' if status=='verified' else ' · 正在连接'))
+                    title=_tr('收件服务') if stage=='imap' else _tr('发件服务')
+                    self.g.label(self.g.object(self.builder,stage+'_status'),('✓  ' if status=='verified' else '◌  ')+title+(_tr(' · 已验证') if status=='verified' else _tr(' · 正在连接')))
             elif kind=='error':
-                self.show_stage('details');self.g.label(self.note,value+' 未保存账户或新凭据。')
+                self.show_stage('details');self.g.label(self.note,value+_tr(' 未保存账户或新凭据。'))
             elif kind=='success':
                 self.receipt,self.candidate_secret=value
                 self.value('secret','')
-                self.g.label(self.g.object(self.builder,'success_title'),'邮箱已验证')
+                self.g.label(self.g.object(self.builder,'success_title'),_tr('邮箱已验证'))
                 account=self.candidate
-                description=('OAuth2 浏览器授权' if self.candidate_method=='browser' else
-                             'OAuth2 访问令牌认证' if account.auth=='oauth2' else 'TLS 加密密码认证')
-                self.g.label(self.g.object(self.builder,'verified_identity'),account.email+'\n登录身份：'+account.login_name+'\n✓ IMAP · '+account.imap_host+'\n✓ SMTP · '+account.smtp_host+'\n'+description)
-                self.show_stage('success');self.g.label(self.note,'尚未保存。请确认以上账户身份与服务器后完成登录。')
+                description=(_tr('OAuth2 浏览器授权') if self.candidate_method=='browser' else
+                             _tr('OAuth2 访问令牌认证') if account.auth=='oauth2' else _tr('TLS 加密密码认证'))
+                self.g.label(self.g.object(self.builder,'verified_identity'),account.email+_tr('\n登录身份：')+account.login_name+'\n✓ IMAP · '+account.imap_host+'\n✓ SMTP · '+account.smtp_host+'\n'+description)
+                self.show_stage('success');self.g.label(self.note,_tr('尚未保存。请确认以上账户身份与服务器后完成登录。'))
         return 1
 
     # ==========================================
@@ -288,7 +289,7 @@ class SignInWizard(Form):
                 saved=self.app.profile.commit_verified_login(self.candidate,self.candidate_secret,self.receipt,self.value('remember'))
             self.result=self.candidate;self.app.apply_accounts(saved);return True
         except Exception:
-            self.g.label(self.note,'本机账户保存失败，未替换已有登录。请检查目录权限或重新验证。');return False
+            self.g.label(self.note,_tr('本机账户保存失败，未替换已有登录。请检查目录权限或重新验证。'));return False
 
     # ==========================================
     # Function: Run native responses while keeping asynchronous verification interactive.
@@ -327,5 +328,5 @@ class SignInWizard(Form):
 # ==========================================
 def account_signin(app,account=None,allow_metadata=False):
     if app.profile.demo:
-        app.message('演示模式不能修改真实账户。请打开普通 TeleMail 窗口。');return None
+        app.message(_tr('演示模式不能修改真实账户。请打开普通 TeleMail 窗口。'));return None
     return SignInWizard(app,account,allow_metadata=allow_metadata).run()

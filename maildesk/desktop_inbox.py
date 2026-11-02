@@ -1,4 +1,5 @@
 """Native inbox view selection, creation, settings and group actions."""
+from .i18n import text as _tr, join_text as _join_ui
 from .inbox_views import InboxViews, MODES
 
 # ==========================================
@@ -18,10 +19,10 @@ class InboxUI:
             self.g.connect(self.widget(name),'clicked',lambda *unused,callback=fn:self.run_action(callback))
         self.g.connect(self.widget('focus_back'),'clicked',self.close_focus_group)
         from .ui_actions import icon_action
-        icon_action(self.g,self.widget('focus_back'),'返回聚焦列表','action-back',16)
+        icon_action(self.g,self.widget('focus_back'),_tr('返回聚焦列表'),'action-back',16)
         self.g.gtk_box_pack_start(self.widget('view_toggle_content'),self.g.image_file(__import__('pathlib').Path(__file__).parent/'desktop_assets/icons/action-down.svg',14),0,0,0)
-        self.g.gtk_widget_set_tooltip_text(self.widget('view_toggle'),'切换收件箱视图'.encode())
-        for name,title,icon in [('view_settings','视图设置','settings-inbox'),('reclassify','重新归类','settings-classification'),('save_search','保存搜索','folder-favorite')]:
+        self.g.gtk_widget_set_tooltip_text(self.widget('view_toggle'),_tr('切换收件箱视图').encode())
+        for name,title,icon in [('view_settings',_tr('视图设置'),'settings-inbox'),('reclassify',_tr('重新归类'),'settings-classification'),('save_search',_tr('保存搜索'),'folder-favorite')]:
             icon_action(self.g,self.widget(name),title,icon,16)
         self.fill_inbox_modes()
 
@@ -49,7 +50,7 @@ class InboxUI:
             g.gtk_box_pack_start(content,g.image_file(Path(__file__).parent/'desktop_assets/icons'/('inbox-preview-'+mode+'.svg'),150),0,1,0)
             label=g.gtk_label_new(title.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),b'inbox-mode-title');g.gtk_box_pack_start(content,label,0,1,0)
             caption=g.gtk_label_new(('Contact Mail' if mode=='conversations' else 'Classic Inbox' if mode=='classic' else 'Smart Inbox').encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(caption),b'inbox-mode-caption');g.gtk_box_pack_start(content,caption,0,1,0)
-            g.gtk_widget_set_tooltip_text(button,((row['name']+' · ') if row else '').encode()+{'focused':'按重要程度和类别归组','smart':'先处理未读邮件','classic':'所有邮件按时间排列','conversations':'按联系人跨主题阅读和撰写邮件'}[mode].encode())
+            g.gtk_widget_set_tooltip_text(button,((row['name']+' · ') if row else '').encode()+{'focused':_tr('按重要程度和类别归组'),'smart':_tr('先处理未读邮件'),'classic':_tr('所有邮件按时间排列'),'conversations':_tr('按联系人跨主题阅读和撰写邮件')}[mode].encode())
             context=g.gtk_widget_get_style_context(button);g.gtk_style_context_add_class(context,b'inbox-view-choice')
             if current['mode']==mode:g.gtk_style_context_add_class(context,b'active')
             g.connect(button,'clicked',lambda *unused,choice=mode:self.run_action(lambda:self.select_inbox_mode(choice)),group='inbox-view-choices');g.gtk_box_pack_start(tile_row,button,1,1,0);self.inbox_view_buttons[row['id'] if row else 'mode:'+mode]=button
@@ -104,25 +105,25 @@ class InboxUI:
     def inbox_dialog(self, create=False):
         from .desktop_forms import Form
         value=self.inboxes.definition(create if isinstance(create,str) else 'focused') if create else self.inboxes.active()
-        fields=[('name','视图名称','text',[]),('mode','收件箱视图','combo',list(MODES.items())),
-                ('grouping','分组方式','combo',[('category','类别'),('sender','发件人'),('domain','域名'),('account','账户')]),
-                ('limit','卡片显示邮件','combo',[('3','3 封'),('5','5 封'),('10','10 封'),('0','全部邮件')]),
-                ('action','整组快捷操作','combo',[('none','无操作'),('seen','标为已读'),('done','完成'),('trash','移到废纸篓')]),
-                ('disabled','隐藏分组（逗号分隔）','text',[])]
+        fields=[('name',_tr('视图名称'),'text',[]),('mode',_tr('收件箱视图'),'combo',list(MODES.items())),
+                ('grouping',_tr('分组方式'),'combo',[('category',_tr('类别')),('sender',_tr('发件人')),('domain',_tr('域名')),('account',_tr('账户'))]),
+                ('limit',_tr('卡片显示邮件'),'combo',[('3',_tr('3 封')),('5',_tr('5 封')),('10',_tr('10 封')),('0',_tr('全部邮件'))]),
+                ('action',_tr('整组快捷操作'),'combo',[('none',_tr('无操作')),('seen',_tr('标为已读')),('done',_tr('完成')),('trash',_tr('移到废纸篓'))]),
+                ('disabled',_tr('隐藏分组（逗号分隔）'),'text',[])]
         account_choices=self.inbox_account_choices()
         fields+=self.inbox_account_fields(account_choices)
-        form=Form(self,'增加收件箱视图' if create else '收件箱视图设置',fields,740)
+        form=Form(self,_tr('增加收件箱视图') if create else _tr('收件箱视图设置'),fields,740)
         for key in form.fields:
             if key=='account_scope' or key.startswith('scope_account_'):continue
             current=value.get(key,'')
-            form.value(key,','.join(current) if isinstance(current,list) else str(current))
+            form.value(key,_join_ui(',',(current)) if isinstance(current,list) else str(current))
         self.fill_inbox_account_fields(form,value['accounts'],account_choices)
-        self.g.label(form.note,'聚焦列表：按重要程度和类别归组。未读卡片：分组展示未读，已读另列。简洁列表：按时间排列。\n分组标识：priority、personal、verification、notification、newsletter、pinned、seen。')
-        form.button('取消',-6)
+        self.g.label(form.note,_tr('聚焦列表：按重要程度和类别归组。未读卡片：分组展示未读，已读另列。简洁列表：按时间排列。\n分组标识：priority、personal、verification、notification、newsletter、pinned、seen。'))
+        form.button(_tr('取消'),-6)
         if not create:
-            form.button('删除此视图',2)
-            form.button('恢复全部卡片',3)
-        form.button('保存并使用',1)
+            form.button(_tr('删除此视图'),2)
+            form.button(_tr('恢复全部卡片'),3)
+        form.button(_tr('保存并使用'),1)
         self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window)
         try:
             if response==1:
@@ -164,7 +165,7 @@ class InboxUI:
         def operation():
             identities=self.inboxes.group_identities(key,definition,'' if account=='all' else account)
             return self.service.bulk_action(identities,action,True if action in ('seen','done') else None)
-        self.background(operation,lambda result:(self.refresh(),self.message(f'已处理 {len(result)} 封邮件')))
+        self.background(operation,lambda result:(self.refresh(),self.message(_tr('已处理 {0} 封邮件').format(len(result)))))
 
     # ==========================================
     # Function: Open a local document inside a native application window.
@@ -173,10 +174,10 @@ class InboxUI:
     def open_document(self):
         self.close_navigation()
         from pathlib import Path
-        target=self.g.choose(self.window,'打开图片或文档')
+        target=self.g.choose(self.window,_tr('打开图片或文档'))
         if target:
             path=Path(target)
-            if path.stat().st_size>30*1024*1024:raise ValueError('文档超过 30 MiB')
+            if path.stat().st_size>30*1024*1024:raise ValueError(_tr('文档超过 30 MiB'))
             self.close_navigation()
             self.show_document(path.name,path.read_bytes(),origin_id=self.selected)
 
@@ -227,20 +228,20 @@ class InboxUI:
     # ==========================================
     def choose_inbox_mode(self):
         from .desktop_forms import Form
-        form=Form(self,'增加收件箱视图',[],800)
+        form=Form(self,_tr('增加收件箱视图'),[],800)
         choices=self.g.gtk_box_new(0,16);selected=[]
-        descriptions={'focused':'━ ━ ━\n▸ 通知\n▸ 动态\n\n按重要程度归组',
-                      'smart':'▣ 个人  3\n▣ 通知  5\n▣ 动态  2\n\n先处理未读邮件',
-                      'classic':'━ ━ ━\n━ ━ ━\n━ ━ ━\n\n所有邮件按时间排列',
-                      'conversations':'◉ 联系人\n  ▰ 收件\n    ▰ 已发送\n\n按联系人跨主题对话'}
+        descriptions={'focused':_tr('━ ━ ━\n▸ 通知\n▸ 动态\n\n按重要程度归组'),
+                      'smart':_tr('▣ 个人  3\n▣ 通知  5\n▣ 动态  2\n\n先处理未读邮件'),
+                      'classic':_tr('━ ━ ━\n━ ━ ━\n━ ━ ━\n\n所有邮件按时间排列'),
+                      'conversations':_tr('◉ 联系人\n  ▰ 收件\n    ▰ 已发送\n\n按联系人跨主题对话')}
         for mode,title in MODES.items():
             button=self.g.gtk_button_new_with_label((title+'\n\n'+descriptions[mode]).encode())
             self.g.gtk_widget_set_size_request(button,220,220)
             self.g.gtk_box_pack_start(choices,button,1,1,0)
             self.g.connect(button,'clicked',lambda *unused,key=mode:(selected.append(key),self.g.gtk_dialog_response(form.window,1)),group=form.group)
         self.g.gtk_box_pack_start(self.g.gtk_dialog_get_content_area(form.window),choices,1,1,20)
-        self.g.label(form.note,'为同一个收件箱增加不同视图；邮件和文件夹保持原样。')
-        form.button('取消',-6);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);form.close()
+        self.g.label(form.note,_tr('为同一个收件箱增加不同视图；邮件和文件夹保持原样。'))
+        form.button(_tr('取消'),-6);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window);form.close()
         if response==1 and selected:self.inbox_dialog(selected[0])
 
     # ==========================================
@@ -251,18 +252,18 @@ class InboxUI:
         from .desktop_forms import Form
         from .inbox_views import TITLES
         value=self.inboxes.active();base=key.split(':',1)[0];card=value.get('cards',{}).get(base,{})
-        fields=[('enabled','显示此卡片','combo',[('yes','显示'),('no','隐藏')]),
-            ('grouping','卡片分组','combo',[('category','合并'),('sender','按发件人'),('domain','按域名'),('account','按账户')]),
-            ('limit','显示邮件数量','combo',[('3','3 封'),('5','5 封'),('10','10 封'),('0','全部')]),
-            ('action','整组快捷操作','combo',[('none','无操作'),('seen','标为已读'),('done','完成'),('trash','移到废纸篓')]),
+        fields=[('enabled',_tr('显示此卡片'),'combo',[('yes',_tr('显示')),('no',_tr('隐藏'))]),
+            ('grouping',_tr('卡片分组'),'combo',[('category',_tr('合并')),('sender',_tr('按发件人')),('domain',_tr('按域名')),('account',_tr('按账户'))]),
+            ('limit',_tr('显示邮件数量'),'combo',[('3',_tr('3 封')),('5',_tr('5 封')),('10',_tr('10 封')),('0',_tr('全部'))]),
+            ('action',_tr('整组快捷操作'),'combo',[('none',_tr('无操作')),('seen',_tr('标为已读')),('done',_tr('完成')),('trash',_tr('移到废纸篓'))]),
             ]
         account_choices=self.inbox_account_choices();fields+=self.inbox_account_fields(account_choices)
-        form=Form(self,TITLES.get(base,base)+' · 卡片设置',fields,700)
+        form=Form(self,TITLES.get(base,base)+_tr(' · 卡片设置'),fields,700)
         form.value('enabled','yes' if card.get('enabled',True) else 'no')
         for field in ('grouping','limit','action'):form.value(field,str(card.get(field,value[field])))
         self.fill_inbox_account_fields(form,card.get('accounts',[]),account_choices)
-        self.g.label(form.note,'设置仅适用于此类卡片。可选择适用账户；隐藏后可在视图设置中恢复。')
-        form.button('取消',-6);form.button('保存',1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window)
+        self.g.label(form.note,_tr('设置仅适用于此类卡片。可选择适用账户；隐藏后可在视图设置中恢复。'))
+        form.button(_tr('取消'),-6);form.button(_tr('保存'),1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window)
         try:
             if response==1:
                 card={'enabled':form.value('enabled')=='yes','grouping':form.value('grouping'),'limit':int(form.value('limit')),'action':form.value('action'),
@@ -276,7 +277,7 @@ class InboxUI:
     # ==========================================
     def inbox_account_choices(self):
         from .local_mail import LOCAL_ACCOUNT,LOCAL_LABEL
-        if self.profile.demo:return [('demo','演示邮箱')]
+        if self.profile.demo:return [('demo',_tr('演示邮箱'))]
         return [(account.id,account.email) for account in self.service.accounts.values()]+[(LOCAL_ACCOUNT,LOCAL_LABEL)]
 
     # ==========================================
@@ -284,7 +285,7 @@ class InboxUI:
     # Method: Offer all accounts, including future additions, or a chosen set.
     # ==========================================
     def inbox_account_fields(self,choices):
-        return [('account_scope','适用账户','combo',[('all','所有账户'),('chosen','仅选中的账户')])]+[
+        return [('account_scope',_tr('适用账户'),'combo',[('all',_tr('所有账户')),('chosen',_tr('仅选中的账户'))])]+[
             ('scope_account_'+str(index),label,'check',[]) for index,(_,label) in enumerate(choices)]
 
     # ==========================================
@@ -302,7 +303,7 @@ class InboxUI:
     def read_inbox_account_fields(self,form,choices):
         if form.value('account_scope')=='all':return []
         selected=[identity for index,(identity,_) in enumerate(choices) if form.value('scope_account_'+str(index))]
-        if not selected:raise ValueError('请选择至少一个账户')
+        if not selected:raise ValueError(_tr('请选择至少一个账户'))
         return selected
 
     # ==========================================
@@ -315,7 +316,7 @@ class InboxUI:
         self.document_request_serial=getattr(self,'document_request_serial',0)+1;serial=self.document_request_serial
         if prepared is None and (Path(name).suffix.lower() in ('.doc','.rtf') or media_type.split(';')[0] in ('application/msword','application/rtf','text/rtf')):
             from .file_previews import preview
-            self.message('正在读取 Word 文档…')
+            self.message(_tr('正在读取 Word 文档…'))
             self.background(lambda:preview(name,data,media_type),lambda model:self.show_document(name,data,on_save,media_type,origin_id,model) if not self.closing and serial==self.document_request_serial else None,lambda error:self.message(str(error)) if not self.closing and serial==self.document_request_serial else None);return None
         workspace=self.document if isinstance(self.document,DocumentWorkspace) else DocumentWorkspace(self)
         try:workspace.open(name,data,on_save,media_type,origin_id,prepared)
@@ -366,11 +367,11 @@ class InboxUI:
         from .desktop_forms import Form
         from .identity_colors import ACCOUNT_PALETTE
         choices=self.inbox_account_choices()
-        names=('蓝色','橙色','绿色','紫色','玫红','青色','金色','灰蓝')
+        names=(_tr('蓝色'),_tr('橙色'),_tr('绿色'),_tr('紫色'),_tr('玫红'),_tr('青色'),_tr('金色'),_tr('灰蓝'))
         colors=list(zip(ACCOUNT_PALETTE,names))
         existing=self.service.store.preference('account_colors',{})
-        colors += [(color,'自定义 '+color) for color in dict.fromkeys(existing.values()) if color not in ACCOUNT_PALETTE]
-        form=Form(self,'账户配色',[('account','邮箱账户','combo',choices),('color','头像外圈','combo',colors)],580)
+        colors += [(color,_tr('自定义 ')+color) for color in dict.fromkeys(existing.values()) if color not in ACCOUNT_PALETTE]
+        form=Form(self,_tr('账户配色'),[('account',_tr('邮箱账户'),'combo',choices),('color',_tr('头像外圈'),'combo',colors)],580)
         # ==========================================
         # Function: Display the selected account's current outline color.
         # Method: Resolve stable assignments without altering sender backgrounds.
@@ -380,8 +381,8 @@ class InboxUI:
             if account:form.value('color',self.identity_colors.account_color(account))
         self.g.connect(form.fields['account'][0],'changed',changed,group=form.group)
         form.value('account',choices[0][0]);changed()
-        self.g.label(form.note,'头像底色区分发件人，外圈颜色区分收到邮件的账户。颜色保存在本机。')
-        form.button('取消',-6);form.button('保存',1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window)
+        self.g.label(form.note,_tr('头像底色区分发件人，外圈颜色区分收到邮件的账户。颜色保存在本机。'))
+        form.button(_tr('取消'),-6);form.button(_tr('保存'),1);self.g.gtk_widget_show_all(form.window);response=self.g.gtk_dialog_run(form.window)
         try:
             if response==1:self.identity_colors.set_account_color(form.value('account'),form.value('color'));self.refresh()
         finally:form.close()

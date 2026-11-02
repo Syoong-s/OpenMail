@@ -1,4 +1,5 @@
 """Service use cases for real folders and personal mail productivity."""
+from .i18n import text as _tr
 from . import folders
 from .local_mail import LOCAL_ACCOUNT,is_local_message
 
@@ -14,34 +15,34 @@ class OrganizationService:
     def folder_action(self, account_id, operation, path, target=''):
         path=folders.valid_path(path)
         if operation not in ('create','rename','delete','subscribe','unsubscribe'):
-            raise ValueError('无效文件夹操作')
+            raise ValueError(_tr('无效文件夹操作'))
         if operation=='rename':
             target=folders.valid_path(target)
         with self.lock:
             rows=self.store.list_folders(account_id)
             current=next((r for r in rows if r['folder']==path),None)
             if operation!='create' and not current:
-                raise ValueError('文件夹不存在')
+                raise ValueError(_tr('文件夹不存在'))
             if operation=='rename' and current:
                 delimiter=current['delimiter']
                 if any(r['folder']==target for r in rows) or target==path or (delimiter and target.startswith(path+delimiter)):
-                    raise ValueError('目标已存在或位于原文件夹内部')
+                    raise ValueError(_tr('目标已存在或位于原文件夹内部'))
             if operation=='create' and current:
-                raise ValueError('文件夹已存在')
+                raise ValueError(_tr('文件夹已存在'))
             if operation in ('rename','delete') and current and current['special']:
-                raise ValueError('系统文件夹不能重命名或删除')
+                raise ValueError(_tr('系统文件夹不能重命名或删除'))
             if operation=='delete':
                 with self.store.db() as db:
                     pending=db.execute('SELECT 1 FROM pending_moves WHERE account=? AND (source_folder=? OR destination=? OR attempted_destination=?) LIMIT 1',(account_id,path,path,path)).fetchone()
-                if pending:raise ValueError('文件夹有尚未同步的邮件移动，请先完成后台同步')
+                if pending:raise ValueError(_tr('文件夹有尚未同步的邮件移动，请先完成后台同步'))
                 delimiter=current['delimiter']
                 if any(r['folder']!=path and delimiter and r['folder'].startswith(path+delimiter) for r in rows):
-                    raise ValueError('请先处理子文件夹，再删除父文件夹')
+                    raise ValueError(_tr('请先处理子文件夹，再删除父文件夹'))
                 if current['total']:
-                    raise ValueError('请先将文件夹中的邮件移出，再删除空文件夹')
+                    raise ValueError(_tr('请先将文件夹中的邮件移出，再删除空文件夹'))
             if self.demo or account_id==LOCAL_ACCOUNT:
                 if any(not part for part in path.split('/')) or (operation=='rename' and any(not part for part in target.split('/'))):
-                    raise ValueError('本地文件夹路径不能包含空层级')
+                    raise ValueError(_tr('本地文件夹路径不能包含空层级'))
                 result=[{'name':r['folder'],**r} for r in rows]
                 if operation=='create':
                     result.append({'name':path,'delimiter':'/','flags':[],'special':'','selectable':True,'subscribed':True})
@@ -56,7 +57,7 @@ class OrganizationService:
             else:
                 account=self.accounts.get(account_id)
                 if not account:
-                    raise ValueError('请选择有效账户')
+                    raise ValueError(_tr('请选择有效账户'))
                 result=folders.mutate_folder(account,operation,path,target)
             if (self.demo or account_id==LOCAL_ACCOUNT) and operation in ('create','rename'):
                 for destination in (path if operation=='create' else target,):
@@ -86,19 +87,19 @@ class OrganizationService:
         message=self.store.get(identity)
         if special:
             destination=self.store.special_folder(message['account'],special)
-            if not destination:raise ValueError('服务器未提供对应文件夹，请在“文件夹管理”中设置 '+special+' 映射')
+            if not destination:raise ValueError(_tr('服务器未提供对应文件夹，请在“文件夹管理”中设置 ')+special+_tr(' 映射'))
         if not copy:
             from .mail_mutations import move
             return move(self,identity,destination)
         with self.lock:
             message=self.store.get(identity)
-            if message['validity']=='pending':raise ValueError('此邮件正在移动，请等待后台同步后再复制')
+            if message['validity']=='pending':raise ValueError(_tr('此邮件正在移动，请等待后台同步后再复制'))
             row=next((r for r in self.store.list_folders(message['account']) if r['folder']==destination and r['selectable']),None)
-            if not row:raise ValueError('目标文件夹不存在或不可选择')
+            if not row:raise ValueError(_tr('目标文件夹不存在或不可选择'))
             local=self.demo or is_local_message(message)
             if not local:
                 account=self.accounts.get(message['account'])
-                if not account:raise ValueError('账户已移除')
+                if not account:raise ValueError(_tr('账户已移除'))
                 mapping=folders.transfer(account,message,destination,True)
             else:mapping=None
             return self.store.transfer_local(identity,destination,True,local,mapping)
@@ -113,7 +114,7 @@ class OrganizationService:
             if not self.demo and not is_local_message(message):
                 account=self.accounts.get(message['account'])
                 if not account:
-                    raise ValueError('账户已移除')
+                    raise ValueError(_tr('账户已移除'))
                 folders.delete_message(account,message)
             with self.store.db() as db:
                 db.execute('DELETE FROM message_labels WHERE message=?',(identity,))
@@ -139,7 +140,7 @@ class OrganizationService:
                     self.store.organize(identity,**{action:value})
                 completed.append(identity)
             except Exception as error:
-                raise ValueError(f'已完成 {len(completed)} / {len(set(identities))} 项：{error}') from None
+                raise ValueError(_tr('已完成 {0} / {1} 项：{2}').format(len(completed),len(set(identities)),error)) from None
         return completed
 
     # ==========================================

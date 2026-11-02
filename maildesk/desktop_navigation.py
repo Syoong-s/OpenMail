@@ -1,4 +1,5 @@
 """Full-height in-window navigation surfaces and account-scoped folder commands."""
+from .i18n import text as _tr
 from pathlib import Path
 from .local_mail import LOCAL_ACCOUNT,LOCAL_LABEL
 from .desktop_folder_navigation import FolderNavigationUI
@@ -23,7 +24,7 @@ class NavigationUI(FolderNavigationUI,PinnedNavigationUI,NavigationHoverUI,Accou
         g=self.g;self.navigation_panel='';self.navigation_updating=False;self.folder_edit=None;self.folder_popup_groups=set();self.folder_row_widgets={};self.navigation_hover_owner=None;self.navigation_hover_pointer=None
         self.initialize_view_pins()
         from .desktop import VIEWS
-        for name,title in [("nav_"+key,value) for key,value in VIEWS.items()]+[('import','导入 EML'),('open_document','打开文件')]:
+        for name,title in [("nav_"+key,value) for key,value in VIEWS.items()]+[('import',_tr('导入 EML')),('open_document',_tr('打开文件'))]:
             self.shrink_navigation_labels(self.widget(name));g.gtk_widget_set_tooltip_text(self.widget(name),title.encode())
         self.folder_capture=g.gtk_gesture_multi_press_new(self.window);g.gtk_gesture_single_set_button(self.folder_capture,0);g.gtk_event_controller_set_propagation_phase(self.folder_capture,1)
         g.connect(self.folder_capture,'pressed',self.folder_pointer_press,count=5,types=[C.c_void_p,C.c_int,C.c_double,C.c_double,C.c_void_p],group='folder-capture')
@@ -131,7 +132,7 @@ class NavigationUI(FolderNavigationUI,PinnedNavigationUI,NavigationHoverUI,Accou
         g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_width_chars(label,0);g.gtk_label_set_max_width_chars(label,-1);g.gtk_widget_set_tooltip_text(toggle,title.encode())
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(toggle),b'folder-account-title');g.gtk_box_pack_start(header,toggle,1,1,0)
         tools=g.gtk_box_new(0,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(tools),b'folder-inline-tools');g.gtk_box_pack_start(header,tools,0,0,0)
-        add=icon_action(g,g.gtk_button_new(),'新建文件夹 · '+title,'action-add',16);more=g.gtk_menu_button_new();icon_action(g,more,'更多 · '+title,'spark-layout-more',16)
+        add=icon_action(g,g.gtk_button_new(),_tr('新建文件夹 · ')+title,'action-add',16);more=g.gtk_menu_button_new();icon_action(g,more,_tr('更多 · ')+title,'spark-layout-more',16)
         g.gtk_box_pack_start(tools,self.account_color_button(account,boundary=self.widget('folders_menu')),0,0,0)
         for button in (add,more):g.gtk_box_pack_start(tools,button,0,0,0)
         popup=g.gtk_popover_new(more);menu=g.gtk_box_new(1,3);g.gtk_menu_button_set_popover(more,popup);g.gtk_container_add(popup,menu);g.surfaces.beside(popup,self.widget('folders_menu'))

@@ -1,4 +1,5 @@
 """Native Windows notification-area icon and local notification balloons."""
+from .i18n import text as _tr
 import ctypes as C
 import os
 from .gtk_native import P,I,U
@@ -51,7 +52,7 @@ class WindowsTray:
         self.data.icon=self.shell.ExtractIconW(self.instance,os.environ.get('TELEMAIL_LAUNCHER',''),0)
         self.owned_icon=bool(self.data.icon and self.data.icon>1)
         if not self.owned_icon:self.data.icon=self.user.LoadIconW(None,P(32512))
-        self.data.tip='TeleMail · 点击恢复，右键打开菜单'
+        self.data.tip=_tr('TeleMail · 点击恢复，右键打开菜单')
         self.available=bool(self.window and self.shell.Shell_NotifyIconW(0,C.byref(self.data)))
 
     # ==========================================
@@ -72,7 +73,7 @@ class WindowsTray:
                 if lparam in (0x0202,0x0203,0x0405):self.app.restore_window()
                 elif lparam==0x0205:self.popup()
                 return 0
-        except Exception as error:self.app.message('通知区域操作失败：'+str(error))
+        except Exception as error:self.app.message(_tr('通知区域操作失败：')+str(error))
         return self.user.DefWindowProcW(window,message,wparam,lparam)
 
     # ==========================================
@@ -96,7 +97,7 @@ class WindowsTray:
         class Point(C.Structure):_fields_=[('x',C.c_long),('y',C.c_long)]
         position=Point();self.user.GetCursorPos(C.byref(position));menu=self.user.CreatePopupMenu()
         try:
-            self.user.AppendMenuW(menu,0,1,'打开 TeleMail');self.user.AppendMenuW(menu,0,2,'退出 TeleMail')
+            self.user.AppendMenuW(menu,0,1,_tr('打开 TeleMail'));self.user.AppendMenuW(menu,0,2,_tr('退出 TeleMail'))
             self.user.SetForegroundWindow(self.window)
             result=self.user.TrackPopupMenu(menu,0x0100|0x0002,position.x,position.y,0,self.window,None)
             if result==1:self.app.restore_window()

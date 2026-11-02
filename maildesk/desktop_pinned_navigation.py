@@ -1,4 +1,5 @@
 """Persistent optional rail destinations for real folders and built-in mail views."""
+from .i18n import text as _tr
 import ctypes as C
 from pathlib import Path
 from .ui_actions import icon_action
@@ -55,7 +56,7 @@ class PinnedNavigationUI:
             children=g.gtk_container_get_children(parent);cursor=children;index=0
             while cursor and cursor.contents.data!=button:index+=1;cursor=cursor.contents.next
             g.g_list_free(children);g.g_object_ref(button);g.gtk_container_remove(parent,button);g.gtk_box_pack_start(line,button,1,1,0);g.g_object_unref(button);g.gtk_container_add(parent,event);g.gtk_box_reorder_child(parent,event,index)
-            pin=icon_action(g,g.gtk_button_new(),'固定到左侧栏','spark-layout-pin',14);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(pin),b'nav-pin-action');g.gtk_box_pack_start(line,pin,0,0,0);g.gtk_widget_set_opacity(pin,0)
+            pin=icon_action(g,g.gtk_button_new(),_tr('固定到左侧栏'),'spark-layout-pin',14);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(pin),b'nav-pin-action');g.gtk_box_pack_start(line,pin,0,0,0);g.gtk_widget_set_opacity(pin,0)
             g.connect(pin,'clicked',lambda *unused,key=view:self.toggle_navigation_pin({'kind':'view','view':key}));self.view_pin_buttons[view]=pin;self.view_pin_rows[view]=line
             g.gtk_widget_add_events(event,(1<<12)|(1<<13))
             for signal in ('enter-notify-event','leave-notify-event'):g.connect(event,signal,lambda *unused,e=event,t=pin,r=line,leave=signal.startswith('leave'):self.navigation_hover(e,t,r,leave=leave),count=3,returns=True)
@@ -86,11 +87,11 @@ class PinnedNavigationUI:
                 if item['kind']=='folder' and (not row or not row['selectable']):continue
                 title=(item['account']+' / '+item['path']) if row else VIEWS[item['view']]
                 icon='spark-layout-folder' if row else VIEW_ICONS[item['view']]
-                button=icon_action(g,g.gtk_button_new(),title+' · 拖动排序 / 右键取消固定',icon,16);records[self.rail_key(item)]=button
+                button=icon_action(g,g.gtk_button_new(),title+_tr(' · 拖动排序 / 右键取消固定'),icon,16);records[self.rail_key(item)]=button
                 if row and row['color']:g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),('folder-'+row['color']).encode())
                 g.connect(button,'clicked',lambda *unused,target=dict(item):self.open_navigation_pin(target),group='rail-pins')
                 popup=g.gtk_popover_new(button);content=g.gtk_box_new(1,3);g.gtk_container_set_border_width(content,5);g.gtk_container_add(popup,content)
-                remove=g.gtk_button_new_with_label('取消固定'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(remove),b'popover-action');g.gtk_box_pack_start(content,remove,0,1,0);g.gtk_widget_show_all(content)
+                remove=g.gtk_button_new_with_label(_tr('取消固定').encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(remove),b'popover-action');g.gtk_box_pack_start(content,remove,0,1,0);g.gtk_widget_show_all(content)
                 g.connect(remove,'clicked',lambda *unused,target=dict(item),pop=popup:(g.gtk_popover_popdown(pop),self.toggle_navigation_pin(target)),group='rail-pins')
                 g.connect(button,'button-press-event',lambda widget,event,*unused,pop=popup:self.pin_context_press(event,pop),count=3,returns=True,group='rail-pins');self.rail_pin_buttons.append((dict(item),button))
             self.rail_order_keys=self.ordered_rail_keys(list(records));self.rail_widgets={**core,**records};settings_bottom=self.rail_order_keys[-1]=='core:settings'
@@ -104,7 +105,7 @@ class PinnedNavigationUI:
         for view,button in self.view_pin_buttons.items():
             row_context=g.gtk_widget_get_style_context(self.view_pin_rows[view]);(g.gtk_style_context_add_class if self.view==view else g.gtk_style_context_remove_class)(row_context,b'active')
             pinned={'kind':'view','view':view} in pins;context=g.gtk_widget_get_style_context(button)
-            (g.gtk_style_context_add_class if pinned else g.gtk_style_context_remove_class)(context,b'pinned');g.gtk_widget_set_tooltip_text(button,('取消固定' if pinned else '固定到左侧栏').encode())
+            (g.gtk_style_context_add_class if pinned else g.gtk_style_context_remove_class)(context,b'pinned');g.gtk_widget_set_tooltip_text(button,(_tr('取消固定') if pinned else _tr('固定到左侧栏')).encode())
             if not hasattr(self,'navigation_persistent_tools'):self.navigation_persistent_tools=set()
             if pinned:self.navigation_persistent_tools.add(button)
             else:self.navigation_persistent_tools.discard(button)

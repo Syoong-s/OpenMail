@@ -1,4 +1,5 @@
 """Original reply content kept separate from authored text and appended once at MIME creation."""
+from .i18n import text as _tr
 from html import escape
 from .mime import MAX_MESSAGE_BYTES
 from .ui_actions import icon_action
@@ -22,8 +23,8 @@ def from_message(message):
 def validated(value):
     if not value:return {}
     keys={'source','caption','plain','html'}
-    if not isinstance(value,dict) or set(value)-keys or any(not isinstance(v,str) for v in value.values()):raise ValueError('回复历史格式无效')
-    if sum(len(v.encode('utf-8')) for v in value.values())>MAX_MESSAGE_BYTES*2:raise ValueError('回复历史过大')
+    if not isinstance(value,dict) or set(value)-keys or any(not isinstance(v,str) for v in value.values()):raise ValueError(_tr('回复历史格式无效'))
+    if sum(len(v.encode('utf-8')) for v in value.values())>MAX_MESSAGE_BYTES*2:raise ValueError(_tr('回复历史过大'))
     return {key:value.get(key,'') for key in keys}
 
 # ==========================================
@@ -64,7 +65,7 @@ class ReplyHistoryView:
         self.root=g.gtk_box_new(1,3);g.gtk_box_pack_start(parent,self.root,0,1,0)
         controls=g.gtk_box_new(0,0);self.controls=controls;g.gtk_widget_set_halign(controls,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(controls),b'reply-history-controls');g.gtk_box_pack_start(self.root,controls,0,0,0)
         self.button=g.gtk_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.button),b'reply-history-toggle');g.gtk_box_pack_start(controls,self.button,0,0,0);self.update_toggle()
-        self.remove_button=g.gtk_button_new();icon_action(g,self.remove_button,'删除附带历史（保留原邮件）','composer-close',14);g.gtk_button_set_image(self.remove_button,None);g.gtk_button_set_label(self.remove_button,'×'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.remove_button),b'reply-history-remove');g.gtk_box_pack_start(controls,self.remove_button,0,0,0)
+        self.remove_button=g.gtk_button_new();icon_action(g,self.remove_button,_tr('删除附带历史（保留原邮件）'),'composer-close',14);g.gtk_button_set_image(self.remove_button,None);g.gtk_button_set_label(self.remove_button,'×'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.remove_button),b'reply-history-remove');g.gtk_box_pack_start(controls,self.remove_button,0,0,0)
         self.host=g.gtk_box_new(1,0);g.gtk_widget_set_no_show_all(self.host,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.host),b'reply-history-card');g.gtk_box_pack_start(self.root,self.host,0,1,0)
         self.set_visible(bool(self.data))
         g.connect(self.button,'clicked',lambda *unused:self.toggle(),group=owner.group)
@@ -75,7 +76,7 @@ class ReplyHistoryView:
     # Method: Remove the empty label from GtkButton image layout, center the smaller arrow and retain accessible action text.
     # ==========================================
     def update_toggle(self):
-        icon_action(self.g,self.button,'收起附带历史' if self.expanded else '展开附带历史','filter-chevron-up' if self.expanded else 'filter-chevron-down',10)
+        icon_action(self.g,self.button,_tr('收起附带历史') if self.expanded else _tr('展开附带历史'),'filter-chevron-up' if self.expanded else 'filter-chevron-down',10)
         self.g.gtk_button_set_label(self.button,None);self.g.gtk_button_set_alignment(self.button,.5,.5)
 
     # ==========================================

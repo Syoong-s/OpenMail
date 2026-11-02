@@ -1,4 +1,5 @@
 """Explainable local email recognition and explicitly trained account-scoped Bayesian similarity."""
+from .i18n import text as _tr
 from collections import Counter
 import json,math,re,time,unicodedata
 
@@ -18,17 +19,17 @@ def recognize(message):
     if not category:
         from .classifier import classify
         category,reason=classify(parsed)
-    else:reason=message.get('reason','使用当前邮件类别')
+    else:reason=message.get('reason',_tr('使用当前邮件类别'))
     result[category]=reason
-    if headers.get('list-id') or headers.get('list-unsubscribe') or normalize(headers.get('precedence')) in ('bulk','list'):result['newsletter']='包含邮件列表、退订或批量投递邮件头'
+    if headers.get('list-id') or headers.get('list-unsubscribe') or normalize(headers.get('precedence')) in ('bulk','list'):result['newsletter']=_tr('包含邮件列表、退订或批量投递邮件头')
     auto=normalize(headers.get('auto-submitted')).split(';',1)[0].strip()
-    if auto=='auto-replied':result['auto_reply']='Auto-Submitted 标记为自动回复'
-    if auto and auto!='no':result['notification']='Auto-Submitted 标记为自动生成或自动回复'
+    if auto=='auto-replied':result['auto_reply']=_tr('Auto-Submitted 标记为自动回复')
+    if auto and auto!='no':result['notification']=_tr('Auto-Submitted 标记为自动生成或自动回复')
     attachment_types={normalize(part.get('type','')) for part in parsed.get('attachments',[])}
-    if 'text/calendar' in normalize(headers.get('content-type')) or 'text/calendar' in attachment_types or any(normalize(part.get('name','')).endswith('.ics') for part in parsed.get('attachments',[])) or ('begin:vcalendar' in body and 'begin:vevent' in body):result['calendar']='包含日历 MIME、ICS 附件或标准日历事件'
+    if 'text/calendar' in normalize(headers.get('content-type')) or 'text/calendar' in attachment_types or any(normalize(part.get('name','')).endswith('.ics') for part in parsed.get('attachments',[])) or ('begin:vcalendar' in body and 'begin:vevent' in body):result['calendar']=_tr('包含日历 MIME、ICS 附件或标准日历事件')
     terms=('发票','电子账单','账单','收据','invoice','payment receipt','billing statement','tax receipt')
-    if any(term in subject for term in terms):result['invoice']='主题包含账单、收据或发票特征'
-    elif any(term in normalize(part.get('name','')) for part in parsed.get('attachments',[]) for term in terms):result['invoice']='附件名称包含账单、收据或发票特征'
+    if any(term in subject for term in terms):result['invoice']=_tr('主题包含账单、收据或发票特征')
+    elif any(term in normalize(part.get('name','')) for part in parsed.get('attachments',[]) for term in terms):result['invoice']=_tr('附件名称包含账单、收据或发票特征')
     if len(result)>1:result.pop('personal',None)
     return result
 
@@ -54,13 +55,13 @@ def features(message):
 # ==========================================
 def train(store,rule,account):
     target=rule['destinations'].get(account)
-    if not target:raise ValueError('请先为这个账号设置目标文件夹')
+    if not target:raise ValueError(_tr('请先为这个账号设置目标文件夹'))
     with store.db() as db:
         positive=db.execute('SELECT message_id,parsed FROM messages WHERE account=? AND folder=? AND remote_gone=0 GROUP BY message_id ORDER BY timestamp DESC LIMIT 200',(account,target)).fetchall()
         negative=db.execute('''SELECT m.message_id,m.parsed FROM messages m WHERE m.account=? AND m.folder<>? AND m.folder NOT LIKE '@%'
             AND m.remote_gone=0 AND NOT EXISTS(SELECT 1 FROM messages p WHERE p.account=m.account AND p.folder=? AND p.remote_gone=0 AND p.message_id=m.message_id)
             GROUP BY m.message_id ORDER BY m.timestamp DESC LIMIT 200''',(account,target,target)).fetchall()
-    if len(positive)<5 or len(negative)<5:raise ValueError('学习至少需要目标文件夹5封、其他文件夹5封不同的已缓存邮件')
+    if len(positive)<5 or len(negative)<5:raise ValueError(_tr('学习至少需要目标文件夹5封、其他文件夹5封不同的已缓存邮件'))
     counts=[]
     for rows in (positive,negative):
         count=Counter()
@@ -72,7 +73,7 @@ def train(store,rule,account):
         if pos[token]+neg[token]>=2:rank.append((abs(delta),token,absent,delta))
     rank.sort(reverse=True);base=0
     for unused,token,absent,delta in rank[:2048]:base+=absent;weights[token]=round(delta,8)
-    if not weights:raise ValueError('示例缺少可学习的共同特征，请添加更多邮件')
+    if not weights:raise ValueError(_tr('示例缺少可学习的共同特征，请添加更多邮件'))
     model={'version':1,'positive':np,'negative':nn,'base':base,'weights':weights,'target':target}
     with store.db() as db:db.execute('INSERT INTO mail_filter_models VALUES(?,?,?,?) ON CONFLICT(rule,account) DO UPDATE SET payload=excluded.payload,updated=excluded.updated',(rule['id'],account,json.dumps(model,ensure_ascii=False),time.time()))
     return {'positive':np,'negative':nn,'features':len(weights),'target':target}

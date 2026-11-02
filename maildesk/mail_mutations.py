@@ -1,4 +1,5 @@
 """Durable local mail intents, coalesced flags and recoverable provider moves."""
+from .i18n import text as _tr
 import time
 import uuid
 from collections import defaultdict
@@ -49,16 +50,16 @@ def initialize(db):
 def flags(service, identities, key, value):
     from .local_mail import is_local_message
     if key not in ('seen','pinned','priority') or not isinstance(value,bool):
-        raise ValueError('无效邮件状态')
+        raise ValueError(_tr('无效邮件状态'))
     identities=list(dict.fromkeys(identities));store=service.store
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
         for identity in identities:
             row=db.execute('SELECT id,account,folder,validity,uid,remote_gone FROM messages WHERE id=?',(identity,)).fetchone()
-            if row is None:raise ValueError('所选邮件已不存在')
+            if row is None:raise ValueError(_tr('所选邮件已不存在'))
             remote=not service.demo and not is_local_message(row) and key!='priority'
             if remote and (row['account'] not in service.accounts or row['remote_gone']):
-                raise ValueError('邮件无法对应到当前账户，请先同步')
+                raise ValueError(_tr('邮件无法对应到当前账户，请先同步'))
             db.execute('UPDATE messages SET '+key+'=? WHERE id=?',(int(value),identity))
             if key!='priority':
                 table='pending_read_flags' if key=='seen' else 'pending_pinned_flags'
@@ -79,15 +80,15 @@ def move(service, identity, destination):
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
         source=db.execute('SELECT id,account,folder,validity,uid,remote_gone FROM messages WHERE id=?',(identity,)).fetchone()
-        if source is None:raise ValueError('邮件不存在')
+        if source is None:raise ValueError(_tr('邮件不存在'))
         target=db.execute('SELECT special FROM folders WHERE account=? AND folder=? AND present=1 AND selectable=1',
                           (source['account'],destination)).fetchone()
-        if target is None:raise ValueError('目标文件夹不存在或不可选择')
+        if target is None:raise ValueError(_tr('目标文件夹不存在或不可选择'))
         local=service.demo or is_local_message(source)
         if local and not service.demo and source['account']!=LOCAL_ACCOUNT:
-            raise ValueError('本地副本不能直接移动到服务器')
+            raise ValueError(_tr('本地副本不能直接移动到服务器'))
         if not local and (source['account'] not in service.accounts or source['remote_gone']):
-            raise ValueError('邮件无法对应到当前账户，请先同步')
+            raise ValueError(_tr('邮件无法对应到当前账户，请先同步'))
         if source['folder']!=destination:
             if local:
                 validity,uid='local',uuid.uuid4().hex
@@ -139,7 +140,7 @@ def flush_flags(service, should_yield=lambda:False):
                     if len(page)==1:transport.set_seen(service.accounts[account],page[0],value,flag)
                     else:transport.set_seen_many(service.accounts[account],page,value,flag)
                 except Exception:
-                    service.status['mutation_error']='更改已保存在本机，后台同步失败，将在下次同步重试'
+                    service.status['mutation_error']=_tr('更改已保存在本机，后台同步失败，将在下次同步重试')
                     break
                 with service.store.db() as db:
                     db.executemany('DELETE FROM '+table+' WHERE message=? AND generation=?',[(r['message'],r['generation']) for r in page])
@@ -208,8 +209,8 @@ def flush_moves(service, should_yield=lambda:False):
             with store.db() as db:
                 db.execute("""UPDATE pending_moves SET state=CASE WHEN state='sending' THEN 'uncertain' ELSE state END,
                     attempts=attempts+1,retry_at=?,error=? WHERE message=?""",
-                    (time.time()+min(900,15*2**min(row['attempts'],6)),'移动尚未同步，后台将核对服务器后重试',row['message']))
-            service.status['mutation_error']='更改已保存在本机，移动尚未同步；后台将核对服务器后重试'
+                    (time.time()+min(900,15*2**min(row['attempts'],6)),_tr('移动尚未同步，后台将核对服务器后重试'),row['message']))
+            service.status['mutation_error']=_tr('更改已保存在本机，移动尚未同步；后台将核对服务器后重试')
 
 
 # ==========================================
@@ -225,7 +226,7 @@ def flush(service, should_yield=lambda:False):
     with service.store.db() as db:
         pending=sum(db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in ('pending_moves','pending_read_flags','pending_pinned_flags'))
         failed=db.execute("SELECT 1 FROM pending_moves WHERE error<>'' LIMIT 1").fetchone()
-    if failed:service.status.setdefault('mutation_error','更改已保存在本机，移动尚未同步；后台将核对服务器后重试')
+    if failed:service.status.setdefault('mutation_error',_tr('更改已保存在本机，移动尚未同步；后台将核对服务器后重试'))
     service.status['mutations_pending']=pending
     return pending
 
@@ -247,4 +248,4 @@ def migrate_done(service):
         if destinations[row['account']]:
             try:move(service,row['id'],destinations[row['account']])
             except ValueError:continue  # A concurrent account/folder edit can invalidate a captured migration row.
-        else:service.status['mutation_error']='历史已完成邮件尚未归档，请在文件夹管理中设置归档映射'
+        else:service.status['mutation_error']=_tr('历史已完成邮件尚未归档，请在文件夹管理中设置归档映射')

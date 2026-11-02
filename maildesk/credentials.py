@@ -3,6 +3,7 @@
 The private device key is readable by the Linux user; this does not protect
 against that user's processes or root. No passwords enter config JSON or argv.
 """
+from .i18n import text as _tr
 import base64
 import ctypes as C
 import hashlib
@@ -74,11 +75,11 @@ def access_secret(account, value):
         with credential_lock(account):
             current=session_secret(account)
             if not current and os.environ.get(account.secret_env)!=value:
-                raise LoginError('登录状态已更新，请重新登录')
+                raise LoginError(_tr('登录状态已更新，请重新登录'))
             bundle=decode_oauth(current or value)
             if bundle is None:return current or value
             if bundle['expires_at']>time.time()+60:return bundle['access_token']
-        if not bundle.get('refresh_token'):raise LoginError('邮箱授权已过期，请在账号设置中重新登录')
+        if not bundle.get('refresh_token'):raise LoginError(_tr('邮箱授权已过期，请在账号设置中重新登录'))
         values={'client_id':bundle['client_id'],'refresh_token':bundle['refresh_token'],'grant_type':'refresh_token'}
         if bundle.get('client_secret'):values['client_secret']=bundle['client_secret']
         token=token_request(bundle['provider'],values)
@@ -86,7 +87,7 @@ def access_secret(account, value):
         encoded=encode_oauth(bundle['provider'],bundle['client_id'],token,bundle.get('client_secret',''))
         with credential_lock(account),_session_lock:
             # A concurrent logout/re-login must not resurrect an obsolete grant.
-            if session_secret(account)!=(current or value):raise LoginError('登录状态已更新，请重试')
+            if session_secret(account)!=(current or value):raise LoginError(_tr('登录状态已更新，请重试'))
             saver=_refresh_savers.get(identity(account))
             if saver:saver(account,encoded)
             session_secret(account,encoded)
@@ -110,7 +111,7 @@ def authenticated(account, callback=None, clear=False):
 # ==========================================
 def aes_gcm(key, nonce, data, aad=b'', tag=None):
     if len(key) != 32 or len(nonce) != 12 or (tag is not None and len(tag) != 16):
-        raise ValueError('本机凭据格式无效')
+        raise ValueError(_tr('本机凭据格式无效'))
     from .platform_native import load_library
     lib=load_library('crypto');P=C.c_void_p;I=C.c_int
     signatures={'EVP_CIPHER_CTX_new':(P,), 'EVP_CIPHER_CTX_free':(None,P),
@@ -121,22 +122,22 @@ def aes_gcm(key, nonce, data, aad=b'', tag=None):
     for name,signature in signatures.items():
         fn=getattr(lib,name);fn.restype=signature[0];fn.argtypes=signature[1:]
     context=lib.EVP_CIPHER_CTX_new()
-    if not context:raise ValueError('本机凭据加密不可用')
+    if not context:raise ValueError(_tr('本机凭据加密不可用'))
     output=C.create_string_buffer(len(data)+16);length=I();final=I()
     try:
         init=getattr(lib,f'EVP_{mode}Init_ex');update=getattr(lib,f'EVP_{mode}Update')
-        if init(context,lib.EVP_aes_256_gcm(),None,key,nonce)!=1:raise ValueError('本机凭据加密不可用')
-        if aad and update(context,None,C.byref(length),aad,len(aad))!=1:raise ValueError('本机凭据认证失败')
-        if update(context,output,C.byref(length),data,len(data))!=1:raise ValueError('本机凭据处理失败')
+        if init(context,lib.EVP_aes_256_gcm(),None,key,nonce)!=1:raise ValueError(_tr('本机凭据加密不可用'))
+        if aad and update(context,None,C.byref(length),aad,len(aad))!=1:raise ValueError(_tr('本机凭据认证失败'))
+        if update(context,output,C.byref(length),data,len(data))!=1:raise ValueError(_tr('本机凭据处理失败'))
         used=length.value
         if tag is not None and lib.EVP_CIPHER_CTX_ctrl(context,0x11,16,C.create_string_buffer(tag))!=1:
-            raise ValueError('本机凭据认证失败')
+            raise ValueError(_tr('本机凭据认证失败'))
         if getattr(lib,f'EVP_{mode}Final_ex')(context,C.byref(output,used),C.byref(final))!=1:
-            raise ValueError('本机凭据已损坏或与此账户不匹配，请重新登录')
+            raise ValueError(_tr('本机凭据已损坏或与此账户不匹配，请重新登录'))
         result=output.raw[:used+final.value]
         if tag is not None:return result
         result_tag=C.create_string_buffer(16)
-        if lib.EVP_CIPHER_CTX_ctrl(context,0x10,16,result_tag)!=1:raise ValueError('本机凭据认证失败')
+        if lib.EVP_CIPHER_CTX_ctrl(context,0x10,16,result_tag)!=1:raise ValueError(_tr('本机凭据认证失败'))
         return result,result_tag.raw
     finally:lib.EVP_CIPHER_CTX_free(context)
 
@@ -163,12 +164,12 @@ class CredentialVault:
         if os.name=='nt':
             info=path.lstat()
             if path.is_symlink() or getattr(info,'st_file_attributes',0)&0x400:
-                raise ValueError('本机凭据文件不能是链接')
+                raise ValueError(_tr('本机凭据文件不能是链接'))
         descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0))
         with os.fdopen(descriptor,'rb') as file:
             info=os.fstat(file.fileno())
             if not stat.S_ISREG(info.st_mode) or (os.name!='nt' and (info.st_uid!=os.getuid() or info.st_mode&0o077)):
-                raise ValueError('本机凭据文件权限无效，请在账号设置中重新登录')
+                raise ValueError(_tr('本机凭据文件权限无效，请在账号设置中重新登录'))
             return file.read(1024*1024)
 
     # ==========================================
@@ -177,15 +178,15 @@ class CredentialVault:
     # ==========================================
     def key(self):
         self.root.mkdir(parents=True,exist_ok=True,mode=0o700)
-        if self.root.is_symlink():raise ValueError('本机凭据目录无效')
+        if self.root.is_symlink():raise ValueError(_tr('本机凭据目录无效'))
         if not self.keyfile.exists():
-            if self.records.exists():raise ValueError('本机凭据密钥丢失，请忘记凭据后重新登录')
+            if self.records.exists():raise ValueError(_tr('本机凭据密钥丢失，请忘记凭据后重新登录'))
             try:
                 descriptor=os.open(self.keyfile,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
                 with os.fdopen(descriptor,'wb') as file:file.write(os.urandom(32));file.flush();os.fsync(file.fileno())
             except FileExistsError:pass
         key=self.read_private(self.keyfile)
-        if len(key)!=32:raise ValueError('本机凭据密钥无效')
+        if len(key)!=32:raise ValueError(_tr('本机凭据密钥无效'))
         return key
 
     # ==========================================
@@ -195,7 +196,7 @@ class CredentialVault:
     def load(self):
         if not self.records.exists():return {}
         data=json.loads(self.read_private(self.records))
-        if not isinstance(data,dict):raise ValueError('本机凭据索引无效')
+        if not isinstance(data,dict):raise ValueError(_tr('本机凭据索引无效'))
         return data
 
     # ==========================================
@@ -217,12 +218,12 @@ class CredentialVault:
     # Method: Use a fresh random nonce and account identity as authenticated metadata.
     # ==========================================
     def save(self, account, secret):
-        if not secret or len(secret.encode())>65536:raise ValueError('邮箱凭据长度无效')
+        if not secret or len(secret.encode())>65536:raise ValueError(_tr('邮箱凭据长度无效'))
         with self.lock:
             if os.name=='nt':
                 from .platform_native import protect_data
                 self.root.mkdir(parents=True,exist_ok=True)
-                if self.root.is_symlink():raise ValueError('本机凭据目录无效')
+                if self.root.is_symlink():raise ValueError(_tr('本机凭据目录无效'))
                 records=self.load();encrypted=protect_data(secret.encode(),identity(account).encode())
                 records[account.id]={'identity':identity(account),'protection':'windows-dpapi-user','data':base64.b64encode(encrypted).decode()}
                 self.write(records);return
@@ -242,9 +243,9 @@ class CredentialVault:
             raw=base64.b64decode(record['data'],validate=True)
             if os.name=='nt':
                 from .platform_native import protect_data
-                if record.get('protection')!='windows-dpapi-user':raise ValueError('本机凭据平台不匹配，请重新登录')
+                if record.get('protection')!='windows-dpapi-user':raise ValueError(_tr('本机凭据平台不匹配，请重新登录'))
                 return protect_data(raw,identity(account).encode(),decrypt=True).decode()
-            if len(raw)<28:raise ValueError('本机凭据格式无效')
+            if len(raw)<28:raise ValueError(_tr('本机凭据格式无效'))
             return aes_gcm(self.key(),raw[:12],raw[28:],identity(account).encode(),raw[12:28]).decode()
 
     # ==========================================

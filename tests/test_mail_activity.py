@@ -14,7 +14,7 @@ from maildesk.mail_activity import activity_snapshot,calendar_bounds
 # Function: Validate statistics independently of graphical libraries and real account providers.
 # Method: Use real local SQLite and RFC messages with deterministic civil dates and folder mappings.
 # ==========================================
-class MailActivityTests(TestCase):
+class MailActivityFixture:
     # ==========================================
     # Function: Create isolated accounts and system folders for activity classification.
     # Method: Avoid profile defaults, provider connections and wall-clock-dependent message dates.
@@ -41,6 +41,12 @@ class MailActivityTests(TestCase):
         message['Date']=format_datetime(datetime.combine(day or self.today,time(hour)).astimezone());message.set_content('A small preview.\n'*100)
         return self.store.ingest(account,folder,'1',str(self.serial),message.as_bytes())
 
+
+# ==========================================
+# Function: Validate statistics independently of graphical libraries and providers.
+# Method: Reuse real local SQLite fixtures with deterministic civil dates and mappings.
+# ==========================================
+class MailActivityTests(MailActivityFixture,TestCase):
     # ==========================================
     # Function: Count received/sent mail without drafts, junk, trash or repeated folder copies.
     # Method: Include archived mail, missing IDs and a second account's independent copy in the same day.

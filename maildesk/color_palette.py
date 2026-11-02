@@ -1,4 +1,5 @@
 """Native HSV palette and always-visible RGB swatches without chooser windows."""
+from .i18n import text as _tr
 import colorsys
 import ctypes as C
 from functools import lru_cache
@@ -33,7 +34,7 @@ class ColorPalette:
     # ==========================================
     def __init__(self,g,group,changed):
         self.g,self.changed=g,changed;self.hue=0;self.saturation=0;self.value=1;self.rgb=(1,1,1);self.start=(0,0);self.closed=False
-        self.widget=g.gtk_drawing_area_new();g.gtk_widget_set_size_request(self.widget,260,145);g.gtk_widget_set_tooltip_text(self.widget,'拖动选择颜色：左右调整饱和度，上下调整明度'.encode())
+        self.widget=g.gtk_drawing_area_new();g.gtk_widget_set_size_request(self.widget,260,145);g.gtk_widget_set_tooltip_text(self.widget,_tr('拖动选择颜色：左右调整饱和度，上下调整明度').encode())
         g.connect(self.widget,'draw',self.draw,count=3,returns=True,group=group)
         self.gesture=g.gtk_gesture_drag_new(self.widget);g.gtk_gesture_single_set_button(self.gesture,1)
         g.connect(self.gesture,'drag-begin',self.begin,types=[P,C.c_double,C.c_double,P],group=group)

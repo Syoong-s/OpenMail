@@ -1,4 +1,5 @@
 """Optional private native reader runtime; never downloads or installs on launch."""
+from .i18n import text as _tr
 import ctypes.util
 import hashlib
 from xml.sax.saxutils import escape
@@ -32,7 +33,7 @@ def prepare_readers():
     helpers=Path('/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1')
     if not (helpers/'WebKitNetworkProcess').exists():
         wrapper=shutil.which('bwrap')
-        if not wrapper:raise RuntimeError('独立 WebKit 运行库需要系统 bubblewrap；也可使用发行版提供的 WebKitGTK。')
+        if not wrapper:raise RuntimeError(_tr('独立 WebKit 运行库需要系统 bubblewrap；也可使用发行版提供的 WebKitGTK。'))
         command=[wrapper,'--bind','/','/','--overlay-src','/usr/lib/x86_64-linux-gnu',
                  '--overlay-src',str(libraries),'--ro-overlay','/usr/lib/x86_64-linux-gnu',
                  '--overlay-src','/usr/bin','--overlay-src',str(root/'usr/bin'),'--ro-overlay','/usr/bin',

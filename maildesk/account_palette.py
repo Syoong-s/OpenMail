@@ -1,4 +1,5 @@
 """Per-account color circles with a compact same-window palette."""
+from .i18n import text as _tr
 from .identity_colors import ACCOUNT_PALETTE
 
 # ==========================================
@@ -11,7 +12,7 @@ class AccountPaletteUI:
     # Method: Use a native toggle and a broker-managed palette with no OS dialog.
     # ==========================================
     def account_color_button(self,account,group='folders',boundary=None):
-        g=self.g;button=g.gtk_menu_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'account-color-circle');dot=g.gtk_label_new(b'');g.gtk_container_add(button,dot);self.set_account_dot(dot,account);g.gtk_widget_set_tooltip_text(button,'调整此账户颜色'.encode())
+        g=self.g;button=g.gtk_menu_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'account-color-circle');dot=g.gtk_label_new(b'');g.gtk_container_add(button,dot);self.set_account_dot(dot,account);g.gtk_widget_set_tooltip_text(button,_tr('调整此账户颜色').encode())
         popup=g.gtk_popover_new(button);host=g.gtk_box_new(1,2);g.gtk_container_set_border_width(host,5);g.gtk_container_add(popup,host);g.gtk_menu_button_set_popover(button,popup)
         if boundary:g.surfaces.beside(popup,boundary)
         options_group='account-palette-'+str(popup);g.surfaces.states[popup].setdefault('cleanup',[]).append(lambda:g.surfaces.retire(options_group))
@@ -31,7 +32,7 @@ class AccountPaletteUI:
     def fill_account_palette(self,host,popup,account,dot,group):
         g=self.g;g.surfaces.retire(group);g.clear(host);current=self.identity_colors.account_color(account);colors=list(ACCOUNT_PALETTE)
         if current not in colors:colors.append(current)
-        titles=['蓝色','橙色','绿色','紫色','粉色','青色','金色','灰蓝色','自定义颜色']
+        titles=[_tr('蓝色'),_tr('橙色'),_tr('绿色'),_tr('紫色'),_tr('粉色'),_tr('青色'),_tr('金色'),_tr('灰蓝色'),_tr('自定义颜色')]
         for index,color in enumerate(colors):
             button=g.gtk_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'choice-option');line=g.gtk_box_new(0,12);g.gtk_container_add(button,line)
             mark=g.gtk_label_new(b'');g.gtk_label_set_markup(mark,('<span foreground="'+color+'">●</span>').encode());g.gtk_box_pack_start(line,mark,0,0,0);label=g.gtk_label_new(titles[min(index,len(titles)-1)].encode());g.gtk_label_set_xalign(label,0);g.gtk_box_pack_start(line,label,1,1,0);g.gtk_box_pack_start(line,g.gtk_label_new(('✓' if current==color else '').encode()),0,0,0)

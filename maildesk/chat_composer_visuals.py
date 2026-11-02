@@ -1,4 +1,5 @@
 """Presentation-only recipient/account captions and a resolution-independent send glyph."""
+from .i18n import text as _tr
 import ctypes as C
 from email.utils import getaddresses
 
@@ -9,10 +10,10 @@ from email.utils import getaddresses
 # ==========================================
 def recipient_caption(to,cc='',bcc=''):
     recipients=[address for name,address in getaddresses([to],strict=False) if address]
-    first=recipients[0] if recipients else to.strip() or '选择收件人'
-    caption='收件人  '+first+(f'  +{len(recipients)-1}' if len(recipients)>1 else '')
-    if cc:caption+=' · 抄送'
-    if bcc:caption+=' · 密送待核对'
+    first=recipients[0] if recipients else to.strip() or _tr('选择收件人')
+    caption=_tr('收件人  ')+first+(f'  +{len(recipients)-1}' if len(recipients)>1 else '')
+    if cc:caption+=_tr(' · 抄送')
+    if bcc:caption+=_tr(' · 密送待核对')
     return caption
 
 

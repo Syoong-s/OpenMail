@@ -1,4 +1,5 @@
 """Resizable mailbox/navigation/preview geometry with bounded durable widths."""
+from .i18n import text as _tr
 import ctypes as C
 import time
 
@@ -72,7 +73,7 @@ class WorkspaceGeometry:
     # ==========================================
     def add_navigation_handle(self,key):
         g=self.g;panel=self.app.widget(key);surface=g.gtk_bin_get_child(panel);g.g_object_ref(surface);g.gtk_container_remove(panel,surface);wrapper=g.gtk_box_new(0,0);g.gtk_widget_set_hexpand(wrapper,0);g.gtk_container_add(panel,wrapper);g.gtk_widget_set_size_request(surface,-1,-1);clip=surface;g.gtk_box_pack_start(wrapper,surface,1,1,0);g.g_object_unref(surface)
-        edge=g.gtk_event_box_new();g.gtk_event_box_set_visible_window(edge,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(edge),b'navigation-resize-edge');g.gtk_widget_set_size_request(edge,8,-1);g.gtk_widget_set_tooltip_text(edge,'拖动调整侧栏宽度'.encode());g.gtk_box_pack_start(wrapper,edge,0,0,0)
+        edge=g.gtk_event_box_new();g.gtk_event_box_set_visible_window(edge,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(edge),b'navigation-resize-edge');g.gtk_widget_set_size_request(edge,8,-1);g.gtk_widget_set_tooltip_text(edge,_tr('拖动调整侧栏宽度').encode());g.gtk_box_pack_start(wrapper,edge,0,0,0)
         gesture=g.gtk_gesture_drag_new(edge);g.gtk_gesture_single_set_button(gesture,1);g.gtk_gesture_single_set_touch_only(gesture,0);g.gtk_event_controller_set_propagation_phase(gesture,1)
         self.nav[key]={'wrapper':wrapper,'surface':surface,'edge':edge,'clip':clip,'gesture':gesture,'width':bounded(self.app.service.store.preference(key+'_width',300),300,NAV_MIN,NAV_MAX),'start':300,'pointer_start':0,'active':False,'applied':None}
         g.connect(gesture,'drag-begin',lambda widget,x,y,data,name=key:self.nav_begin(name),types=[P,C.c_double,C.c_double,P],group='workspace-geometry')

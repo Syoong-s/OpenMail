@@ -1,4 +1,5 @@
 """Native Windows WebView2 reader embedded in independently owned child surfaces aligned with GTK widgets."""
+from .i18n import text as _tr
 import ctypes as C
 import json
 import os
@@ -89,7 +90,7 @@ class HTMLReader:
         if self.closed or self.handle or not self.source:return
         gdk=self.g.libs['gdk'];native=gdk.gdk_win32_window_get_handle;native.argtypes=[P];native.restype=P
         window=self.g.gtk_widget_get_window(self.g.gtk_widget_get_toplevel(self.widget))
-        if not window:raise RuntimeError('无法创建应用内阅读区域')
+        if not window:raise RuntimeError(_tr('无法创建应用内阅读区域'))
         hwnd=native(window)
         from .storage_paths import active_cache
         profile=active_cache()/'webview2'
@@ -101,7 +102,7 @@ class HTMLReader:
         if candidate:
             idle.remove(candidate);self.handle=candidate[1];self.app.reader_pool_reused=getattr(self.app,'reader_pool_reused',0)+1
         else:self.handle=self.lib.md_webview_create(hwnd,str(profile),str(runtime_root()/'bin/WebView2Loader.dll'))
-        if not self.handle:raise RuntimeError('无法初始化 Windows WebView2 阅读器')
+        if not self.handle:raise RuntimeError(_tr('无法初始化 Windows WebView2 阅读器'))
         self.lib.md_webview_zoom(self.handle,self.zoom)
         if self.source:self.lib.md_webview_load(self.handle,self.rendered_document(),int(self.remote))
         self.timer_callback=C.CFUNCTYPE(I,P)(self.poll)
@@ -194,7 +195,7 @@ class HTMLReader:
         self.sync_native_viewport()
         status=self.lib.md_webview_status(self.handle)
         if status<0 and not self.failed:
-            self.failed=True;self.app.message('Windows 阅读器无法启动，请检查 Microsoft Edge WebView2 Runtime（错误 '+hex(status&0xffffffff)+'）')
+            self.failed=True;self.app.message(_tr('Windows 阅读器无法启动，请检查 Microsoft Edge WebView2 Runtime（错误 {0}）').format(hex(status&0xffffffff)))
         self.document_ready=status==1
         if self.document_ready and getattr(self,'compact_mail',False):self.poll_content_fit()
         if self.document_ready and self.pending_image is not None:

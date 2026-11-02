@@ -1,4 +1,5 @@
 """Small typed GTK 3 C-ABI adapter using only Python's standard library."""
+from .i18n import text as _tr
 import ctypes as C
 from pathlib import Path
 import sys
@@ -157,6 +158,8 @@ class GtkNative:
     # Method: Own the builder reference and project GError on failure.
     # ==========================================
     def builder(self, xml):
+        from .i18n import builder_xml
+        xml=builder_xml(xml)
         xml,metadata=self.surfaces.prepare_builder(xml)
         builder = self.gtk_builder_new()
         encoded, error = xml.encode('utf-8'), P()
@@ -277,7 +280,7 @@ class GtkNative:
             for path in Path(folder).glob('*.otf'):
                 error=P()
                 if not register(fontmap,str(path).encode(),C.byref(error)):
-                    detail=C.cast(error,C.POINTER(GError)).contents.message.decode() if error else '无法加载程序附带的中文字体'
+                    detail=C.cast(error,C.POINTER(GError)).contents.message.decode() if error else _tr('无法加载程序附带的中文字体')
                     if error:self.g_error_free(error)
                     raise RuntimeError(detail)
         self.fontconfig = load_library('fontconfig')
@@ -285,7 +288,7 @@ class GtkNative:
         add.restype, add.argtypes = I, (P, S)
         for path in Path(folder).glob('*.otf'):
             if not add(None, str(path).encode()):
-                raise RuntimeError('无法加载程序附带的中文字体')
+                raise RuntimeError(_tr('无法加载程序附带的中文字体'))
 
     # ==========================================
     # Function: Apply the desktop stylesheet.
@@ -308,7 +311,7 @@ class GtkNative:
     # Method: Use the native file chooser and release its allocated filename.
     # ==========================================
     def choose(self, parent, title, save_name=None):
-        dialog = self.gtk_file_chooser_native_new(title.encode(), parent, 1 if save_name is not None else 0, '保存'.encode() if save_name is not None else '打开'.encode(), '取消'.encode())
+        dialog = self.gtk_file_chooser_native_new(title.encode(), parent, 1 if save_name is not None else 0, _tr('保存').encode() if save_name is not None else _tr('打开').encode(), _tr('取消').encode())
         try:
             if save_name is not None:
                 app=getattr(self.surfaces,'app',None)
@@ -331,7 +334,7 @@ class GtkNative:
     def choose_folder(self, parent, title, current=None):
         app=getattr(self.surfaces,'app',None)
         parent=getattr(app,'window',None) or parent
-        dialog=self.gtk_file_chooser_native_new(title.encode(),parent,2,'选择文件夹'.encode(),'取消'.encode())
+        dialog=self.gtk_file_chooser_native_new(title.encode(),parent,2,_tr('选择文件夹').encode(),_tr('取消').encode())
         try:
             if current and Path(current).is_dir():self.gtk_file_chooser_set_current_folder(dialog,str(current).encode())
             if self.gtk_native_dialog_run(dialog)!=-3:return None
@@ -350,7 +353,7 @@ class GtkNative:
         provider=provider or self.gtk_css_provider_new();encoded=source.encode()
         if not self.gtk_css_provider_load_from_data(provider,encoded,len(encoded),None):
             if fresh:self.g_object_unref(provider)
-            raise ValueError('无效的头像样式')
+            raise ValueError(_tr('无效的头像样式'))
         if fresh:
             self.gtk_style_context_add_provider(self.gtk_widget_get_style_context(widget),provider,601)
             self.g_object_unref(provider)
@@ -366,7 +369,7 @@ class GtkNative:
         key=(str(path),size)
         if key not in cache:
             pixbuf=self.gdk_pixbuf_new_from_file_at_scale(str(path).encode(),size,size,1,None)
-            if not pixbuf:raise ValueError('无法读取应用图标')
+            if not pixbuf:raise ValueError(_tr('无法读取应用图标'))
             cache[key]=pixbuf
         return self.gtk_image_new_from_pixbuf(cache[key])
 
@@ -387,11 +390,11 @@ class GtkNative:
         path.parent.mkdir(parents=True, exist_ok=True)
         pixbuf = self.gdk_pixbuf_get_from_window(self.gtk_widget_get_window(window), 0, 0, self.gtk_widget_get_allocated_width(window), self.gtk_widget_get_allocated_height(window))
         if not pixbuf:
-            raise RuntimeError('当前显示后端不支持窗口截图；可用 GDK_BACKEND=x11 进行截图测试')
+            raise RuntimeError(_tr('当前显示后端不支持窗口截图；可用 GDK_BACKEND=x11 进行截图测试'))
         error = P()
         try:
             if not self.gdk_pixbuf_savev(pixbuf, str(path).encode(), b'png', None, None, C.byref(error)):
-                raise RuntimeError('无法保存窗口截图')
+                raise RuntimeError(_tr('无法保存窗口截图'))
         finally:
             if error:
                 self.g_error_free(error)

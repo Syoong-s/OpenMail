@@ -1,4 +1,5 @@
 """Embedded inert HTML/Markdown and isolated offline PDF.js readers."""
+from .i18n import text as _tr
 import ctypes as C
 import ctypes.util
 import os
@@ -29,7 +30,7 @@ def library(name, signatures):
     if not soname and private:
         matches=list((Path(private)/'usr/lib/x86_64-linux-gnu').glob('lib'+name+'.so.*'))
         if matches:soname=str(sorted(matches,key=lambda value:len(value.name))[0])
-    if not soname:raise RuntimeError('缺少应用内阅读运行库：'+name+'。请按阅读器依赖清单安装 Linux 运行库。')
+    if not soname:raise RuntimeError(_tr('缺少应用内阅读运行库：')+name+_tr('。请按阅读器依赖清单安装 Linux 运行库。'))
     module=C.CDLL(soname)
     for symbol,signature in signatures.items():
         fn=getattr(module,symbol);fn.restype,fn.argtypes=signature[0],signature[1:]
@@ -316,7 +317,7 @@ class DocumentPanel:
         self.model=prepared if prepared is not None else preview(name,data,media_type)
         if Path(name).suffix.lower() in ('.tif','.tiff','.ico'):
             from .file_previews import native_raster,Preview
-            self.model=Preview('image',[('图片','<figure><img src="'+native_raster(self.g,data)+'" alt="本机图片"></figure>')])
+            self.model=Preview('image',[(_tr('图片'),'<figure><img src="'+native_raster(self.g,data)+_tr('" alt="本机图片"></figure>'))])
         self.preview_kind=self.model.kind;self.text_source=self.model.source;self.page_index=0;self.source_mode=False
         self.root=self.g.gtk_box_new(1,0);self.g.g_object_ref_sink(self.root);self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(self.root),b'document-panel')
         self.scroll=self.g.gtk_scrolled_window_new(None,None);self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(self.scroll),b'document-canvas');self.g.gtk_widget_set_hexpand(self.scroll,1);self.g.gtk_widget_set_vexpand(self.scroll,1);self.g.gtk_box_pack_start(self.root,self.scroll,1,1,0)
@@ -327,13 +328,13 @@ class DocumentPanel:
             self.g.gtk_container_add(self.scroll,self.engine.widget)
             if isinstance(self.engine,HTMLReader):self.engine.attached()
             if self.preview_kind=='pdf' or len(self.model.pages)>1:
-                self.previous_button=self.add_button('上一页','action-back',lambda:self.set_page(-1));self.next_button=self.add_button('下一页','action-next',lambda:self.set_page(1))
+                self.previous_button=self.add_button(_tr('上一页'),'action-back',lambda:self.set_page(-1));self.next_button=self.add_button(_tr('下一页'),'action-next',lambda:self.set_page(1))
             self.page_label=self.g.gtk_label_new(b'');self.g.gtk_label_set_ellipsize(self.page_label,3);self.g.gtk_label_set_max_width_chars(self.page_label,22);self.g.gtk_box_pack_start(self.toolbar,self.page_label,0,0,2)
-            self.zoom_out_button=self.add_button('缩小','action-zoom-out',lambda:self.engine.scale(1/1.2));self.zoom_in_button=self.add_button('放大','action-zoom-in',lambda:self.engine.scale(1.2))
+            self.zoom_out_button=self.add_button(_tr('缩小'),'action-zoom-out',lambda:self.engine.scale(1/1.2));self.zoom_in_button=self.add_button(_tr('放大'),'action-zoom-in',lambda:self.engine.scale(1.2))
             if self.preview_kind=='pdf':
-                self.fit_button=self.add_button('适合宽度','action-fit',lambda:self.engine.fit(self.g.gtk_widget_get_allocated_width(self.scroll)))
+                self.fit_button=self.add_button(_tr('适合宽度'),'action-fit',lambda:self.engine.fit(self.g.gtk_widget_get_allocated_width(self.scroll)))
                 self.search_entry=self.g.gtk_entry_new();self.g.gtk_entry_set_width_chars(self.search_entry,12);self.g.gtk_entry_set_max_length(self.search_entry,2048)
-                self.g.gtk_entry_set_placeholder_text(self.search_entry,'搜索 PDF'.encode());self.g.gtk_widget_set_tooltip_text(self.search_entry,'输入文字并按回车搜索；再次回车查找下一处'.encode())
+                self.g.gtk_entry_set_placeholder_text(self.search_entry,_tr('搜索 PDF').encode());self.g.gtk_widget_set_tooltip_text(self.search_entry,_tr('输入文字并按回车搜索；再次回车查找下一处').encode())
                 self.g.gtk_box_pack_start(self.toolbar,self.search_entry,0,0,4)
                 self.g.connect(self.search_entry,'activate',lambda *unused:self.engine.find((self.g.gtk_entry_get_text(self.search_entry) or b'').decode()),group=self.group)
             self.initial_fit=False;self.update_page()
@@ -381,7 +382,7 @@ class DocumentPanel:
     def update_page(self):
         if not hasattr(self,'page_label'):return
         pdf=self.preview_kind=='pdf';index=self.engine.index if pdf else self.page_index;count=self.engine.count if pdf else len(self.model.pages)
-        title=(f'{index+1} / {count}' if count else (self.engine.error or 'PDF 正在加载…')) if pdf else self.model.pages[index][0]
+        title=(f'{index+1} / {count}' if count else (self.engine.error or _tr('PDF 正在加载…'))) if pdf else self.model.pages[index][0]
         self.g.label(self.page_label,title+f' · {getattr(self.engine,"zoom",1):.0%}');self.g.gtk_widget_set_tooltip_text(self.page_label,title.encode())
         if hasattr(self,'previous_button'):self.g.gtk_widget_set_sensitive(self.previous_button,index>0);self.g.gtk_widget_set_sensitive(self.next_button,index+1<count)
 

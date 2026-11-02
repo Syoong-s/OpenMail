@@ -4,6 +4,7 @@ Call execute_migration only after readers, workers and executors are drained,
 while the caller still owns the original mailbox instance lock. A successful
 return requires restarting with the original command-line arguments.
 """
+from .i18n import text as _tr
 from contextlib import closing
 from dataclasses import dataclass
 import hashlib
@@ -84,9 +85,9 @@ def _vault(config):
 def _destination(path):
     path = safe_path(path)
     if path == path.parent:
-        raise ValueError('不能使用文件系统根目录作为存储目录')
+        raise ValueError(_tr('不能使用文件系统根目录作为存储目录'))
     if path.exists() and (not path.is_dir() or any(path.iterdir())):
-        raise ValueError('新存储目录必须为空；已有文件不会被覆盖：' + str(path))
+        raise ValueError(_tr('新存储目录必须为空；已有文件不会被覆盖：') + str(path))
     return path
 
 
@@ -96,7 +97,7 @@ def _destination(path):
 # ==========================================
 def prepare_migration(locations, desired):
     if not isinstance(desired, dict) or set(desired) - {'data', 'cache', 'downloads'}:
-        raise ValueError('仅支持数据、缓存和托管下载目录')
+        raise ValueError(_tr('仅支持数据、缓存和托管下载目录'))
     paths = {name: safe_path(desired.get(name, getattr(locations, name)))
              for name in ('data', 'cache', 'downloads')}
     changed = tuple(name for name in paths if _identity(paths[name]) != _identity(getattr(locations, name)))
@@ -110,13 +111,13 @@ def prepare_migration(locations, desired):
     for index, left in enumerate(paths):
         for right in list(paths)[index + 1:]:
             if _overlap(paths[left], paths[right]):
-                raise ValueError('数据、缓存和下载目录不能互相包含')
+                raise ValueError(_tr('数据、缓存和下载目录不能互相包含'))
     sources = [locations.data, locations.cache, locations.downloads, locations.config, _vault(locations.config)]
     for name in changed:
         target = _destination(paths[name])
         for source in sources:
             if _overlap(target, source):
-                raise ValueError('新目录不能与任何原存储路径重叠：' + str(target))
+                raise ValueError(_tr('新目录不能与任何原存储路径重叠：') + str(target))
     config = paths['data'] / 'settings' / locations.config.name if 'data' in changed else locations.config
     validate_profile_destinations(locations,{**paths,'config':config})
     return MigrationPlan(locations, paths['data'], config, paths['cache'], paths['downloads'], changed)
@@ -128,7 +129,7 @@ def prepare_migration(locations, desired):
 # ==========================================
 def _cancel(event):
     if event is not None and event.is_set():
-        raise MigrationCancelled('已取消迁移，原存储位置继续可用')
+        raise MigrationCancelled(_tr('已取消迁移，原存储位置继续可用'))
 
 
 # ==========================================
@@ -139,7 +140,7 @@ def _source_info(path):
     safe_path(path)
     info = path.lstat()
     if not stat.S_ISREG(info.st_mode) and not stat.S_ISDIR(info.st_mode):
-        raise ValueError('存储目录中存在不支持的文件类型：' + str(path))
+        raise ValueError(_tr('存储目录中存在不支持的文件类型：') + str(path))
     return info
 
 
@@ -154,7 +155,7 @@ def _inventory(source, relative=Path(), excluded=None, event=None):
         return [], []
     info = _source_info(source)
     if not stat.S_ISDIR(info.st_mode):
-        raise ValueError('原存储路径不是目录：' + str(source))
+        raise ValueError(_tr('原存储路径不是目录：') + str(source))
     files, directories = [], [relative]
     for entry in sorted(source.iterdir(), key=lambda item: item.name):
         _cancel(event)
@@ -188,7 +189,7 @@ def _hash_file(path, event, emit):
     descriptor = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
     with os.fdopen(descriptor, 'rb') as stream:
         if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
-            raise ValueError('校验对象不是普通文件：' + str(path))
+            raise ValueError(_tr('校验对象不是普通文件：') + str(path))
         while True:
             _cancel(event)
             block = stream.read(_CHUNK)
@@ -211,14 +212,14 @@ def _copy_file(source, target, event, emit):
         # A legacy cache can contain an identical owned file. Conflicting
         # versions are retained at source and require explicit user resolution.
         if _hash_file(source, event, emit) != _hash_file(target, event, emit):
-            raise ValueError('缓存来源包含同名且不同的文件：' + str(target))
+            raise ValueError(_tr('缓存来源包含同名且不同的文件：') + str(target))
         emit('copy', source, before.st_size)
         return
     descriptor = os.open(source, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
     digest = hashlib.sha256()
     with os.fdopen(descriptor, 'rb') as reader, target.open('xb') as writer:
         if _signature(os.fstat(reader.fileno())) != _signature(before):
-            raise RuntimeError('复制期间原文件发生变化：' + str(source))
+            raise RuntimeError(_tr('复制期间原文件发生变化：') + str(source))
         while True:
             _cancel(event)
             block = reader.read(_CHUNK)
@@ -231,9 +232,9 @@ def _copy_file(source, target, event, emit):
         os.fsync(writer.fileno())
         after = os.fstat(reader.fileno())
     if _signature(before) != _signature(after) or _signature(before) != _signature(source.lstat()):
-        raise RuntimeError('复制期间原文件发生变化：' + str(source))
+        raise RuntimeError(_tr('复制期间原文件发生变化：') + str(source))
     if digest.digest() != _hash_file(target, event, emit):
-        raise RuntimeError('文件校验失败：' + str(target))
+        raise RuntimeError(_tr('文件校验失败：') + str(target))
     os.chmod(target, stat.S_IMODE(before.st_mode) & 0o777)
     os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
 
@@ -257,7 +258,7 @@ def _backup_database(source, target, event, emit):
                 emit('database', source, 0)
             reader.backup(writer, pages=128, progress=progress, sleep=0.05)
             if writer.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
-                raise RuntimeError('邮件数据库校验失败')
+                raise RuntimeError(_tr('邮件数据库校验失败'))
             writer.execute('PRAGMA journal_mode=DELETE')
     descriptor = os.open(target, os.O_RDWR)
     try:
@@ -267,7 +268,7 @@ def _backup_database(source, target, event, emit):
     # Independent post-close streaming hashes verify the published snapshot.
     expected = _hash_file(target, event, emit)
     if expected != _hash_file(target, event, emit):
-        raise RuntimeError('邮件数据库文件校验失败')
+        raise RuntimeError(_tr('邮件数据库文件校验失败'))
     os.chmod(target, stat.S_IMODE(source.stat().st_mode) & 0o777)
     emit('database', source, source.stat().st_size)
 
@@ -302,7 +303,7 @@ def _manifests(plan, event=None):
             if old_config.exists():
                 info = _source_info(old_config)
                 if not stat.S_ISREG(info.st_mode):
-                    raise ValueError('账户配置不是普通文件')
+                    raise ValueError(_tr('账户配置不是普通文件'))
                 files.append((old_config, Path('settings') / plan.config.name, info.st_size))
             vault_files, vault_directories = _inventory(old_vault, Path('settings') / _vault(plan.config).name, event=event)
             files.extend(vault_files)
@@ -334,11 +335,11 @@ def _manifests(plan, event=None):
 # ==========================================
 def execute_migration(plan, cancel_event=None, progress_callback=None):
     if not isinstance(plan, MigrationPlan):
-        raise TypeError('需要有效的迁移计划')
+        raise TypeError(_tr('需要有效的迁移计划'))
     # Revalidate after readers and workers have drained, not just when Apply was clicked.
     confirmed = prepare_migration(plan.locations, {name: getattr(plan, name) for name in ('data', 'cache', 'downloads')})
     if confirmed != plan:
-        raise RuntimeError('迁移计划已失效')
+        raise RuntimeError(_tr('迁移计划已失效'))
     _cancel(cancel_event)
     if progress_callback is not None:
         progress_callback({'phase': 'scan', 'path': str(plan.locations.data), 'completed': 0, 'total': 0})
@@ -406,11 +407,11 @@ def execute_migration(plan, cancel_event=None, progress_callback=None):
             pass
         return result
     except InterruptedError as error:
-        suffix = ' 已验证的目标副本已保留；重试请选择空目录。' if published else ''
-        raise MigrationCancelled('已取消迁移，原存储位置继续可用。' + suffix) from error
+        suffix = _tr(' 已验证的目标副本已保留；重试请选择空目录。') if published else ''
+        raise MigrationCancelled(_tr('已取消迁移，原存储位置继续可用。') + suffix) from error
     except Exception as error:
         if published:
-            raise RuntimeError('迁移未完成，原存储位置继续可用。已验证的目标副本已保留；重试请选择空目录。 ' + str(error)) from error
+            raise RuntimeError(_tr('迁移未完成，原存储位置继续可用。已验证的目标副本已保留；重试请选择空目录。 ') + str(error)) from error
         raise
     finally:
         for stage in stages.values():

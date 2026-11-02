@@ -1,4 +1,5 @@
 """Same-window rounded menus and editor cards over compatible native controllers."""
+from .i18n import text as _tr
 import ctypes as C
 import sys
 import xml.etree.ElementTree as ET
@@ -118,7 +119,7 @@ class NativeSurfaces:
         g=self.g;window=g.gtk_widget_get_toplevel(anchor) if anchor else (self.app.window if self.app else None)
         if window not in self.roots:
             child=self.orig['gtk_bin_get_child'](window)
-            if not child:raise RuntimeError('浮层缺少可用的应用内容区域')
+            if not child:raise RuntimeError(_tr('浮层缺少可用的应用内容区域'))
             g.g_object_ref(child);g.gtk_container_remove(window,child);overlay=g.gtk_overlay_new();g.gtk_container_add(overlay,child);g.g_object_unref(child);g.gtk_container_add(window,overlay);self.orig['gtk_widget_show_all'](overlay);self.add_root(window,overlay)
         return window,self.roots[window]['overlay']
 
@@ -418,12 +419,12 @@ class NativeSurfaces:
     # Method: Create independent public content/footer boxes, leaving GTK's private children untouched.
     # ==========================================
     def register_dialog(self,controller,title,width):
-        if self.stopping:raise RuntimeError('程序正在退出')
+        if self.stopping:raise RuntimeError(_tr('程序正在退出'))
         g=self.g;window,overlay=self.root_for();parent=self.opened[-1] if self.opened else None;state={'id':controller,'kind':'dialog','anchor':None,'frame':self.make_frame(overlay,'surface-editor'),'content':g.gtk_box_new(1,0),'root':window,'parent':parent,'open':False,'placement':'side' if parent and self.states[parent]['kind']=='menu' else 'center','width':width,'group':'surface-'+str(controller),'loops':[],'result':-1}
         if parent:state['anchor']=self.states[parent].get('last_action') or self.states[parent]['frame']
         self.states[controller]=state;frame=state['frame'];header=g.gtk_box_new(0,8);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(header),b'surface-editor-header');label=g.gtk_label_new(title.encode());g.gtk_label_set_xalign(label,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),b'surface-editor-title');g.gtk_box_pack_start(header,label,1,1,0)
         from .ui_actions import icon_action
-        close=icon_action(g,g.gtk_button_new(),'关闭','composer-close',16);g.gtk_box_pack_start(header,close,0,0,0);g.connect(close,'clicked',lambda *unused:g.gtk_dialog_response(controller,-6),group=state['group']);g.gtk_box_pack_start(frame,header,0,1,0)
+        close=icon_action(g,g.gtk_button_new(),_tr('关闭'),'composer-close',16);g.gtk_box_pack_start(header,close,0,0,0);g.connect(close,'clicked',lambda *unused:g.gtk_dialog_response(controller,-6),group=state['group']);g.gtk_box_pack_start(frame,header,0,1,0)
         scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(scroll,2,1);g.gtk_scrolled_window_set_propagate_natural_height(scroll,1);g.gtk_container_add(scroll,state['content']);g.gtk_box_pack_start(frame,scroll,1,1,0);state['scroll']=scroll;state['title_label']=label
         footer=g.gtk_box_new(0,8);g.gtk_widget_set_halign(footer,2);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(footer),b'surface-editor-footer');g.gtk_box_pack_start(frame,footer,0,1,0);state['footer']=footer;state['header']=header
         if state['placement']!='side':

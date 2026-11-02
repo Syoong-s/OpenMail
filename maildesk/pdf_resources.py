@@ -1,4 +1,5 @@
 """Capability-scoped, loopback-only resources for the bundled offline PDF viewer."""
+from .i18n import text as _tr
 from functools import lru_cache
 from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -63,6 +64,9 @@ class PDFHandler(BaseHTTPRequestHandler):
                 data, mime = server.pdf_data, 'application/pdf'
             elif name in resource_names():
                 data, mime = resource_bytes(name), MIME[Path(name).suffix]
+                if name in ('viewer.html','viewer.mjs','bootstrap.mjs') and server.language=='en':
+                    from .i18n import pdf_resource
+                    data=pdf_resource(name,data)
             else:
                 self.send_error(404)
                 return
@@ -128,11 +132,13 @@ class PDFSession:
     # ==========================================
     def __init__(self, data):
         if not data or len(data) > MAX_PDF_BYTES or b'%PDF-' not in data[:1024]:
-            raise ValueError('PDF 无效或超过 64 MiB 预览上限')
+            raise ValueError(_tr('PDF 无效或超过 64 MiB 预览上限'))
         resource_names()
         self.closed = False
         self.server = PDFServer(('127.0.0.1', 0), PDFHandler)
         self.server.pdf_data = bytes(data)
+        from .i18n import language
+        self.server.language=language()
         self.server.retired = False
         self.server.served = Counter()
         self.token = secrets.token_hex(24)

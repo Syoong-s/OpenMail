@@ -1,4 +1,5 @@
 """Bounded data-only rule matching shared by automatic runs, previews and manual filtering."""
+from .i18n import text as _tr
 import fnmatch
 from .filter_smart import normalize,recognize,score
 from .participant_identity import parse_participants
@@ -40,16 +41,16 @@ def condition_matches(condition,message,context,rule):
     elif field in ('has_attachment','seen','starred_contact'):
         actual=bool(parsed.get('attachments')) if field=='has_attachment' else bool(message.get('seen')) if field=='seen' else normalize(parsed.get('sender','')) in context['starred']
         value=actual==(wanted=='true');return (not value if op=='is_not' else value),field
-    elif field=='category':return ((message['category']==wanted) if op=='is' else (message['category']!=wanted)),'当前邮件类别：'+message['category']
+    elif field=='category':return ((message['category']==wanted) if op=='is' else (message['category']!=wanted)),_tr('当前邮件类别：')+message['category']
     elif field=='smart':
         matches=recognize(message);value=wanted in matches
-        return (value if op=='is' else not value),matches.get(wanted,'未发现所选智能特征')
+        return (value if op=='is' else not value),matches.get(wanted,_tr('未发现所选智能特征'))
     elif field in ('size_kb','learned'):
         value=message['raw_size']/1024 if field=='size_kb' else score(context['models'].get((rule['id'],message['account'])),message)
-        if value is None:return False,'尚未学习本账号的目标文件夹示例'
+        if value is None:return False,_tr('尚未学习本账号的目标文件夹示例')
         threshold=int(wanted);matched=value>threshold if op=='gt' else value<threshold if op=='lt' else value>=threshold if op=='gte' else value<=threshold
-        return matched,('学习匹配分数 '+str(round(value,1)) if field=='learned' else '邮件大小 '+str(round(value,1))+' KiB')
-    else:return False,'条件不受支持'
+        return matched,(_tr('学习匹配分数 ')+str(round(value,1)) if field=='learned' else _tr('邮件大小 ')+str(round(value,1))+' KiB')
+    else:return False,_tr('条件不受支持')
     return text_match(values,op,wanted),field+' '+op+' '+wanted
 
 # ==========================================

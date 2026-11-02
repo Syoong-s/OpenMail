@@ -1,4 +1,5 @@
 """Branded nonactivating native desktop notices with bounded lifetime."""
+from .i18n import text as _tr
 import ctypes as C
 import os
 import time
@@ -57,10 +58,10 @@ class NotificationCards:
         g.gtk_box_pack_start(header,g.image_file(Path(__file__).parent/'desktop_assets/icon.svg',22),0,0,0);brand=g.gtk_label_new('TeleMail'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(brand),b'notification-brand');g.gtk_box_pack_start(header,brand,1,1,0)
         stamp=g.gtk_label_new(time.strftime('%H:%M').encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(stamp),b'muted');g.gtk_box_pack_start(header,stamp,0,0,0)
         from .ui_actions import icon_action
-        close=icon_action(g,g.gtk_button_new(),'关闭通知','composer-close',14);g.gtk_box_pack_start(header,close,0,0,0);g.connect(close,'clicked',lambda *unused:self.dismiss(identity),group=group)
-        for source,style,lines in [(str(title)[:240],'notification-title',2),(str(text)[:600] if preview else '你有新的邮件动态，打开 TeleMail 查看。','notification-body',3)]:
+        close=icon_action(g,g.gtk_button_new(),_tr('关闭通知'),'composer-close',14);g.gtk_box_pack_start(header,close,0,0,0);g.connect(close,'clicked',lambda *unused:self.dismiss(identity),group=group)
+        for source,style,lines in [(str(title)[:240],'notification-title',2),(str(text)[:600] if preview else _tr('你有新的邮件动态，打开 TeleMail 查看。'),'notification-body',3)]:
             label=g.gtk_label_new(source.encode());g.gtk_label_set_xalign(label,0);g.gtk_label_set_line_wrap(label,1);g.gtk_label_set_lines(label,lines);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,39);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),style.encode());g.gtk_box_pack_start(card,label,0,1,0)
-        open_button=g.gtk_button_new_with_label('打开 TeleMail  ›'.encode());g.gtk_widget_set_halign(open_button,2);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(open_button),b'notification-open');g.gtk_box_pack_start(card,open_button,0,0,0);g.connect(open_button,'clicked',lambda *unused:self.open_client(identity),group=group)
+        open_button=g.gtk_button_new_with_label(_tr('打开 TeleMail  ›').encode());g.gtk_widget_set_halign(open_button,2);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(open_button),b'notification-open');g.gtk_box_pack_start(card,open_button,0,0,0);g.connect(open_button,'clicked',lambda *unused:self.open_client(identity),group=group)
         self.cards.append({'id':identity,'widget':card,'group':group,'expires':time.monotonic()+min(60,max(3,int(duration)))})
         g.gtk_box_pack_start(self.host,card,0,1,0);g.gtk_widget_show_all(self.window);self.position()
         if not self.timer:self.timer=g.g_timeout_add(200,C.cast(self.callback,P),None)
@@ -131,7 +132,7 @@ class NotificationCards:
 def preview_notification(app,style='cards',preview=True,duration=8):
     if style=='system' and os.name=='nt':
         tray=getattr(app,'windows_tray',None)
-        if tray:tray.notify('TeleMail · 通知预览','这是一条示例通知，不会发送或读取邮件。')
+        if tray:tray.notify(_tr('TeleMail · 通知预览'),_tr('这是一条示例通知，不会发送或读取邮件。'))
         return
     if not getattr(app,'notification_cards',None):app.notification_cards=NotificationCards(app)
-    app.notification_cards.show('新的邮件动态','专属通知卡片 · 悬停可暂停消失，点击打开 TeleMail。',preview,duration,explicit=True)
+    app.notification_cards.show(_tr('新的邮件动态'),_tr('专属通知卡片 · 悬停可暂停消失，点击打开 TeleMail。'),preview,duration,explicit=True)

@@ -1,4 +1,5 @@
 """Native reply attachment policy with explicit always/never/ask behavior."""
+from .i18n import text as _tr
 import base64
 from email import policy
 from email.parser import BytesParser
@@ -14,8 +15,8 @@ def reply_attachments(app, message):
     if not items or mode=='never':return []
     if mode=='ask':
         from .desktop_forms import Form
-        form=Form(app,'回复包含附件',[],520);form.button('取消回复',-6);form.button('不包含附件',2);form.button('包含附件',1)
-        app.g.label(form.note,f'原邮件有 {len(items)} 个附件，是否附在这次回复中？')
+        form=Form(app,_tr('回复包含附件'),[],520);form.button(_tr('取消回复'),-6);form.button(_tr('不包含附件'),2);form.button(_tr('包含附件'),1)
+        app.g.label(form.note,_tr('原邮件有 {0} 个附件，是否附在这次回复中？').format(len(items)))
         app.g.gtk_widget_show_all(form.window);response=app.g.gtk_dialog_run(form.window);form.close()
         if response not in (1,2):return None
         if response==2:return []

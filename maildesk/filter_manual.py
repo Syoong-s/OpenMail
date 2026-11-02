@@ -1,4 +1,5 @@
 """Visible manual-run scope summaries and explicit account/folder/rule pickers."""
+from .i18n import text as _tr
 import ctypes as C
 from .desktop_general import bind,P,I
 from .desktop_forms import Form
@@ -27,18 +28,18 @@ class ManualRunPanel:
     def __init__(self,page,host,accounts):
         self.page=page;self.app=page.app;self.g=g=page.g;self.accounts=accounts;self.signature=None
         self.separator=separator=bind(self.app,'gtk','gtk_separator_new',P,I)(0);style(g,separator,'filter-manual-divider');g.gtk_box_pack_start(host,separator,0,1,10)
-        heading=label(g,'手动运行','filter-manual-heading');g.gtk_box_pack_start(host,heading,0,1,2)
-        hint=label(g,'选择范围与过滤器 → 预览匹配 → 运行移动','filter-manual-hint');g.gtk_box_pack_start(host,hint,0,1,3)
+        heading=label(g,_tr('手动运行'),'filter-manual-heading');g.gtk_box_pack_start(host,heading,0,1,2)
+        hint=label(g,_tr('选择范围与过滤器 → 预览匹配 → 运行移动'),'filter-manual-hint');g.gtk_box_pack_start(host,hint,0,1,3)
         hidden=g.gtk_box_new(0,0);g.gtk_widget_set_no_show_all(hidden,1);g.gtk_box_pack_start(host,hidden,0,0,0)
-        page.run_account=controller(g,hidden,[('','所有账号'),*accounts]);page.run_folder=controller(g,hidden,[('','所有文件夹')]);page.run_rule=controller(g,hidden,[('','全部启用的过滤器')])
+        page.run_account=controller(g,hidden,[('',_tr('所有账号')),*accounts]);page.run_folder=controller(g,hidden,[('',_tr('所有文件夹'))]);page.run_rule=controller(g,hidden,[('',_tr('全部启用的过滤器'))])
         line=g.gtk_box_new(0,9);g.gtk_box_pack_start(host,line,0,1,5)
         self.source_button,self.source_title,self.source_detail=self.card(line,'spark-layout-folder',self.choose_source)
         self.rule_button,self.rule_title,self.rule_detail=self.card(line,'settings-filters',self.choose_rule)
         self.selected=g.gtk_flow_box_new();g.gtk_flow_box_set_selection_mode(self.selected,0);g.gtk_flow_box_set_max_children_per_line(self.selected,3);g.gtk_flow_box_set_column_spacing(self.selected,5);g.gtk_flow_box_set_row_spacing(self.selected,5);g.gtk_box_pack_start(host,self.selected,0,1,2)
         switchline=g.gtk_box_new(0,8);g.gtk_box_pack_start(host,switchline,0,1,4)
         page.subfolders=bind(self.app,'gtk','gtk_switch_new',P)();g.gtk_widget_set_valign(page.subfolders,3);g.gtk_box_pack_start(switchline,page.subfolders,0,0,0)
-        g.gtk_box_pack_start(switchline,label(g,'手动扫描子文件夹','filter-manual-hint'),0,0,0)
-        g.gtk_widget_set_tooltip_text(page.subfolders,'仅扩展所选文件夹的手动扫描范围；规则内部的来源条件仍然生效。选择所有文件夹时已包含全部子文件夹。'.encode())
+        g.gtk_box_pack_start(switchline,label(g,_tr('手动扫描子文件夹'),'filter-manual-hint'),0,0,0)
+        g.gtk_widget_set_tooltip_text(page.subfolders,_tr('仅扩展所选文件夹的手动扫描范围；规则内部的来源条件仍然生效。选择所有文件夹时已包含全部子文件夹。').encode())
 
     # ==========================================
     # Function: Create one wide selection card with a persistent title and second-line context.
@@ -74,13 +75,13 @@ class ManualRunPanel:
         signature=(account,folder,identity,tuple((r['id'],r['name'],r['enabled'],r['account'],tuple(sorted(r['destinations']))) for r in page.items.values()))
         if signature==self.signature:return
         self.signature=signature;names=dict(self.accounts)
-        g.label(self.source_title,names.get(account,'所有账号'));g.label(self.source_detail,'来源 · '+(folder or '所有文件夹'))
-        g.gtk_widget_set_tooltip_text(self.source_button,('选择账号与来源文件夹\n'+names.get(account,'所有账号')+' · '+(folder or '所有文件夹')).encode())
-        title=rule['name'] if rule else '全部启用的过滤器';detail=('已暂停' if rule and not rule['enabled'] else '不适用于当前账号' if not valid else ('全局规则' if rule and not rule['account'] else names.get(rule['account'],rule['account']) if rule else str(len(eligible))+' 条过滤器参与匹配'))
-        g.label(self.rule_title,title);g.label(self.rule_detail,detail);g.gtk_widget_set_tooltip_text(self.rule_button,('选择过滤器\n'+title+' · '+detail).encode())
+        g.label(self.source_title,names.get(account,_tr('所有账号')));g.label(self.source_detail,_tr('来源 · ')+(folder or _tr('所有文件夹')))
+        g.gtk_widget_set_tooltip_text(self.source_button,(_tr('选择账号与来源文件夹\n')+names.get(account,_tr('所有账号'))+' · '+(folder or _tr('所有文件夹'))).encode())
+        title=rule['name'] if rule else _tr('全部启用的过滤器');detail=(_tr('已暂停') if rule and not rule['enabled'] else _tr('不适用于当前账号') if not valid else (_tr('全局规则') if rule and not rule['account'] else names.get(rule['account'],rule['account']) if rule else str(len(eligible))+_tr(' 条过滤器参与匹配')))
+        g.label(self.rule_title,title);g.label(self.rule_detail,detail);g.gtk_widget_set_tooltip_text(self.rule_button,(_tr('选择过滤器\n')+title+' · '+detail).encode())
         g.clear(self.selected)
         for value in ([rule] if rule else eligible[:6]):g.gtk_container_add(self.selected,chip(g,value['name'],'settings-filters','filter-condition',32))
-        if not rule and len(eligible)>6:g.gtk_container_add(self.selected,chip(g,'另 '+str(len(eligible)-6)+' 条','','filter-chip'))
+        if not rule and len(eligible)>6:g.gtk_container_add(self.selected,chip(g,_tr('另 ')+str(len(eligible)-6)+_tr(' 条'),'','filter-chip'))
         g.gtk_widget_show_all(self.selected)
 
     # ==========================================
@@ -99,9 +100,9 @@ class ManualRunPanel:
     def choose_source(self):
         from .settings_filters import active
         g=self.g;page=self.page;state={'account':active(g,page.run_account),'folder':active(g,page.run_folder)}
-        form=Form(self.app,'选择手动运行范围',[],680);self.source_form=form;root=g.object(form.builder,'form')
+        form=Form(self.app,_tr('选择手动运行范围'),[],680);self.source_form=form;root=g.object(form.builder,'form')
         accounts=g.gtk_flow_box_new();g.gtk_flow_box_set_selection_mode(accounts,0);g.gtk_flow_box_set_max_children_per_line(accounts,2);g.gtk_box_pack_start(root,accounts,0,1,3)
-        search=g.gtk_entry_new();bind(self.app,'gtk','gtk_entry_set_placeholder_text',None,P,C.c_char_p)(search,'搜索文件夹…'.encode());g.gtk_box_pack_start(root,search,0,1,4)
+        search=g.gtk_entry_new();bind(self.app,'gtk','gtk_entry_set_placeholder_text',None,P,C.c_char_p)(search,_tr('搜索文件夹…').encode());g.gtk_box_pack_start(root,search,0,1,4)
         scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(scroll,2,1);g.gtk_widget_set_size_request(scroll,-1,260);rows=g.gtk_box_new(1,3);g.gtk_container_add(scroll,rows);g.gtk_box_pack_start(root,scroll,1,1,0)
         self.source_accounts={};self.source_folders={};folder_group=form.group+'-folders'
         # ==========================================
@@ -110,7 +111,7 @@ class ManualRunPanel:
         # ==========================================
         def select_folder(folder):
             state['folder']=folder
-            for path,button in self.source_folders.items():g.gtk_button_set_label(button,(('✓  ' if path==folder else '    ')+(path or '所有文件夹')).encode())
+            for path,button in self.source_folders.items():g.gtk_button_set_label(button,(('✓  ' if path==folder else '    ')+(path or _tr('所有文件夹'))).encode())
         # ==========================================
         # Function: Render the selected account's folders and filter them by the search entry.
         # Method: Disconnect only the separate folder signal group before replacing its widgets.
@@ -120,7 +121,7 @@ class ManualRunPanel:
             values=['']+[r['folder'] for r in page.store.list_folders(state['account']) if r['selectable']] if state['account'] else ['']
             for path in values:
                 if path and query not in path.casefold():continue
-                button=g.gtk_button_new_with_label((('✓  ' if path==state['folder'] else '    ')+(path or '所有文件夹')).encode());style(g,button,'filter-pick-row');self.fit_row(button);g.gtk_box_pack_start(rows,button,0,1,0);self.source_folders[path]=button
+                button=g.gtk_button_new_with_label((('✓  ' if path==state['folder'] else '    ')+(path or _tr('所有文件夹'))).encode());style(g,button,'filter-pick-row');self.fit_row(button);g.gtk_box_pack_start(rows,button,0,1,0);self.source_folders[path]=button
                 g.connect(button,'clicked',lambda *unused,value=path:select_folder(value),group=folder_group)
             g.gtk_widget_show_all(rows)
         # ==========================================
@@ -129,13 +130,13 @@ class ManualRunPanel:
         # ==========================================
         def select_account(account):
             state.update(account=account,folder='')
-            for value,button in self.source_accounts.items():g.gtk_button_set_label(button,(('✓  ' if value==account else '')+dict([('','所有账号'),*self.accounts])[value]).encode())
+            for value,button in self.source_accounts.items():g.gtk_button_set_label(button,(('✓  ' if value==account else '')+dict([('',_tr('所有账号')),*self.accounts])[value]).encode())
             folders()
-        for identity,text in [('','所有账号'),*self.accounts]:
+        for identity,text in [('',_tr('所有账号')),*self.accounts]:
             button=g.gtk_button_new_with_label((('✓  ' if identity==state['account'] else '')+text).encode());style(g,button,'filter-pick-row');self.fit_row(button);g.gtk_container_add(accounts,button);self.source_accounts[identity]=button
             g.connect(button,'clicked',lambda *unused,value=identity:select_account(value),group=form.group)
         g.connect(search,'changed',lambda *unused:folders(),group=form.group);folders()
-        form.button('取消',-6);form.button('使用这个范围',1);g.gtk_widget_show_all(form.window);response=g.gtk_dialog_run(form.window);g.disconnect(folder_group);form.close()
+        form.button(_tr('取消'),-6);form.button(_tr('使用这个范围'),1);g.gtk_widget_show_all(form.window);response=g.gtk_dialog_run(form.window);g.disconnect(folder_group);form.close()
         if response==1:
             if active(g,page.run_account)!=state['account']:g.gtk_combo_box_set_active_id(page.run_account,state['account'].encode())
             if active(g,page.run_folder)!=state['folder']:g.gtk_combo_box_set_active_id(page.run_folder,state['folder'].encode())
@@ -147,9 +148,9 @@ class ManualRunPanel:
     def choose_rule(self):
         from .settings_filters import active
         g=self.g;page=self.page;state={'id':active(g,page.run_rule)};names=dict(self.accounts)
-        form=Form(self.app,'选择手动运行的过滤器',[],680);self.rule_form=form;root=g.object(form.builder,'form');search=g.gtk_entry_new();g.gtk_entry_set_placeholder_text(search,'搜索过滤器名称…'.encode());g.gtk_box_pack_start(root,search,0,1,4)
+        form=Form(self.app,_tr('选择手动运行的过滤器'),[],680);self.rule_form=form;root=g.object(form.builder,'form');search=g.gtk_entry_new();g.gtk_entry_set_placeholder_text(search,_tr('搜索过滤器名称…').encode());g.gtk_box_pack_start(root,search,0,1,4)
         scroll=g.gtk_scrolled_window_new(None,None);g.gtk_scrolled_window_set_policy(scroll,2,1);g.gtk_widget_set_size_request(scroll,-1,300);rows=g.gtk_box_new(1,4);g.gtk_container_add(scroll,rows);g.gtk_box_pack_start(root,scroll,1,1,0);group=form.group+'-rules';self.rule_options={}
-        values=[('', '全部启用的过滤器','按账号优先、列表顺序匹配')]+[(r['id'],r['name'],('全局规则' if not r['account'] else names.get(r['account'],r['account']))+' · '+str(len(r['conditions']))+' 条条件') for r in self.eligible()]
+        values=[('', _tr('全部启用的过滤器'),_tr('按账号优先、列表顺序匹配'))]+[(r['id'],r['name'],(_tr('全局规则') if not r['account'] else names.get(r['account'],r['account']))+' · '+str(len(r['conditions']))+_tr(' 条条件')) for r in self.eligible()]
         # ==========================================
         # Function: Mark one draft rule using a persistent row check symbol.
         # Method: Leave filtering and the page's prepared preview untouched until Apply.
@@ -168,5 +169,5 @@ class ManualRunPanel:
                 caption=name+'\n'+detail;button=g.gtk_button_new_with_label((('✓  ' if identity==state['id'] else '    ')+caption).encode());style(g,button,'filter-pick-row');self.fit_row(button);g.gtk_box_pack_start(rows,button,0,1,0);self.rule_options[identity]=(button,caption)
                 g.connect(button,'clicked',lambda *unused,value=identity:select(value),group=group)
             g.gtk_widget_show_all(rows)
-        g.connect(search,'changed',lambda *unused:render(),group=form.group);render();form.button('取消',-6);form.button('使用这个过滤器',1);g.gtk_widget_show_all(form.window);response=g.gtk_dialog_run(form.window);g.disconnect(group);form.close()
+        g.connect(search,'changed',lambda *unused:render(),group=form.group);render();form.button(_tr('取消'),-6);form.button(_tr('使用这个过滤器'),1);g.gtk_widget_show_all(form.window);response=g.gtk_dialog_run(form.window);g.disconnect(group);form.close()
         if response==1 and active(g,page.run_rule)!=state['id']:g.gtk_combo_box_set_active_id(page.run_rule,state['id'].encode())

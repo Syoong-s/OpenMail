@@ -1,4 +1,5 @@
 """Compact account scope trigger backed by the existing native filter controller."""
+from .i18n import text as _tr
 from .local_mail import LOCAL_ACCOUNT,LOCAL_LABEL
 
 # ==========================================
@@ -17,11 +18,11 @@ class AccountScopeUI:
         pill=g.gtk_menu_button_new();self.account_pill=pill;g.gtk_style_context_add_class(g.gtk_widget_get_style_context(pill),b'account-scope-pill')
         content=g.gtk_box_new(0,6);g.gtk_container_add(pill,content)
         icon=g.gtk_image_new_from_icon_name(b'mail-unread-symbolic',1);g.gtk_box_pack_start(content,icon,0,0,0)
-        label=g.gtk_label_new('全部账户'.encode());self.account_pill_label=label;g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,17);g.gtk_box_pack_start(content,label,1,1,0)
+        label=g.gtk_label_new(_tr('全部账户').encode());self.account_pill_label=label;g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,17);g.gtk_box_pack_start(content,label,1,1,0)
         g.gtk_box_pack_start(content,g.gtk_image_new_from_icon_name(b'pan-down-symbolic',1),0,0,0);g.gtk_box_pack_start(parent,pill,0,0,0)
         popup=g.gtk_popover_new(pill);self.account_popover=popup;g.gtk_style_context_add_class(g.gtk_widget_get_style_context(popup),b'account-scope-popover');g.gtk_menu_button_set_popover(pill,popup)
         box=g.gtk_box_new(1,4);self.account_scope_host=box;g.gtk_container_set_border_width(popup,8);g.gtk_container_add(popup,box)
-        g.gtk_widget_set_tooltip_text(pill,'切换账户范围'.encode());g.gtk_widget_show_all(pill)
+        g.gtk_widget_set_tooltip_text(pill,_tr('切换账户范围').encode());g.gtk_widget_show_all(pill)
 
     # ==========================================
     # Function: Rebuild account choices without changing the user's valid selected scope.
@@ -29,17 +30,17 @@ class AccountScopeUI:
     # ==========================================
     def fill_accounts(self):
         g=self.g;combo=self.widget('account_filter');selected=g.gtk_combo_box_get_active_id(combo) or b'all';self.rendering=True
-        entries=[('all','全部账户','统一收件箱')]
-        if self.profile.demo:entries.append(('demo','演示账户','demo@example.com'))
+        entries=[('all',_tr('全部账户'),_tr('统一收件箱'))]
+        if self.profile.demo:entries.append(('demo',_tr('演示账户'),'demo@example.com'))
         else:
             entries.extend((account.id,account.title or account.email,account.email) for account in self.service.accounts.values())
-            entries.append((LOCAL_ACCOUNT,LOCAL_LABEL,'此设备上的邮件'))
+            entries.append((LOCAL_ACCOUNT,LOCAL_LABEL,_tr('此设备上的邮件')))
         self.account_scope_entries={identity:(title,email) for identity,title,email in entries}
         g.gtk_combo_box_text_remove_all(combo)
         for identity,title,email in entries:g.gtk_combo_box_text_append(combo,identity.encode(),title.encode())
         if not g.gtk_combo_box_set_active_id(combo,selected):g.gtk_combo_box_set_active_id(combo,b'all')
         self.rendering=False;self.ensure_account_pill();g.disconnect('account-scope');g.clear(self.account_scope_host);self.account_buttons={};self.account_checks={}
-        title=g.gtk_label_new('账户范围'.encode());g.gtk_label_set_xalign(title,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(title),b'account-scope-heading');g.gtk_box_pack_start(self.account_scope_host,title,0,1,0)
+        title=g.gtk_label_new(_tr('账户范围').encode());g.gtk_label_set_xalign(title,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(title),b'account-scope-heading');g.gtk_box_pack_start(self.account_scope_host,title,0,1,0)
         colors=self.identity_colors.snapshot([identity for identity,_,_ in entries if identity!='all'])['colors']
         for identity,title,email in entries:
             button=g.gtk_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'account-scope-row');row=g.gtk_box_new(0,9);g.gtk_container_add(button,row)
@@ -65,6 +66,6 @@ class AccountScopeUI:
     # ==========================================
     def update_account_pill(self):
         if not getattr(self,'account_pill',None):return
-        identity=(self.g.gtk_combo_box_get_active_id(self.widget('account_filter')) or b'all').decode();title,email=self.account_scope_entries.get(identity,('全部账户','统一收件箱'))
+        identity=(self.g.gtk_combo_box_get_active_id(self.widget('account_filter')) or b'all').decode();title,email=self.account_scope_entries.get(identity,(_tr('全部账户'),_tr('统一收件箱')))
         self.g.label(self.account_pill_label,title);self.g.gtk_widget_set_tooltip_text(self.account_pill,(title+' · '+email).encode())
         for key,check in self.account_checks.items():self.g.label(check,'✓' if key==identity else '')

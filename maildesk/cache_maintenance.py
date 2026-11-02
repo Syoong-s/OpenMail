@@ -1,4 +1,5 @@
 """Explicit cloud-verified cache cleanup, preserving local mail and starred people."""
+from .i18n import text as _tr
 import hashlib
 import shutil
 from pathlib import Path
@@ -14,22 +15,22 @@ from .participant_identity import parse_participants
 def cloud_snapshot(account):
     snapshot={}
     with transport.imap_connection(account) as client:
-        rows=transport.checked(client.list('""','"*"'),'核对云端文件夹')
+        rows=transport.checked(client.list('""','"*"'),_tr('核对云端文件夹'))
         folders=[item for row in rows if row and (item:=parse_folder(row))]
         if not folders or not any(item['selectable'] for item in folders):
-            raise ValueError('云端文件夹列表不完整，保留该账号缓存')
+            raise ValueError(_tr('云端文件夹列表不完整，保留该账号缓存'))
         for item in folders:
             folder=item['name']
             if not item['selectable']:
                 snapshot[folder]=None;continue
-            transport.checked(client.select(transport.mailbox_name(folder),readonly=True),'核对云端文件夹')
+            transport.checked(client.select(transport.mailbox_name(folder),readonly=True),_tr('核对云端文件夹'))
             validity=transport.uid_validity(client)
-            rows=transport.checked(client.uid('SEARCH',None,'ALL'),'核对云端邮件')
+            rows=transport.checked(client.uid('SEARCH',None,'ALL'),_tr('核对云端邮件'))
             if len(rows)!=1 or not isinstance(rows[0],bytes):
-                raise ValueError('云端邮件列表不完整，保留该账号缓存')
+                raise ValueError(_tr('云端邮件列表不完整，保留该账号缓存'))
             uids=rows[0].decode('ascii').split()
             if any(not uid.isdecimal() or int(uid)<1 for uid in uids):
-                raise ValueError('云端返回无效邮件标识，保留该账号缓存')
+                raise ValueError(_tr('云端返回无效邮件标识，保留该账号缓存'))
             snapshot['INBOX' if folder.upper()=='INBOX' else folder]=(validity,frozenset(uids))
     return snapshot
 

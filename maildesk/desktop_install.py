@@ -1,4 +1,5 @@
 """Per-user Linux desktop installation with a relocatable native ELF entry point."""
+from .i18n import text as _tr, join_text as _join_ui
 import hashlib
 import os
 from pathlib import Path
@@ -24,12 +25,12 @@ def desktop_entry(executable, icon):
     # env is a Linux executable (no shell); keep percent-bearing paths in argv.
     if '%' in str(executable):
         command = '/usr/bin/env -- ' + command
-    return '\n'.join(['[Desktop Entry]', 'Type=Application', 'Version=1.0', 'Name=TeleMail',
+    return _join_ui('\n',(['[Desktop Entry]', 'Type=Application', 'Version=1.0', 'Name=TeleMail',
         'GenericName=Email Client', 'Comment=Native Linux email client',
         'Comment[zh_CN]=Linux 原生邮件客户端', 'Exec=' + command + ' %u', 'MimeType=x-scheme-handler/mailto;', 'TryExec=' + str(executable).replace('\\', '\\\\'), 'Icon=' + str(icon),
         'Terminal=false', 'Categories=Network;Email;', 'StartupNotify=true',
         'StartupWMClass=TeleMail', 'Actions=Demo;', '', '[Desktop Action Demo]',
-        'Name=Demo mailbox', 'Name[zh_CN]=体验演示邮箱', 'Exec=' + command + ' --demo', ''])
+        'Name=Demo mailbox', 'Name[zh_CN]=体验演示邮箱', 'Exec=' + command + ' --demo', '']))
 
 # ==========================================
 # Function: Install the portable bundle into the current user's Linux application menu.
@@ -39,7 +40,7 @@ def install_user(bundle):
     bundle = Path(bundle).resolve()
     executable, payload = bundle / 'TeleMail', bundle / 'app'
     if not executable.is_file() or executable.read_bytes()[:4] != b'\x7fELF' or not (payload / 'maildesk/desktop.py').is_file():
-        raise ValueError('请选择完整的 Linux TeleMail 发行目录')
+        raise ValueError(_tr('请选择完整的 Linux TeleMail 发行目录'))
     digest = hashlib.sha256()
     digest.update(executable.read_bytes())
     for file in sorted(payload.rglob('*')):
@@ -82,7 +83,7 @@ def install_user(bundle):
 # ==========================================
 def installed_entry():
     path=Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local/share'))/'applications/org.telemail.Desktop.desktop'
-    if not path.is_file():raise ValueError('请先从应用菜单安装 TeleMail，然后设置系统集成')
+    if not path.is_file():raise ValueError(_tr('请先从应用菜单安装 TeleMail，然后设置系统集成'))
     return path
 
 # ==========================================
@@ -101,7 +102,7 @@ def set_autostart(enabled):
     path.parent.mkdir(parents=True,mode=0o700,exist_ok=True)
     descriptor,temporary=tempfile.mkstemp(prefix='.telemail-',dir=path.parent)
     try:
-        with os.fdopen(descriptor,'w',encoding='utf-8') as output:output.write('\n'.join(lines))
+        with os.fdopen(descriptor,'w',encoding='utf-8') as output:output.write(_join_ui('\n',(lines)))
         os.chmod(temporary,0o600);os.replace(temporary,path)
     finally:
         if os.path.exists(temporary):os.unlink(temporary)
@@ -114,8 +115,8 @@ def set_autostart(enabled):
 def default_mail_client():
     installed_entry()
     try:result=subprocess.run(['xdg-mime','default','org.telemail.Desktop.desktop','x-scheme-handler/mailto'],capture_output=True,text=True,timeout=15)
-    except (OSError,subprocess.TimeoutExpired) as error:raise ValueError('当前桌面不支持默认邮件应用设置') from error
-    if result.returncode:raise ValueError('系统拒绝默认邮件应用设置，请在桌面“默认应用”中选择 TeleMail')
+    except (OSError,subprocess.TimeoutExpired) as error:raise ValueError(_tr('当前桌面不支持默认邮件应用设置')) from error
+    if result.returncode:raise ValueError(_tr('系统拒绝默认邮件应用设置，请在桌面“默认应用”中选择 TeleMail'))
     return True
 
 # Native Windows integration keeps existing Linux installers and settings untouched.

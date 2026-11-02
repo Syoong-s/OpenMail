@@ -1,11 +1,12 @@
 """Account-free mail storage that never needs an application cloud or mail provider."""
+from .i18n import text as _tr
 from pathlib import Path
 import hashlib
 
 from .mime import MAX_MESSAGE_BYTES
 
 LOCAL_ACCOUNT = '@local'
-LOCAL_LABEL = '本地文件夹'
+LOCAL_LABEL = _tr('本地文件夹')
 LOCAL_FOLDERS = [('INBOX','inbox'),('Archive','archive'),('Trash','trash'),('Spam','spam')]
 
 # ==========================================
@@ -31,15 +32,15 @@ def is_local_message(message):
 def import_local_eml(store, filename, folder='INBOX', demo=False):
     filename=Path(filename)
     if filename.stat().st_size>MAX_MESSAGE_BYTES:
-        raise ValueError('邮件超过 30 MiB')
+        raise ValueError(_tr('邮件超过 30 MiB'))
     with filename.open('rb') as source:
         raw=source.read(MAX_MESSAGE_BYTES+1)
     if len(raw)>MAX_MESSAGE_BYTES:
-        raise ValueError('邮件超过 30 MiB')
+        raise ValueError(_tr('邮件超过 30 MiB'))
     account='demo' if demo else LOCAL_ACCOUNT
     destination='@import' if demo else folder
     if not demo:
         ensure_local_folders(store)
         if not any(r['folder']==destination and r['selectable'] for r in store.list_folders(account)):
-            raise ValueError('请选择可用的本地文件夹')
+            raise ValueError(_tr('请选择可用的本地文件夹'))
     return store.ingest(account,destination,'local',hashlib.sha256(raw).hexdigest(),raw)

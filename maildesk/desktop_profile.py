@@ -1,4 +1,5 @@
 """Native desktop paths and atomic graphical account configuration."""
+from .i18n import text as _tr
 from dataclasses import asdict
 import hashlib
 import json
@@ -45,7 +46,7 @@ class DesktopProfile:
     def save_account(self, values, secret='', remember=True):
         account = Account(**{**values, 'folders': tuple(values.get('folders', ['INBOX']))})
         if self.demo:
-            raise ValueError('演示模式不能修改真实账户；请打开普通 TeleMail 窗口')
+            raise ValueError(_tr('演示模式不能修改真实账户；请打开普通 TeleMail 窗口'))
         accounts = self.accounts()
         mapping = {item.id: item for item in accounts}
         mapping[account.id] = account
@@ -78,15 +79,15 @@ class DesktopProfile:
     def commit_verified_login(self, account, secret, receipt, remember=True):
         from .credentials import identity,session_secret,authenticated,refresh_saver,credential_lock
         import time
-        if self.demo:raise ValueError('演示模式不能修改真实账户')
+        if self.demo:raise ValueError(_tr('演示模式不能修改真实账户'))
         if (receipt.get('identity')!=identity(account) or
             receipt.get('credential_digest')!=hashlib.sha256(secret.encode()).hexdigest() or
             not 0<=time.time()-receipt.get('verified_at',0)<600):
-            raise ValueError('登录验证已失效，请重新验证')
+            raise ValueError(_tr('登录验证已失效，请重新验证'))
         with credential_lock(account),self.credential_lock:
             mapping={item.id:item for item in self.accounts()}
             if any(item.id!=account.id and item.email.casefold()==account.email.casefold() for item in mapping.values()):
-                raise ValueError('这个邮箱已经添加，请更新原账号的登录')
+                raise ValueError(_tr('这个邮箱已经添加，请更新原账号的登录'))
             old=mapping.get(account.id)
             with self.vault.lock:
                 old_records=self.vault.load()
@@ -131,7 +132,7 @@ class DesktopProfile:
     # ==========================================
     def authenticated(self, account):
         try:self.confirm_login(account)
-        except (ValueError,OSError):self.credential_errors[account.id]='登录成功，但本机凭据保存失败，请在账号设置中重试'
+        except (ValueError,OSError):self.credential_errors[account.id]=_tr('登录成功，但本机凭据保存失败，请在账号设置中重试')
 
     # ==========================================
     # Function: Persist a staged credential after a successful provider login.
@@ -158,16 +159,16 @@ class DesktopProfile:
                 if value:
                     session_secret(account,value);refresh_saver(account,self.vault.save)
             except (ValueError,OSError,KeyError):
-                self.credential_errors[account.id]='无法读取已保存凭据，请在账号设置中重新登录'
+                self.credential_errors[account.id]=_tr('无法读取已保存凭据，请在账号设置中重新登录')
 
     # ==========================================
     # Function: Report credential persistence without revealing its content.
     # Method: Inspect pending state and validate an existing saved envelope.
     # ==========================================
     def credential_state(self, account):
-        if account.id in self.pending:return '待验证后保存' if self.pending[account.id][2] else '仅本次会话'
-        try:return '已在本机保存' if self.vault.get(account) else '尚未保存'
-        except (ValueError,OSError,KeyError):return '需要重新登录'
+        if account.id in self.pending:return _tr('待验证后保存') if self.pending[account.id][2] else _tr('仅本次会话')
+        try:return _tr('已在本机保存') if self.vault.get(account) else _tr('尚未保存')
+        except (ValueError,OSError,KeyError):return _tr('需要重新登录')
 
     # ==========================================
     # Function: Forget saved and staged credentials for a mailbox.
@@ -186,7 +187,7 @@ class DesktopProfile:
     # Method: Rewrite configuration without the account and forget its local login.
     # ==========================================
     def remove_account(self, account):
-        if self.demo:raise ValueError('演示模式不能修改真实账户')
+        if self.demo:raise ValueError(_tr('演示模式不能修改真实账户'))
         accounts=[item for item in self.accounts() if item.id!=account.id]
         self.write_accounts(accounts);self.forget_credential(account)
         return accounts

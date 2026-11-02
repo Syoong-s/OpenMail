@@ -1,73 +1,88 @@
-# TeleMail
+<div align="center">
+  <img src="maildesk/desktop_assets/icon.svg" width="72" alt="TeleMail 图标">
+  <h1>TeleMail</h1>
+  <p><strong>你的邮件，你的节奏。</strong></p>
+  <p>本地优先的桌面邮件客户端，支持 Windows 与 Linux。</p>
+  <p><a href="README.md">English</a> · <strong>简体中文</strong></p>
+  <p><a href="https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0">下载 0.57.0</a> · <a href="#开始使用">开始使用</a> · <a href="docs/BUILDING.md">从源码构建</a></p>
+</div>
 
-一款多种收件箱界面的邮件客户端，多账号统一管理。支持 Windows 11 (x64) 与 Linux (x86-64) ，所有邮件数据、账号凭据与附件预览均在本地完成，不依赖项目自建云服务或遥测上传。它支持 IMAP/SMTP 多账号管理、智能收件箱分类、自定义过滤规则、对话流视图、通讯录、稍后发送以及基于内置 PDF.js 的离线文档预览。
+![TeleMail 中文界面：聚焦收件箱与每日邮件活动](docs/screenshots/main-zh_CN.png)
 
----
+<p align="center"><sub>中文界面 · 聚焦收件箱、每日收发统计与邮件时间线。截图中的邮件均为合成演示数据。</sub></p>
 
-## 使用方法
+TeleMail 将多个邮箱、聚焦收件箱和联系人对话整合到同一个工作空间。邮件操作先在本地生效，再由后台隐式同步。邮件、凭据和附件预览保留在你的电脑上；客户端直接连接邮箱服务商，不依赖 TeleMail 自建云服务，也不上传遥测数据。
 
-### 1. 安装与启动
+## 更从容地处理邮件
 
-可从 GitHub Releases 下载对应平台的发行包（当前版本 `0.55.3`），或在 Linux 下直接从源码启动：
+| 工作空间 | 可以做什么 |
+| --- | --- |
+| **四种收件箱视图** | 在聚焦列表、未读卡片、简洁列表和对话列表之间切换，无需重新整理邮箱。 |
+| **每日邮件活动** | 查看近一年的收发热力图，回顾某一天的邮件，并在时间线直接完成归档、标为已读或移入废纸篓。统计使用缓存，随邮件变化更新。 |
+| **本地即时操作** | 已读、置顶和移动立即反映在客户端；待同步修改持久保存并由后台处理。“完成”即归档邮件。 |
+| **多账号统一管理** | 管理多个 IMAP/SMTP 账号、本地文件夹、智能文件夹、发件人筛选和自定义过滤规则。 |
+| **对话与撰写** | 按联系人跨主题阅读，维护通讯录，使用模板、稍后发送和跟进提醒。 |
+| **舒适的阅读体验** | 深浅主题、克制的辅助配色与可调字号；附件在本地预览，PDF 支持搜索和文字选择。 |
 
-| 发行包 | 运行依赖 | 是否自动安装依赖 |
+**内置简体中文和完整英文界面。** 在 **设置 → 外观 → 界面语言** 中选择，保存后重新启动 TeleMail。语言切换只影响界面，不翻译邮件、联系人、自定义名称或文件夹标识。
+
+## 开始使用
+
+从 [GitHub Releases](https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0) 下载对应平台的发行包。
+
+| 平台 | 发行包 | 启动方式 |
 | --- | --- | --- |
-| Windows 11 x64 ZIP | 已内置 Python、GTK、OpenSSL 和 Antiword；系统需具备 Microsoft Edge WebView2 Evergreen Runtime。 | 标准 Windows 11 已预装 WebView2，通常无需额外安装；若缺失，需手动安装，TeleMail 不会自动安装。启动前须完整解压 ZIP。 |
-| Debian / Ubuntu amd64 DEB | Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器（`librsvg2-common`）及 glibc >= 2.34；预览旧式 `.doc` 文件另需可选组件 `antiword`。 | 使用 `sudo apt install ./telemail-desktop_0.55.3_amd64.deb` 时，apt 会安装已声明的依赖，前提是配置的软件源提供兼容版本；`antiword` 未声明为依赖，需在需要 `.doc` 预览时单独安装。 |
-| Linux x86-64 可移动 tar.gz | Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器及 glibc >= 2.34；预览旧式 `.doc` 文件另需可选组件 `antiword`。 | 不会。启动前需手动安装缺失的系统依赖；解压或运行程序均不会自动安装。 |
+| **Windows 11 · x64** | `telemail-0.57.0-windows-amd64.zip` | 完整解压后，打开 `TeleMail-Windows-amd64/TeleMail.exe`。 |
+| **Debian / Ubuntu · amd64** | `telemail-desktop_0.57.0_amd64.deb` | 执行 `sudo apt install ./telemail-desktop_0.57.0_amd64.deb`，随后从应用菜单启动，或运行 `telemail`。 |
+| **Linux 可移动包 · x86-64** | `telemail-0.57.0-linux-amd64.tar.gz` | 解压后运行 `TeleMail-Linux-amd64/TeleMail`；使用 `--install-user` 注册应用菜单入口。 |
 
-实际最低 glibc 版本取决于构建主机，不能保证兼容所有旧版 Linux 发行版，详见[构建指南](docs/BUILDING.md)。
+### 运行依赖
 
-- **Windows 11 (x64)**
-  解压 `telemail-0.55.3-windows-amd64.zip`（请保留完整目录结构），双击运行 `TeleMail-Windows-amd64/TeleMail.exe`。包内已自带 Python 与 GTK 运行时，无需安装 Python 或 WSL，仅需系统具备 Microsoft Edge WebView2 Evergreen Runtime。
-- **Debian / Ubuntu (amd64)**
-  安装 `telemail-desktop_0.55.3_amd64.deb`（系统包管理器会自动处理依赖），完成后可从桌面应用菜单或终端执行 `telemail` 启动：
-  ```bash
-  sudo apt install ./telemail-desktop_0.55.3_amd64.deb
-  ```
-- **Linux 通用可移动包 (x86-64)**
-  解压 `telemail-0.55.3-linux-amd64.tar.gz` 并运行其中的 `TeleMail`（需系统提供 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1 及 `glibc >= 2.34`）：
-  ```bash
-  tar -xzf telemail-0.55.3-linux-amd64.tar.gz
-  ./TeleMail-Linux-amd64/TeleMail
-  # 可选：为当前用户注册桌面快捷方式
-  ./TeleMail-Linux-amd64/TeleMail --install-user
-  ```
-- **从源码运行 (Linux)**
-  满足上述 Linux 运行时依赖后，可在仓库根目录直接启动：
-  ```bash
-  ./run.sh
-  # 或使用合成邮件进入演示模式（不连接真实邮箱、不外发邮件）
-  ./run.sh --demo
-  ```
+- **Windows：** 已内置 Python、GTK、OpenSSL 和 Antiword。系统需具备 Microsoft Edge WebView2 Evergreen Runtime，标准 Windows 11 通常已包含；若缺失，需自行安装。无需另装 Python 或 WSL。
+- **Linux：** 需要 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1、SVG 加载器（`librsvg2-common`）及 glibc ≥ 2.34。DEB 已声明必要依赖，软件源提供兼容版本时由 `apt` 处理；可移动包不会安装依赖。旧式 `.doc` 预览另需可选组件 `antiword`。
 
-### 2. 账号配置与常用命令
+实际最低 glibc 版本取决于构建主机，兼容性与打包细节见[构建指南](docs/BUILDING.md)。
 
-- **添加邮箱**：首次启动后，通过登录向导或 **“设置 → 账号”** 添加邮箱。内置 Gmail、Outlook、Microsoft 365 及通用 IMAP/SMTP 配置模板，支持密码/应用授权码，或使用自行注册的 OAuth 2.0 客户端（本项目不预置公共 Google/Microsoft OAuth 客户端 ID）。
-- **命令行参数**：
-  ```bash
-  TeleMail --demo                              # 演示模式（使用独立演示目录与合成邮件）
-  TeleMail --config <配置文件> --data <数据目录>  # 指定自定义配置与本地数据目录
-  TeleMail mailto:user@example.com             # 打开预填收件人的未发送草稿窗口
-  TeleMail --version                           # 查看当前版本与平台信息
-  ```
+### 连接邮箱
 
-### 3. 使用注意事项
+打开 **设置 → 账号**，或使用首次启动时的登录流程。选择 Gmail、Outlook、Microsoft 365 或通用 IMAP/SMTP 服务商，再验证收件与发件服务。
 
-- **界面字号与侧栏**：在 **“设置 → 外观 → 界面字号”** 中选择 10–32（默认 14），支持即时预览、保存与取消恢复；弹窗宽高随字号扩大并适配可用窗口。左侧固定图标栏宽度为 40 逻辑像素，固定文件夹使用窗口剩余高度，仅在实际放不下时滚动；展开的文件夹和邮箱侧栏默认宽度为 300 逻辑像素，仍可拖动调整，并保留已保存的宽度。邮件正文字号和 PDF 缩放继续使用各自设置。
+支持密码／应用授权码。浏览器 OAuth 登录需要自行注册的 Google 或 Microsoft 客户端配置；TeleMail 不内置公共 OAuth Client ID。
 
-- **Windows 多显示器**：使用 Windows 整窗兼容缩放，使窗口、字体与浮窗在 100%、150%、200% 显示器之间保持一致的逻辑尺寸；非主显示器上的非整数缩放可能略柔和。大字号浮窗必要时临时扩大主窗口，跨屏时重新适配工作区，关闭后恢复自动扩大的尺寸，并保留用户手动调整。
+> **添加账号后，请检查自动整理策略。** 默认会将收件箱中**超过 365 天且未置顶**的邮件移至该账号的服务器垃圾箱，邮箱服务商可能随后清空。若需保留全部收件箱邮件，请在 **设置 → 储存空间** 关闭自动整理或调整保留天数。
 
-> **重要提示（自动整理策略）**：连接真实邮箱后，请先检查 **“设置 → 储存空间”** 中的自动整理设置。当前默认会将收件箱中**超过 365 天且未置顶**的邮件移至服务器垃圾箱（邮箱服务商可能随后永久清空垃圾箱）。如需长期保留全部收件箱邮件，请先关闭该选项或修改保留天数。
+### 从源码体验
 
-- **离线 PDF 阅读**：PDF 附件由内置的 PDF.js 6.4.299 在本机环回地址离线渲染，支持连续滚动、缩放、文字选择、全文搜索高亮与密码解锁，文档不会上传至外部服务器（扫描版 PDF 不提供 OCR）。
-- **稍后发送与回执**：定时发送需保持应用处于运行状态，关闭期间到期的任务会在下次启动时处理；阅读回执取决于收件人客户端是否支持并响应。
-- **更多文档**：详见 [隐私与数据说明](docs/PRIVACY.md)、[构建与测试指南](docs/BUILDING.md) 及 [开发说明](Develop.md)。
+安装 Linux 运行依赖后，在仓库根目录执行：
 
----
+```bash
+./run.sh
+./run.sh --demo   # 独立演示邮箱，仅使用合成邮件，不访问真实账号或外发邮件
+```
+
+常用命令：
+
+```bash
+TeleMail --demo
+TeleMail --config <配置文件> --data <数据目录>
+TeleMail mailto:user@example.com   # 打开未发送的草稿
+TeleMail --version
+```
+
+## 使用细节
+
+- **阅读与布局：** 界面字号支持 10–32，默认 14；外观即时预览，保存后保留，取消则恢复。浮窗尺寸随界面字号调整，邮件正文和 PDF 缩放使用各自设置。
+- **多显示器：** Windows 使用整窗兼容缩放；副屏上的非整数缩放可能略柔和。大型编辑浮窗可临时扩大主窗口，并保留手动调整的尺寸。
+- **离线文档：** 内置 PDF.js 6.4.299，通过私有 localhost 地址运行，支持滚动、缩放、文字选择、搜索和密码解锁，不上传文档。扫描图片型 PDF 不提供 OCR。
+- **稍后发送：** 按时投递需保持应用运行；关闭期间到期的计划会在下次启动时处理。阅读回执取决于收件客户端，收件人也可以拒绝。
+- **本地存储：** 凭据、远程图片、邮件缓存和清理行为详见[隐私与数据说明](docs/PRIVACY.md)。
+
+## 文档
+
+[构建与测试](docs/BUILDING.md) · [开发说明](Develop.md) · [本地即时操作与同步](docs/LOCAL_FIRST_SYNC.md) · [邮件概览](docs/MAIL_OVERVIEW.md) · [界面翻译](docs/LOCALIZATION.md) · [更新记录](docs/CHANGELOG.md)
 
 ## 开源协议
 
-- **项目自有代码**：TeleMail 自有应用代码、原生适配层与构建脚本采用 **[MIT License](LICENSE)** 开源。
-- **第三方组件**：随附或引用的第三方组件（包括 PDF.js、Noto Sans CJK SC 字体、CPython、MSYS2/GTK 运行库、Microsoft WebView2 Loader 等）各自保留其原始许可证与版权声明，详见 [NOTICE](NOTICE) 与 [第三方组件说明](docs/THIRD_PARTY.md)。
-- **Windows 二进制组合分发**：Windows 发行包包含独立子进程工具 Antiword（`GPL-2.0-or-later`），并通过 GdkPixbuf/libtiff 间接加载 JBIG-KIT（`GPL-2.0-or-later`）。因此，Windows 组合二进制发行包整体按 **GPLv3 或更高版本（`GPL-3.0-or-later`）** 条件提供并随附对应源码，而 TeleMail 自有代码部分仍保留 MIT 许可权限；详情请参阅 [Windows 组合分发说明](docs/WINDOWS_LICENSE.md)。
+TeleMail 自有代码、原生适配层与构建脚本采用 [MIT License](LICENSE)。第三方组件保留原有许可证，详见 [NOTICE](NOTICE) 与[第三方组件说明](docs/THIRD_PARTY.md)。
+
+Windows 组合二进制包含 Antiword，并间接加载受 GPL 条款约束的 JBIG-KIT。因此，组合发行包整体按 **GPLv3 或更高版本**提供并附带对应源码，TeleMail 自有代码仍采用 MIT 许可。详见 [Windows 组合分发说明](docs/WINDOWS_LICENSE.md)。

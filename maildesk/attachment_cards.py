@@ -1,11 +1,12 @@
 """Consistent fixed-width adaptive attachment cards without decoding payloads."""
+from .i18n import text as _tr
 from pathlib import Path
 
 WIDTH=218
 TYPES={
-    'pdf':('PDF','#dd817e'),'image':('图片','#b9a1e5'),'markdown':('Markdown','#83b4e5'),
-    'html':('网页','#dca56d'),'sheet':('表格','#7bb69a'),'document':('文档','#86a5e2'),
-    'archive':('压缩包','#d2b16e'),'audio':('音频','#84bfae'),'video':('视频','#d08da6'),'code':('代码','#8abfc9'),'file':('文件','#a5acb8')}
+    'pdf':('PDF','#dd817e'),'image':(_tr('图片'),'#b9a1e5'),'markdown':('Markdown','#83b4e5'),
+    'html':(_tr('网页'),'#dca56d'),'sheet':(_tr('表格'),'#7bb69a'),'document':(_tr('文档'),'#86a5e2'),
+    'archive':(_tr('压缩包'),'#d2b16e'),'audio':(_tr('音频'),'#84bfae'),'video':(_tr('视频'),'#d08da6'),'code':(_tr('代码'),'#8abfc9'),'file':(_tr('文件'),'#a5acb8')}
 
 # ==========================================
 # Function: Identify an attachment by safe metadata only.
@@ -49,7 +50,7 @@ def configure(g,host):
 # Method: Ellipsize real labels within a fixed width; keep origin/part callbacks in the caller's group.
 # ==========================================
 def card(g,attachment,callback,group):
-    name=str(attachment.get('name') or '未命名附件');kind=file_kind(name,attachment.get('type',''));title,color=TYPES[kind];button=g.gtk_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'attachment-card');g.gtk_widget_set_halign(button,1);g.gtk_widget_set_size_request(button,WIDTH,-1);g.gtk_widget_set_tooltip_text(button,(name+'\n'+title+' · '+size_label(attachment.get('size',0))).encode())
+    name=str(attachment.get('name') or _tr('未命名附件'));kind=file_kind(name,attachment.get('type',''));title,color=TYPES[kind];button=g.gtk_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'attachment-card');g.gtk_widget_set_halign(button,1);g.gtk_widget_set_size_request(button,WIDTH,-1);g.gtk_widget_set_tooltip_text(button,(name+'\n'+title+' · '+size_label(attachment.get('size',0))).encode())
     line=g.gtk_box_new(0,10);g.gtk_container_add(button,line);badge=g.gtk_event_box_new();g.gtk_event_box_set_visible_window(badge,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(badge),('attachment-'+kind).encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(badge),b'attachment-badge');g.gtk_container_add(badge,g.image_file(Path(__file__).parent/'desktop_assets/icons'/('file-'+kind+'.svg'),24));g.gtk_box_pack_start(line,badge,0,0,0)
     labels=g.gtk_box_new(1,4);g.gtk_box_pack_start(line,labels,1,1,0);label=g.gtk_label_new(name.encode());g.gtk_label_set_single_line_mode(label,1);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,17);g.gtk_label_set_xalign(label,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),b'attachment-name');g.gtk_box_pack_start(labels,label,0,1,0)
     detail=g.gtk_label_new((title+' · '+size_label(attachment.get('size',0))).encode());g.gtk_label_set_single_line_mode(detail,1);g.gtk_label_set_ellipsize(detail,3);g.gtk_label_set_max_width_chars(detail,20);g.gtk_label_set_xalign(detail,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(detail),b'attachment-detail');g.gtk_box_pack_start(labels,detail,0,1,0)

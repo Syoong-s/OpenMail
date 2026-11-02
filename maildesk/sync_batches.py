@@ -1,4 +1,5 @@
 """Bounded, UID-verified IMAP fetch batches with cooperative foreground checkpoints."""
+from .i18n import text as _tr
 import re
 from datetime import datetime,timedelta,timezone
 from .mime import MAX_MESSAGE_BYTES
@@ -53,7 +54,7 @@ def fetch_new(client,store,account,folder,validity,uids,should_yield=None,progre
     imported=skipped=0
     for start in range(0,len(uids),SIZE_BATCH):
         checkpoint(should_yield);page=uids[start:start+SIZE_BATCH]
-        data=checked(client.uid('FETCH',','.join(page),'(UID RFC822.SIZE INTERNALDATE)'),'读取邮件大小');sizes={};received={}
+        data=checked(client.uid('FETCH',','.join(page),'(UID RFC822.SIZE INTERNALDATE)'),_tr('读取邮件大小'));sizes={};received={}
         for row in data:
             header=row[0] if isinstance(row,tuple) else row
             if not isinstance(header,bytes):continue
@@ -68,16 +69,16 @@ def fetch_new(client,store,account,folder,validity,uids,should_yield=None,progre
         if progress:progress(0,page_skipped)
         for batch in body_batches(candidates):
             checkpoint(should_yield)
-            rows=checked(client.uid('FETCH',','.join(batch),'(UID FLAGS BODY.PEEK[])'),'读取邮件')
+            rows=checked(client.uid('FETCH',','.join(batch),'(UID FLAGS BODY.PEEK[])'),_tr('读取邮件'))
             flags=flag_rows(rows);sources={}
             for row in rows:
                 if not isinstance(row,tuple) or not isinstance(row[0],bytes) or not isinstance(row[1],bytes):continue
                 uid=re.search(rb'\bUID (\d+)\b',row[0],re.I)
                 if not uid or uid[1].decode() not in batch:continue
                 identity=uid[1].decode()
-                if identity in sources or len(row[1])>MAX_MESSAGE_BYTES:raise RuntimeError('IMAP 邮件内容重复或超过大小限制')
+                if identity in sources or len(row[1])>MAX_MESSAGE_BYTES:raise RuntimeError(_tr('IMAP 邮件内容重复或超过大小限制'))
                 sources[identity]={'uid':identity,'raw':row[1],'seen':flags.get(identity,False),'received_at':received.get(identity)}
-            if set(sources)!=set(batch):raise RuntimeError('IMAP 未返回完整邮件内容，请稍后重试')
+            if set(sources)!=set(batch):raise RuntimeError(_tr('IMAP 未返回完整邮件内容，请稍后重试'))
             store.ingest_many(account,folder,validity,[sources[uid] for uid in batch]);imported+=len(batch)
             if progress:progress(len(batch),0)
             checkpoint(should_yield)

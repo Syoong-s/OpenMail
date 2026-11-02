@@ -1,4 +1,5 @@
 """Durable local people observed from inbound senders and verified own-sent recipients."""
+from .i18n import text as _tr
 import json
 import time
 import uuid
@@ -206,15 +207,15 @@ def save(store,person,name,addresses):
         value=value.strip()
         if not value:continue
         address=normalize_address(value)
-        if not _single_from(value) or not address or address!=value.casefold():raise ValueError('请逐行填写有效的纯邮箱地址')
+        if not _single_from(value) or not address or address!=value.casefold():raise ValueError(_tr('请逐行填写有效的纯邮箱地址'))
         if address not in normalized:normalized.append(address)
-    if not normalized or len(normalized)>100:raise ValueError('每位联系人需要 1 至 100 个邮箱地址')
+    if not normalized or len(normalized)>100:raise ValueError(_tr('每位联系人需要 1 至 100 个邮箱地址'))
     person=person or uuid.uuid4().hex;name=' '.join(str(name).split())[:256]
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
         for address in normalized:
             other=db.execute('SELECT person,suppressed FROM address_mailboxes WHERE address=?',(address,)).fetchone()
-            if other and not other['suppressed'] and other['person']!=person:raise ValueError('该地址已属于另一位联系人，请使用“合并到此人”')
+            if other and not other['suppressed'] and other['person']!=person:raise ValueError(_tr('该地址已属于另一位联系人，请使用“合并到此人”'))
         conversation='contact:person:'+person if len(normalized)>1 else ''
         db.execute('INSERT INTO address_people(id,name,custom_name,conversation) VALUES(?,?,1,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,custom_name=1,conversation=CASE WHEN excluded.conversation<>\'\' THEN excluded.conversation ELSE address_people.conversation END',(person,name,conversation))
         db.execute('UPDATE address_mailboxes SET person=NULL,suppressed=1 WHERE person=? AND address NOT IN ('+','.join('?' for _ in normalized)+')',[person,*normalized])
@@ -237,11 +238,11 @@ def remove(store,person):
 # ==========================================
 def remove_many(store,people):
     people=list(dict.fromkeys(people))
-    if not people or len(people)>100:raise ValueError('每次请选择 1 至 100 位联系人')
+    if not people or len(people)>100:raise ValueError(_tr('每次请选择 1 至 100 位联系人'))
     marks=','.join('?' for _ in people)
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
-        if db.execute('SELECT count(*) FROM address_people WHERE id IN ('+marks+')',people).fetchone()[0]!=len(people):raise ValueError('联系人已变更，请刷新后重新选择')
+        if db.execute('SELECT count(*) FROM address_people WHERE id IN ('+marks+')',people).fetchone()[0]!=len(people):raise ValueError(_tr('联系人已变更，请刷新后重新选择'))
         db.execute('UPDATE address_mailboxes SET person=NULL,suppressed=1 WHERE person IN ('+marks+')',people)
         db.execute('DELETE FROM contact_preferences WHERE person IN ('+marks+')',people)
         db.execute('DELETE FROM address_people WHERE id IN ('+marks+')',people)
@@ -259,12 +260,12 @@ def merge(store,target,source):
 # ==========================================
 def merge_many(store,target,sources):
     sources=list(dict.fromkeys(sources))
-    if not target or not sources or target in sources or len(sources)>100:raise ValueError('请选择不同的来源和目标联系人（每次最多 100 位）')
+    if not target or not sources or target in sources or len(sources)>100:raise ValueError(_tr('请选择不同的来源和目标联系人（每次最多 100 位）'))
     people=[target,*sources];marks=','.join('?' for _ in people);source_marks=','.join('?' for _ in sources)
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
-        if db.execute('SELECT count(*) FROM address_people WHERE id IN ('+marks+')',people).fetchone()[0]!=len(people):raise ValueError('联系人已变更，请刷新后重试')
-        if db.execute('SELECT count(*) FROM address_mailboxes WHERE person IN ('+marks+') AND suppressed=0',people).fetchone()[0]>100:raise ValueError('合并后每位联系人最多 100 个邮箱地址')
+        if db.execute('SELECT count(*) FROM address_people WHERE id IN ('+marks+')',people).fetchone()[0]!=len(people):raise ValueError(_tr('联系人已变更，请刷新后重试'))
+        if db.execute('SELECT count(*) FROM address_mailboxes WHERE person IN ('+marks+') AND suppressed=0',people).fetchone()[0]>100:raise ValueError(_tr('合并后每位联系人最多 100 个邮箱地址'))
         from .contact_policies import merge as merge_policies
         merge_policies(db,target,sources)
         db.execute('UPDATE address_mailboxes SET person=? WHERE person IN ('+source_marks+')',[target,*sources])
@@ -278,7 +279,7 @@ def merge_many(store,target,sources):
 def split(store,person,address):
     with store.db() as db:
         row=db.execute('SELECT observed_name FROM address_mailboxes WHERE person=? AND address=? AND suppressed=0',(person,address)).fetchone()
-        if not row:raise ValueError('请选择此联系人的一个邮箱地址')
+        if not row:raise ValueError(_tr('请选择此联系人的一个邮箱地址'))
         identity=uuid.uuid4().hex
         db.execute('INSERT INTO address_people(id,name,starred) SELECT ?,?,starred FROM address_people WHERE id=?',(identity,row['observed_name'],person))
         db.execute('INSERT INTO contact_preferences SELECT ?,muted,pinned,blocked FROM contact_preferences WHERE person=?',(identity,person))
@@ -298,9 +299,9 @@ def suggestions(store,limit=300):
 # ==========================================
 def star_many(store,people,enabled=True):
     people=list(dict.fromkeys(people))
-    if not people or len(people)>100 or not isinstance(enabled,bool):raise ValueError('每次请选择 1 至 100 位联系人')
+    if not people or len(people)>100 or not isinstance(enabled,bool):raise ValueError(_tr('每次请选择 1 至 100 位联系人'))
     marks=','.join('?' for _ in people)
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
-        if db.execute('SELECT count(*) FROM address_people WHERE id IN ('+marks+')',people).fetchone()[0]!=len(people):raise ValueError('联系人已变更，请刷新后重新选择')
+        if db.execute('SELECT count(*) FROM address_people WHERE id IN ('+marks+')',people).fetchone()[0]!=len(people):raise ValueError(_tr('联系人已变更，请刷新后重新选择'))
         db.execute('UPDATE address_people SET starred=? WHERE id IN ('+marks+')',[int(enabled),*people])

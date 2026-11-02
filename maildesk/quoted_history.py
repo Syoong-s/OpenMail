@@ -1,4 +1,5 @@
 """Conservative render-only quote recognition; original MIME is never rewritten."""
+from .i18n import text as _tr
 import html
 from html.parser import HTMLParser
 import re
@@ -378,7 +379,7 @@ def _split_html(source):
             if fragment_text(prefix).strip() or re.search(r'<(?:img|table)\b',prefix,re.I):result.append({'kind':'current','source':prefix})
             elif prefix.strip() and not result:result.append({'kind':'current','source':prefix})
             content=source[node['inner']:node['inner_end']]
-            title=fragment_text(content).splitlines();title=node.get('title') or next((line.strip() for line in title if line.strip()),'引用的历史内容')
+            title=fragment_text(content).splitlines();title=node.get('title') or next((line.strip() for line in title if line.strip()),_tr('引用的历史内容'))
             # Exclude this marker from its own child scan (Outlook begins at its marker).
             removed=candidates.index(node);candidates.pop(removed)
             children=segments(node['inner'],node['inner_end'],depth+1)

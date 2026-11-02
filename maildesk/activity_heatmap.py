@@ -1,4 +1,5 @@
 """A small native calendar with accessible date selection and vector cells."""
+from .i18n import text as _tr
 import ctypes as C
 from datetime import date,timedelta
 from functools import lru_cache
@@ -40,7 +41,7 @@ class ActivityHeatmap:
         self.widget=g.gtk_drawing_area_new();g.gtk_widget_set_size_request(self.widget,-1,150)
         focus=g.libs['gtk'].gtk_widget_set_can_focus;focus.restype=None;focus.argtypes=[P,I];focus(self.widget,1)
         g.gtk_widget_add_events(self.widget,(1<<2)|(1<<8)|(1<<13))
-        g.gtk_widget_set_tooltip_text(self.widget,'每日邮件收发数量 · 点击日期查看 · 方向键切换日期'.encode())
+        g.gtk_widget_set_tooltip_text(self.widget,_tr('每日邮件收发数量 · 点击日期查看 · 方向键切换日期').encode())
         g.connect(self.widget,'draw',self.draw,count=3,returns=True,group='activity')
         g.connect(self.widget,'motion-notify-event',self.motion,count=3,returns=True,group='activity')
         g.connect(self.widget,'button-press-event',self.pressed,count=3,returns=True,group='activity')
@@ -84,7 +85,7 @@ class ActivityHeatmap:
         day=self.hit(event)
         if day!=self.hover:
             self.hover=day;counts=(self.data or {}).get('days',{}).get(day,{})
-            text=(day+' · 收到 '+str(counts.get('received',0))+' 封 · 发出 '+str(counts.get('sent',0))+' 封') if day else '点击日期查看邮件'
+            text=(day+_tr(' · 收到 ')+str(counts.get('received',0))+_tr(' 封 · 发出 ')+str(counts.get('sent',0))+_tr(' 封')) if day else _tr('点击日期查看邮件')
             self.g.gtk_widget_set_tooltip_text(widget,text.encode());self.g.gtk_widget_queue_draw(widget)
         return False
 
@@ -121,6 +122,7 @@ class ActivityHeatmap:
     # ==========================================
     def draw(self,widget,cr,data):
         from math import log2
+        from .i18n import month_label
         from .mail_activity import calendar_bounds
         g=self.g;cairo,pango,pc=drawing_api();today=date.today();start=calendar_bounds(today)[0]
         if self.data:today=date.fromisoformat(self.data['today']);start=date.fromisoformat(self.data['start'])
@@ -148,12 +150,12 @@ class ActivityHeatmap:
                 cairo.cairo_arc(cr,cx,cy,radius,a,b)
             cairo.cairo_close_path(cr)
         try:
-            for index,label in ((0,'一'),(2,'三'),(4,'五')):text(label,0,top+index*step-2)
+            for index,label in ((0,_tr('一')),(2,_tr('三')),(4,_tr('五'))):text(label,0,top+index*step-2)
             self.cells=[];month=None
             for week in range(53):
                 first=start+timedelta(days=week*7)
                 if first.month!=month:
-                    if week<51:text(str(first.month)+'月',left+week*step,0)
+                    if week<51:text(month_label(first),left+week*step,0)
                     month=first.month
                 for weekday in range(7):
                     day=first+timedelta(days=weekday)

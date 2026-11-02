@@ -1,4 +1,5 @@
 """Continuous RFC cards with independent local history disclosure and lazy bodies."""
+from .i18n import text as _tr, join_text as _join_ui
 from datetime import datetime
 import ctypes as C
 import time
@@ -17,10 +18,10 @@ from .message_style import app_own_identities,bubble_direction,message_text
 # ==========================================
 def conversation_details(parsed):
     headers=parsed.get('headers',{})
-    values=[('发件人',headers.get('from') or parsed.get('sender','')),('收件人',headers.get('to') or parsed.get('recipients',''))]
-    values.extend((title,headers.get(key,'')) for key,title in [('cc','抄送'),('bcc','密送'),('reply-to','回复至')])
-    values.append(('日期',headers.get('date') or datetime.fromtimestamp(parsed['timestamp']).strftime('%Y-%m-%d %H:%M:%S')))
-    return '\n'.join(title+'：'+value for title,value in values if value)
+    values=[(_tr('发件人'),headers.get('from') or parsed.get('sender','')),(_tr('收件人'),headers.get('to') or parsed.get('recipients',''))]
+    values.extend((title,headers.get(key,'')) for key,title in [('cc',_tr('抄送')),('bcc',_tr('密送')),('reply-to',_tr('回复至'))])
+    values.append((_tr('日期'),headers.get('date') or datetime.fromtimestamp(parsed['timestamp']).strftime('%Y-%m-%d %H:%M:%S')))
+    return _join_ui('\n',((title+'：'+value for title,value in values if value)))
 
 # ==========================================
 # Function: Match CID references without sharing unrelated image attachments between fragments.
@@ -173,25 +174,25 @@ class ConversationUI:
         label=g.gtk_bin_get_child(toggle);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,38)
         message_text(g,toggle);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(toggle),b'conversation-sender');g.gtk_box_pack_start(header,toggle,1,1,0)
         date=g.gtk_label_new(datetime.fromtimestamp(row['timestamp']).strftime('%m-%d %H:%M').encode());message_text(g,date);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(date),b'conversation-date');g.gtk_box_pack_start(header,date,0,0,0)
-        disclosure=self.conversation_icon(header,'展开邮件','conversation-open',lambda target=origin:self.toggle_conversation_card(target),group)
+        disclosure=self.conversation_icon(header,_tr('展开邮件'),'conversation-open',lambda target=origin:self.toggle_conversation_card(target),group)
         details=g.gtk_menu_button_new();g.gtk_button_set_image(details,g.image_file(Path(__file__).parent/'desktop_assets/icons/conversation-info.svg',17));g.gtk_button_set_always_show_image(details,1)
         popup=g.gtk_popover_new(details);text=g.gtk_label_new(caption.encode());g.gtk_label_set_xalign(text,0);g.gtk_label_set_selectable(text,1);g.gtk_label_set_line_wrap(text,1);g.gtk_label_set_max_width_chars(text,60)
         g.gtk_container_set_border_width(popup,14);g.gtk_container_add(popup,text);g.gtk_widget_show_all(text);g.gtk_menu_button_set_popover(details,popup);g.gtk_box_pack_start(header,details,0,0,0)
-        g.gtk_widget_set_tooltip_text(details,'邮件详情'.encode());g.connect(details,'toggled',lambda *unused,target=origin:self.load_card_details(target),group=group)
+        g.gtk_widget_set_tooltip_text(details,_tr('邮件详情').encode());g.connect(details,'toggled',lambda *unused,target=origin:self.load_card_details(target),group=group)
         state_buttons={}
-        for action,title in [('done','完成并归档'),('seen','标为已读'),('trash','移到废纸篓')]:
+        for action,title in [('done',_tr('完成并归档')),('seen',_tr('标为已读')),('trash',_tr('移到废纸篓'))]:
             button=self.conversation_icon(header,title,'spark-layout-'+action,lambda origin=origin,code=action:self.run_action(lambda:self.quick_action(origin,code)),group)
             if action in ('done','seen'):state_buttons[action]=button
         trash_button=button
-        snippet=g.gtk_label_new((' '.join(row.get('preview','').split())[:130] or '(无文字正文)').encode());g.gtk_label_set_xalign(snippet,0);g.gtk_label_set_ellipsize(snippet,3);g.gtk_label_set_max_width_chars(snippet,70)
+        snippet=g.gtk_label_new((_join_ui(' ',(row.get('preview','').split()))[:130] or _tr('(无文字正文)')).encode());g.gtk_label_set_xalign(snippet,0);g.gtk_label_set_ellipsize(snippet,3);g.gtk_label_set_max_width_chars(snippet,70)
         message_text(g,snippet);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(snippet),b'conversation-snippet');g.gtk_box_pack_start(root,snippet,0,1,0)
         content=g.gtk_box_new(1,6);g.gtk_box_pack_start(root,content,0,1,0)
         labels=message_text(g,g.gtk_label_new(b''));g.gtk_box_pack_start(content,labels,0,1,0);body=g.gtk_box_new(1,7);g.gtk_box_pack_start(content,body,0,1,0)
         from .attachment_cards import configure as configure_attachments
         attachments=g.gtk_flow_box_new();configure_attachments(g,attachments);g.gtk_flow_box_set_selection_mode(attachments,0);g.gtk_flow_box_set_max_children_per_line(attachments,64);g.gtk_box_pack_start(content,attachments,0,1,0)
         actions=g.gtk_box_new(0,5);action_widgets={}
-        for mode,title in [('reply','回复'),('reply_all','全部回复'),('forward','转发')]:action_widgets[mode]=self.conversation_icon(actions,title,'reader-'+mode.replace('_','-'),lambda origin=origin,code=mode:self.run_action(lambda:self.reply_message(origin,code)),group)
-        history_button=self.conversation_icon(actions,'展开引用历史','action-down',lambda origin=origin:self.toggle_card_history(origin),group)
+        for mode,title in [('reply',_tr('回复')),('reply_all',_tr('全部回复')),('forward',_tr('转发'))]:action_widgets[mode]=self.conversation_icon(actions,title,'reader-'+mode.replace('_','-'),lambda origin=origin,code=mode:self.run_action(lambda:self.reply_message(origin,code)),group)
+        history_button=self.conversation_icon(actions,_tr('展开引用历史'),'action-down',lambda origin=origin:self.toggle_card_history(origin),group)
         g.gtk_widget_set_no_show_all(history_button,1);g.gtk_widget_set_visible(history_button,0)
         g.gtk_box_pack_start(content,actions,0,1,0)
         reply_host=g.gtk_box_new(1,0);draft_host=g.gtk_box_new(1,6);g.gtk_box_pack_start(root,reply_host,0,1,0);g.gtk_box_pack_start(root,draft_host,0,1,0)
@@ -207,7 +208,7 @@ class ConversationUI:
         row=card['metadata']
         for key,button in card.get('state_buttons',{}).items():
             active=bool(row.get(key) or key=='done' and row.get('archived'))
-            title=('标为未读' if active else '标为已读') if key=='seen' else ('移回收件箱' if active else '完成并归档')
+            title=(_tr('标为未读') if active else _tr('标为已读')) if key=='seen' else (_tr('移回收件箱') if active else _tr('完成并归档'))
             state_action(self.g,button,title,'spark-layout-'+key,active)
 
     # ==========================================
@@ -228,7 +229,7 @@ class ConversationUI:
         store=self.service.store;g=self.g
         if not card.get('history_model'):
             message=store.get(card['origin'],raw=True);parsed=message['parsed']
-            model=split_history(parsed.get('html',''),parsed.get('body','') or '(无文字正文)');images=message_images(message['raw'])
+            model=split_history(parsed.get('html',''),parsed.get('body','') or _tr('(无文字正文)'));images=message_images(message['raw'])
             all_cids=set().union(*(fragment_cids(source) for source in history_sources(model)))
             card['orphan_images']=[image for image in images if not image.get('cid') or image['cid'].casefold() not in all_cids]
             card['images']=images;card['image_count']=len(images);card['history_model']=model
@@ -273,13 +274,13 @@ class ConversationUI:
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(root),('message-'+bubble_direction(entry,app_own_identities(self))).encode())
         g.gtk_box_pack_start(card['history_host'],wrapper,0,1,0)
         header=g.gtk_box_new(0,6);g.gtk_box_pack_start(root,header,0,1,0)
-        badge=message_text(g,g.gtk_label_new('历史'.encode()));g.gtk_style_context_add_class(g.gtk_widget_get_style_context(badge),b'history-badge');g.gtk_box_pack_start(header,badge,0,0,0)
+        badge=message_text(g,g.gtk_label_new(_tr('历史').encode()));g.gtk_style_context_add_class(g.gtk_widget_get_style_context(badge),b'history-badge');g.gtk_box_pack_start(header,badge,0,0,0)
         title=entry['title'];toggle=message_text(g,g.gtk_button_new_with_label(title.encode()));g.gtk_button_set_alignment(toggle,0,.5);g.gtk_widget_set_tooltip_text(toggle,title.encode())
         label=g.gtk_bin_get_child(toggle);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,54);g.gtk_box_pack_start(header,toggle,1,1,0)
         if entry['date']:
             date=g.gtk_label_new(entry['date'][:40].encode());g.gtk_label_set_ellipsize(date,3);g.gtk_label_set_max_width_chars(date,24);g.gtk_widget_set_tooltip_text(date,entry['date'].encode());message_text(g,date);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(date),b'conversation-date');g.gtk_box_pack_start(header,date,0,0,0)
-        group='history-quote-'+card['origin']+'-'+'-'.join(map(str,route))
-        disclosure=self.conversation_icon(header,'展开历史邮件','conversation-open',lambda:self.toggle_quote_card(card['origin'],route),group)
+        group='history-quote-'+card['origin']+'-'+_join_ui('-',(map(str,route)))
+        disclosure=self.conversation_icon(header,_tr('展开历史邮件'),'conversation-open',lambda:self.toggle_quote_card(card['origin'],route),group)
         body=g.gtk_box_new(1,4);g.gtk_box_pack_start(root,body,0,1,0)
         quote={'root':root,'wrapper':wrapper,'connector':connector,'toggle':toggle,'disclosure':disclosure,'body_host':body,'expanded':False,'reader':None,'readers':[],'children':[],'model':entry,'path':route,'group':group}
         card['quote_cards'].append(quote);g.connect(toggle,'clicked',lambda *unused:self.toggle_quote_card(card['origin'],route),group=group)
@@ -302,7 +303,7 @@ class ConversationUI:
             text=fragment_text(source);height=min(5000,max(90,35+sum(max(1,(len(line)+69)//70) for line in text.splitlines())*max(23,int(self.service.store.preference('reader_font_size',14))*1.8)+len(images)*300))
             g.gtk_widget_set_size_request(reader.widget,-1,int(min(height,280) if getattr(reader,'compact_mail',False) else height));g.gtk_widget_set_vexpand(reader.widget,0);g.gtk_box_pack_start(parent,reader.widget,0,1,0);reader.attached();readers.append(reader)
         except RuntimeError:
-            label=message_text(g,g.gtk_label_new((fragment_text(source) or '(无文字正文)').encode()));g.gtk_label_set_line_wrap(label,1);g.gtk_label_set_selectable(label,1);g.gtk_label_set_xalign(label,0);g.gtk_box_pack_start(parent,label,0,1,0)
+            label=message_text(g,g.gtk_label_new((fragment_text(source) or _tr('(无文字正文)')).encode()));g.gtk_label_set_line_wrap(label,1);g.gtk_label_set_selectable(label,1);g.gtk_label_set_xalign(label,0);g.gtk_box_pack_start(parent,label,0,1,0)
 
     # ==========================================
     # Function: Independently disclose one flat historical reply without changing any other card.
@@ -324,7 +325,7 @@ class ConversationUI:
         if state:self.g.gtk_widget_show_all(quote['body_host'])
         self.g.gtk_widget_set_visible(quote['body_host'],state)
         self.g.gtk_button_set_image(quote['disclosure'],self.g.image_file(Path(__file__).parent/'desktop_assets/icons'/('conversation-close.svg' if state else 'conversation-open.svg'),17))
-        self.g.gtk_widget_set_tooltip_text(quote['disclosure'],('收起引用历史' if state else '展开引用历史').encode())
+        self.g.gtk_widget_set_tooltip_text(quote['disclosure'],(_tr('收起引用历史') if state else _tr('展开引用历史')).encode())
         if state and quote['reader']:self.html_reader=quote['reader']
 
     # ==========================================
@@ -340,7 +341,7 @@ class ConversationUI:
             card['history_initialized']=True
             for entry in card['timeline_model']['history']:self.create_history_card(card,entry)
         self.show_card_history(card,card['history_visible'])
-        icon_action(self.g,card['history_button'],'收起引用历史' if card['history_visible'] else '展开引用历史','action-up' if card['history_visible'] else 'action-down',17)
+        icon_action(self.g,card['history_button'],_tr('收起引用历史') if card['history_visible'] else _tr('展开引用历史'),'action-up' if card['history_visible'] else 'action-down',17)
         context=self.g.gtk_widget_get_style_context(card['history_button'])
         (self.g.gtk_style_context_add_class if card['history_visible'] else self.g.gtk_style_context_remove_class)(context,b'active')
         self.sync_conversation_reader()
@@ -375,11 +376,11 @@ class ConversationUI:
         if not state:
             card['history_visible']=False
             self.g.gtk_style_context_remove_class(self.g.gtk_widget_get_style_context(card['history_button']),b'active')
-            icon_action(self.g,card['history_button'],'展开引用历史','action-down',17)
+            icon_action(self.g,card['history_button'],_tr('展开引用历史'),'action-down',17)
         self.show_card_history(card,state)
         g=self.g;g.gtk_widget_set_no_show_all(card['content'],not state);g.gtk_widget_set_visible(card['content'],state);g.gtk_widget_set_no_show_all(card['snippet'],state);g.gtk_widget_set_visible(card['snippet'],not state)
         g.gtk_button_set_image(card['disclosure'],g.image_file(Path(__file__).parent/'desktop_assets/icons'/('conversation-close.svg' if state else 'conversation-open.svg'),17))
-        g.gtk_widget_set_tooltip_text(card['toggle'],(('收起邮件' if state else '展开邮件')+' · '+card['caption']).encode());g.gtk_widget_set_tooltip_text(card['disclosure'],('收起邮件' if state else '展开邮件').encode())
+        g.gtk_widget_set_tooltip_text(card['toggle'],((_tr('收起邮件') if state else _tr('展开邮件'))+' · '+card['caption']).encode());g.gtk_widget_set_tooltip_text(card['disclosure'],(_tr('收起邮件') if state else _tr('展开邮件')).encode())
         self.sync_conversation_reader()
         if opening and self.service.store.preference('mark_read_on_open',True) and self.service.mark_opened(identity):self.queue.put((lambda result:self.mail_changed([identity]),None))
 
@@ -398,8 +399,8 @@ class ConversationUI:
                     if changed and not reload:reader.reload()
             self.update_card_actions(card)
             row=card['metadata'];values=labels.get(origin,[]) if store.preference('labels_reader',True) else []
-            if store.preference('labels_system',False):values=values+list(filter(None,['已完成' if row.get('done') else '', '已置顶' if row.get('pinned') else '',row.get('category','')]))
-            g.label(card['labels_widget'],' · '.join(values));g.gtk_widget_set_no_show_all(card['labels_widget'],not bool(values));g.gtk_widget_set_visible(card['labels_widget'],bool(values))
+            if store.preference('labels_system',False):values=values+list(filter(None,[_tr('已完成') if row.get('done') else '', _tr('已置顶') if row.get('pinned') else '',row.get('category','')]))
+            g.label(card['labels_widget'],_join_ui(' · ',(values)));g.gtk_widget_set_no_show_all(card['labels_widget'],not bool(values));g.gtk_widget_set_visible(card['labels_widget'],bool(values))
             shown=store.preference('avatars_mode','everywhere') in ('everywhere','reader');g.gtk_widget_set_no_show_all(card['avatar'],not shown);g.gtk_widget_set_visible(card['avatar'],shown)
             style=self.identity_colors.style(row['sender'],row['account'])
             if style!=card.get('avatar_style'):card['avatar_provider']=g.style(card['avatar'],'label { background-color: '+style['background']+'; color: #ffffff; border: 2px solid '+style['border']+'; }',card['avatar_provider']);card['avatar_style']=style
@@ -488,7 +489,7 @@ class ConversationUI:
             job=self.service.store.job(identity)
             self.open_composer({**job['draft'],'id':identity,'account':job['account']});current=self.composer
         elif current.identity!=identity:
-            self.message('请先保存或关闭当前正在编辑的草稿');return
+            self.message(_tr('请先保存或关闭当前正在编辑的草稿'));return
         if external:current.detach_surface()
         elif current.detached:self.g.gtk_window_present(current.surface_window)
         else:
@@ -514,12 +515,12 @@ class ConversationUI:
                 if editor and editor.identity==job['id'] and editor.inline and not editor.detached:continue
                 preview=g.gtk_box_new(0,5);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(preview),b'inline-draft-card')
                 button=g.gtk_button_new();labels=g.gtk_box_new(1,3)
-                for text,css in [('草稿 · '+(job['draft'].get('to') or '回复邮件'),'draft-card-title'),(job['draft'].get('body','').strip().split('\n')[0][:90] or '点击继续撰写','mail-preview')]:
+                for text,css in [(_tr('草稿 · ')+(job['draft'].get('to') or _tr('回复邮件')),'draft-card-title'),(job['draft'].get('body','').strip().split('\n')[0][:90] or _tr('点击继续撰写'),'mail-preview')]:
                     label=g.gtk_label_new(text.encode());g.gtk_label_set_xalign(label,0);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,40)
                     g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),css.encode());g.gtk_box_pack_start(labels,label,0,1,0)
                 g.gtk_container_add(button,labels);g.gtk_box_pack_start(preview,button,1,1,0)
                 g.connect(button,'clicked',lambda *unused,identity=job['id']:self.run_action(lambda:self.resume_reply_draft(identity)),group=group)
-                popout=self.conversation_icon(preview,'在独立窗口继续撰写','composer-popout',lambda identity=job['id']:self.run_action(lambda:self.resume_reply_draft(identity,True)),group)
+                popout=self.conversation_icon(preview,_tr('在独立窗口继续撰写'),'composer-popout',lambda identity=job['id']:self.run_action(lambda:self.resume_reply_draft(identity,True)),group)
                 g.gtk_box_pack_start(card['draft_host'],preview,0,1,8);card['draft_cards'][job['id']]={'root':preview,'button':button,'popout':popout}
                 if editor and editor.identity==job['id']:editor.inline_card=preview
             g.gtk_widget_show_all(card['draft_host'])

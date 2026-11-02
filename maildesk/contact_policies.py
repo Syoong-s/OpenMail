@@ -1,4 +1,5 @@
 """Local per-person conversation visibility, ordering and notification preferences."""
+from .i18n import text as _tr
 from .participant_identity import normalize_address,parse_participants
 
 # ==========================================
@@ -23,12 +24,12 @@ def get(store,person):
 # Method: Validate every stable person and commit the coalesced switch values in one transaction.
 # ==========================================
 def save_many(store,changes):
-    if not changes or len(changes)>100:raise ValueError('联系人设置数量无效')
+    if not changes or len(changes)>100:raise ValueError(_tr('联系人设置数量无效'))
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
         for person,values in changes.items():
-            if not {'muted','pinned','blocked'}<=set(values) or set(values)-{'muted','pinned','blocked','starred'} or any(not isinstance(value,bool) for value in values.values()):raise ValueError('联系人设置无效')
-            if not db.execute('SELECT 1 FROM address_people WHERE id=?',(person,)).fetchone():raise ValueError('联系人已变更，请刷新后重试')
+            if not {'muted','pinned','blocked'}<=set(values) or set(values)-{'muted','pinned','blocked','starred'} or any(not isinstance(value,bool) for value in values.values()):raise ValueError(_tr('联系人设置无效'))
+            if not db.execute('SELECT 1 FROM address_people WHERE id=?',(person,)).fetchone():raise ValueError(_tr('联系人已变更，请刷新后重试'))
             db.execute('''INSERT INTO contact_preferences(person,muted,pinned,blocked) VALUES(?,?,?,?)
                 ON CONFLICT(person) DO UPDATE SET muted=excluded.muted,pinned=excluded.pinned,blocked=excluded.blocked''',
                 (person,int(values['muted']),int(values['pinned']),int(values['blocked'])))
@@ -77,12 +78,12 @@ def allows_message_notice(store,message,quiet,own):
 # ==========================================
 def toggle_many(store,people,key):
     people=list(dict.fromkeys(people))
-    if key not in ('muted','pinned','blocked') or not people or len(people)>100:raise ValueError('请选择 1 至 100 位联系人')
+    if key not in ('muted','pinned','blocked') or not people or len(people)>100:raise ValueError(_tr('请选择 1 至 100 位联系人'))
     marks=','.join('?' for _ in people)
     with store.db() as db:
         db.execute('BEGIN IMMEDIATE')
         rows=db.execute('SELECT p.id,coalesce(cp.'+key+',0) AS flag FROM address_people p LEFT JOIN contact_preferences cp ON cp.person=p.id WHERE p.id IN ('+marks+')',people).fetchall()
-        if len(rows)!=len(people):raise ValueError('联系人已变更，请刷新后重新选择')
+        if len(rows)!=len(people):raise ValueError(_tr('联系人已变更，请刷新后重新选择'))
         enabled=not all(row['flag'] for row in rows)
         db.executemany('INSERT OR IGNORE INTO contact_preferences(person) VALUES(?)',[(person,) for person in people])
         db.execute('UPDATE contact_preferences SET '+key+'=? WHERE person IN ('+marks+')',[int(enabled),*people])

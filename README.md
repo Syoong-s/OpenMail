@@ -1,87 +1,88 @@
-# TeleMail
+<div align="center">
+  <img src="maildesk/desktop_assets/icon.svg" width="72" alt="TeleMail logo">
+  <h1>TeleMail</h1>
+  <p><strong>Your mail. Your rhythm.</strong></p>
+  <p>A local-first desktop email client for Windows and Linux.</p>
+  <p><strong>English</strong> · <a href="README-CN.md">简体中文</a></p>
+  <p><a href="https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0">Download 0.57.0</a> · <a href="#get-started">Get started</a> · <a href="docs/BUILDING.md">Build from source</a></p>
+</div>
 
-> [中文版](README-CN.md)
+![TeleMail in English — focused inbox and daily mail activity](docs/screenshots/main-en.png)
 
-A desktop email client featuring multiple inbox layout modes and unified multi-account management. Supporting Windows 11 (x64) and Linux (x86-64), TeleMail processes all email data, account credentials, and attachment previews locally without relying on proprietary cloud services or telemetry uploads. Key features include IMAP/SMTP multi-account management, smart inbox categorization, custom filtering rules, conversation thread views, an address book, scheduled sending, and offline document preview powered by bundled PDF.js.
+<p align="center"><sub>English interface · Focused inbox, daily activity and a linked mail timeline. All messages shown are synthetic.</sub></p>
 
----
+TeleMail brings multiple accounts, a focused inbox and contact conversations into one workspace. Mail operations update locally and sync quietly in the background. Your messages, credentials and attachment previews stay on your computer; the client connects directly to your email providers, with no TeleMail cloud service or telemetry uploads.
 
-## Usage
+## A quieter way to handle email
 
-### 1. Installation & Launch
+| Your workspace | What you can do |
+| --- | --- |
+| **Four inbox views** | Switch between Focused, Unread cards, Classic and Conversations without reorganizing your mailbox. |
+| **Daily activity** | See received and sent mail across the year, revisit a day, and archive, mark read or trash messages directly from its timeline. Statistics are cached and updated when mail changes. |
+| **Immediate local actions** | Read status, pins and moves appear locally first. Durable pending changes sync in the background; **Done** archives the message. |
+| **One home for your accounts** | Use multiple IMAP/SMTP accounts, local folders, smart folders, sender screening and custom filters. |
+| **Conversations and writing** | Follow contacts across subjects, manage your address book, use templates, schedule sending and set follow-up reminders. |
+| **Comfortable reading** | Choose light or dark themes, restrained companion colors and adjustable text sizes. Preview attachments locally, including PDFs with search and text selection. |
 
-Download the release package for your platform from GitHub Releases (current version: `0.55.3`), or run directly from source on Linux:
+**English and 简体中文 are included.** Choose **Settings → Appearance → Interface language**, save, then restart TeleMail. Language changes affect the interface, not your mail, contacts, custom names or folder identities.
 
-| Release package | Runtime dependencies | Installed automatically? |
+## Get started
+
+Download a package from [GitHub Releases](https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0).
+
+| Platform | Package | Launch |
 | --- | --- | --- |
-| Windows 11 x64 ZIP | Python, GTK, OpenSSL and Antiword are bundled; Microsoft Edge WebView2 Evergreen Runtime must be available on the system. | WebView2 is preinstalled on standard Windows 11 systems. If missing, install it manually; TeleMail does not install it automatically. Fully extract the ZIP before launching. |
-| Debian / Ubuntu amd64 DEB | Python 3.12+, GTK 3.24+, Fontconfig, OpenSSL 3, WebKitGTK 4.1, SVG loader (`librsvg2-common`) and glibc >= 2.34; optional `antiword` for legacy `.doc` previews. | `sudo apt install ./telemail-desktop_0.55.3_amd64.deb` installs declared dependencies when compatible versions are available from configured repositories. `antiword` is not declared and must be installed separately for `.doc` previews. |
-| Linux x86-64 portable tar.gz | Python 3.12+, GTK 3.24+, Fontconfig, OpenSSL 3, WebKitGTK 4.1, an SVG loader and glibc >= 2.34; optional `antiword` for legacy `.doc` previews. | No. Install missing system dependencies manually before launching; extracting or running the archive does not install them. |
+| **Windows 11 · x64** | `telemail-0.57.0-windows-amd64.zip` | Extract the complete archive, then open `TeleMail-Windows-amd64/TeleMail.exe`. |
+| **Debian / Ubuntu · amd64** | `telemail-desktop_0.57.0_amd64.deb` | Install with `sudo apt install ./telemail-desktop_0.57.0_amd64.deb`, then launch TeleMail from the app menu or run `telemail`. |
+| **Linux portable · x86-64** | `telemail-0.57.0-linux-amd64.tar.gz` | Extract, then run `TeleMail-Linux-amd64/TeleMail`. Use `--install-user` to register an app-menu shortcut. |
 
-The actual minimum glibc version depends on the build host; compatibility with older Linux distributions is not guaranteed. See the [build guide](docs/BUILDING.md).
+### Runtime requirements
 
-* **Windows 11 (x64)**
-Extract `telemail-0.55.3-windows-amd64.zip` (keeping the complete directory structure intact) and double-click `TeleMail-Windows-amd64/TeleMail.exe`. The archive bundles the required Python and GTK runtimes—neither a local Python installation nor WSL is needed. Only the Microsoft Edge WebView2 Evergreen Runtime is required on the host system.
-* **Debian / Ubuntu (amd64)**
-Install `telemail-desktop_0.55.3_amd64.deb` (the system package manager will resolve dependencies automatically). Once installed, launch the app from your desktop application menu or run `telemail` in a terminal:
-```bash
-sudo apt install ./telemail-desktop_0.55.3_amd64.deb
+- **Windows:** Python, GTK, OpenSSL and Antiword are bundled. Microsoft Edge WebView2 Evergreen Runtime must be available; standard Windows 11 installations normally include it. If it is missing, install it yourself. Neither Python nor WSL needs to be installed separately.
+- **Linux:** Python 3.12+, GTK 3.24+, Fontconfig, OpenSSL 3, WebKitGTK 4.1, an SVG loader (`librsvg2-common`) and glibc ≥ 2.34. The DEB declares its required dependencies; `apt` resolves them when compatible versions are available. Portable archives do not install dependencies. Optional `antiword` is needed for older `.doc` previews.
 
-```
+The actual minimum glibc version depends on the build host. See the [build guide](docs/BUILDING.md) for compatibility and packaging details.
 
+### Connect an account
 
-* **Linux Portable Archive (x86-64)**
-Extract `telemail-0.55.3-linux-amd64.tar.gz` and run the `TeleMail` executable inside (requires system installations of Python 3.12+, GTK 3.24+, Fontconfig, OpenSSL 3, WebKitGTK 4.1, and `glibc >= 2.34`):
-```bash
-tar -xzf telemail-0.55.3-linux-amd64.tar.gz
-./TeleMail-Linux-amd64/TeleMail
-# Optional: register a desktop shortcut for the current user
-./TeleMail-Linux-amd64/TeleMail --install-user
+Open **Settings → Accounts** or the first-launch sign-in flow. Choose Gmail, Outlook, Microsoft 365 or a generic IMAP/SMTP provider, then verify the receiving and sending services.
 
-```
+Password/app-password authentication is supported. Browser OAuth sign-in requires your own registered Google or Microsoft client configuration; TeleMail does not ship public OAuth client IDs.
 
+> **Check automatic cleanup after adding an account.** By default, unpinned inbox messages older than **365 days** are moved to that account's server Trash folder, which your provider may later empty. To retain all inbox mail, disable automatic cleanup or adjust the period in **Settings → Storage**.
 
-* **Run from Source (Linux)**
-Once the Linux runtime dependencies listed above are satisfied, launch directly from the repository root:
+### Try it from source
+
+With the Linux runtime dependencies installed, run from the repository root:
+
 ```bash
 ./run.sh
-# Or enter demo mode using synthetic emails (does not connect to real mailboxes or send outgoing mail)
-./run.sh --demo
-
+./run.sh --demo   # Isolated synthetic mailbox; no real account access or outgoing mail
 ```
 
+Useful commands:
 
-
-### 2. Account Configuration & Common Commands
-
-* **Adding Accounts**: On first launch, add your email account via the setup wizard or navigate to **Settings → Accounts**. Built-in configuration templates are provided for Gmail, Outlook, Microsoft 365, and generic IMAP/SMTP servers. Authentication supports standard passwords, app-specific passwords, or self-registered OAuth 2.0 client IDs (this project does not ship with pre-embedded public Google/Microsoft OAuth client IDs).
-* **Command-Line Arguments**:
 ```bash
-TeleMail --demo                              # Demo mode (uses an isolated demo directory and synthetic emails)
-TeleMail --config <file> --data <dir>        # Specify custom configuration file and local data directory
-TeleMail mailto:user@example.com             # Open an unsent draft window with the recipient pre-filled
-TeleMail --version                           # Display current version and platform information
-
+TeleMail --demo
+TeleMail --config <file> --data <directory>
+TeleMail mailto:user@example.com   # Opens an unsent draft
+TeleMail --version
 ```
 
+## Details that matter
 
+- **Reading and layout:** Interface font sizes range from 10–32, with a default of 14. Settings preview immediately; Save keeps changes and Cancel restores them. Popup sizes follow the interface font. Message text and PDF zoom have separate settings.
+- **Multiple displays:** Windows uses system-aware whole-window scaling. Fractional scaling on secondary displays may look slightly softer. Large editors can temporarily enlarge the window while preserving manual resizing.
+- **Offline documents:** The bundled PDF.js 6.4.299 viewer runs through a private localhost endpoint. It supports scrolling, zoom, text selection, search and password unlocking, without uploading documents. Image-only scans do not gain OCR.
+- **Scheduled mail:** Keep the application open for on-time delivery. Overdue schedules are handled on the next launch. Read receipts depend on the receiving client and may be declined.
+- **Local storage:** Read the [privacy and data policy](docs/PRIVACY.md) for credential storage, remote images, cached mail and cleanup behavior.
 
-### 3. Important Notes
+## Documentation
 
-* **Interface Font Size & Sidebar**: Choose **Settings → Appearance → 界面字号** from 10–32 (default 14). Changes preview immediately, with Save and Cancel controlling persistence. Popup widths and heights follow the chosen font within the available window. The fixed navigation rail is 40 logical pixels wide and gives pinned folders the remaining window height; scrolling is needed only when they exceed that space. Expanded folder/mailbox sidebars now default to 300 logical pixels and remain draggable; saved widths are preserved. Email body text and PDF zoom retain their own settings.
-
-* **Windows Multiple Displays**: Windows system-aware whole-window scaling keeps windows, text and floating editors consistent across 100%, 150% and 200% displays. Fractional scaling on other displays may look slightly softer. Large editors can temporarily expand the main window, refit to the current monitor, and restore automatic growth on close while preserving manual resizes.
-
-> **Important (Auto-Cleanup Policy)**: After connecting a real email account, please review the automatic cleanup policy under **Settings → Storage** first. By default, **unpinned inbox emails older than 365 days** are moved to the server Trash folder (which your email provider may subsequently purge permanently). To keep all inbox messages indefinitely, disable this option or adjust the retention period immediately after setup.
-
-* **Offline PDF Viewer**: PDF attachments are rendered offline via localhost loopback using the bundled PDF.js 6.4.299 engine. It supports continuous scrolling, zooming, text selection, full-text search highlighting, and password unlocking without uploading documents to external servers (OCR is not provided for scanned PDFs).
-* **Send Later & Read Receipts**: Scheduled emails require the application to remain running; tasks that come due while the application is closed will be processed upon the next launch. Read receipts depend on whether the recipient's email client supports and responds to receipt requests.
-* **Further Documentation**: See [Privacy & Data Policy](https://www.google.com/search?q=docs/PRIVACY.md), [Build & Testing Guide](https://www.google.com/search?q=docs/BUILDING.md), and [Developer Guide](https://www.google.com/search?q=Develop.md) for details.
-
----
+[Build & test](docs/BUILDING.md) · [Developer guide](Develop.md) · [Local-first sync](docs/LOCAL_FIRST_SYNC.md) · [Mail activity](docs/MAIL_OVERVIEW.md) · [Localization](docs/LOCALIZATION.md) · [Changelog](docs/CHANGELOG.md)
 
 ## License
 
-* **First-Party Code**: TeleMail's original application code, native adaptation layers, and build scripts are licensed under the **[MIT License](https://www.google.com/search?q=LICENSE)**.
-* **Third-Party Components**: Bundled or referenced third-party components (including PDF.js, Noto Sans CJK SC fonts, CPython, MSYS2/GTK runtimes, Microsoft WebView2 Loader, etc.) retain their original licenses and copyright notices. See [NOTICE](https://www.google.com/search?q=NOTICE) and [Third-Party Components](https://www.google.com/search?q=docs/THIRD_PARTY.md) for full details.
-* **Windows Combined Binary Distribution**: The Windows release archive includes the standalone subprocess utility Antiword (`GPL-2.0-or-later`) and indirectly loads JBIG-KIT (`GPL-2.0-or-later`) via GdkPixbuf/libtiff. Consequently, the combined Windows binary distribution as a whole is provided under the terms of **GPLv3 or later (`GPL-3.0-or-later`)** accompanied by the corresponding source code, while TeleMail's own original code remains available under the MIT License. Please refer to [Windows Combined Distribution Licensing](https://www.google.com/search?q=docs/WINDOWS_LICENSE.md) for details.
+TeleMail's original code, native adaptation layers and build scripts are licensed under [MIT](LICENSE). Third-party components retain their own licenses; see [NOTICE](NOTICE) and [Third-party components](docs/THIRD_PARTY.md).
+
+The combined Windows binary distribution includes Antiword and indirectly loaded JBIG-KIT components under GPL terms. That combined distribution is provided under **GPLv3 or later**, with corresponding source, while TeleMail's original code remains MIT-licensed. See [Windows distribution licensing](docs/WINDOWS_LICENSE.md).

@@ -1,4 +1,5 @@
 """Dedicated native composer surface with bounded inline sizing and compact actions."""
+from .i18n import text as _tr, join_text as _join_ui
 import ctypes as C
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -29,7 +30,7 @@ def composer_viewport(g,window,reader,inline):
 # Method: Keep native field identifiers while placing recipients above an expanding body and one footer.
 # ==========================================
 def composer_xml(accounts):
-    items=''.join('<item id="'+escape(key)+'">'+escape(label)+'</item>' for key,label in accounts)
+    items=_join_ui('',(('<item translatable="no" id="'+escape(key)+'">'+escape(label)+'</item>' for key,label in accounts)))
     # ==========================================
     # Function: Define one recipient row with optional discoverable disclosure.
     # Method: Use borderless editable fields and hide only empty secondary recipients.
@@ -39,7 +40,7 @@ def composer_xml(accounts):
         return '<child><object class="GtkBox" id="'+key+'_row">'+hidden+'<property name="spacing">8</property><style><class name="composer-recipient"/></style><child><object class="GtkLabel"><property name="label">'+title+'</property><property name="xalign">0</property><style><class name="composer-muted"/></style></object></child><child><object class="GtkEntry" id="'+key+'"><property name="hexpand">True</property><property name="width-chars">8</property><property name="placeholder-text">输入邮箱地址</property></object><packing><property name="expand">True</property><property name="fill">True</property></packing></child></object></child>'
     return '''<interface><object class="GtkBox" id="form"><property name="orientation">vertical</property><property name="spacing">0</property><property name="hexpand">True</property><property name="vexpand">True</property><style><class name="modern-composer"/></style>
 <child><object class="GtkBox" id="composer_heading"><property name="spacing">4</property><style><class name="composer-heading"/></style><child><object class="GtkEntry" id="subject"><property name="placeholder-text">主题</property><property name="width-chars">10</property><property name="hexpand">True</property><style><class name="composer-subject"/></style></object><packing><property name="expand">True</property><property name="fill">True</property></packing></child></object></child>
-<child><object class="GtkBox" id="recipient_fields"><property name="orientation">vertical</property>'''+recipient('to','收件人')+recipient('cc','抄送',True)+recipient('bcc','密送',True)+'''</object></child>
+<child><object class="GtkBox" id="recipient_fields"><property name="orientation">vertical</property>'''+recipient('to',_tr('收件人'))+recipient('cc',_tr('抄送'),True)+recipient('bcc',_tr('密送'),True)+'''</object></child>
 <child><object class="GtkBox" id="attachments_chips"><property name="orientation">vertical</property><property name="no-show-all">True</property><property name="visible">False</property><style><class name="composer-attachments"/></style></object></child>
 <child><object class="GtkScrolledWindow" id="body_scroll"><property name="hscrollbar-policy">never</property><property name="vscrollbar-policy">automatic</property><property name="vexpand">True</property><property name="height-request">180</property><child><object class="GtkTextView" id="body"><property name="wrap-mode">word-char</property><property name="left-margin">16</property><property name="right-margin">16</property><property name="top-margin">12</property><property name="bottom-margin">12</property><property name="pixels-below-lines">4</property><style><class name="composer-body"/></style></object></child></object><packing><property name="expand">True</property><property name="fill">True</property></packing></child>
 <child><object class="GtkLabel" id="note"><property name="xalign">0</property><property name="ellipsize">end</property><property name="max-width-chars">20</property><style><class name="composer-note"/></style></object></child>
@@ -62,7 +63,7 @@ class ComposerLayout:
         self.builder=g.builder(composer_xml(accounts));self.group=f'form-{self.window}';self.closed=False
         self.fields={key:(g.object(self.builder,key),kind) for key,_,kind,_ in fields};self.note=g.object(self.builder,'note')
         from .native_choices import NativeChoice
-        self.account_choice=NativeChoice(g,self.fields['account'][0],'发件账户')
+        self.account_choice=NativeChoice(g,self.fields['account'][0],_tr('发件账户'))
         if not hasattr(app,'active_forms'):app.active_forms=[]
         app.active_forms.append(self)
         if getattr(app.options,'self_test',False):app.testing_form=self
@@ -73,7 +74,7 @@ class ComposerLayout:
         else:
             from .windows_frame import bind_window_frame
             bind_window_frame(app,self.window,self.group)
-            g.gtk_window_set_title(self.window,'TeleMail · 新邮件'.encode());g.gtk_window_set_default_size(self.window,900,700)
+            g.gtk_window_set_title(self.window,_tr('TeleMail · 新邮件').encode());g.gtk_window_set_default_size(self.window,900,700)
             g.gtk_window_set_transient_for(self.window,app.window);g.gtk_window_set_application(self.window,app.application)
             g.gtk_container_add(g.gtk_dialog_get_content_area(self.window),root)
         self.layout_height=None;self.layout_scroll_callback=None;self.layout_scroll_timer=0;self.last_viewport=None
@@ -98,22 +99,22 @@ class ComposerLayout:
     # ==========================================
     def setup_actions(self):
         g=self.g;heading=g.object(self.builder,'composer_heading');footer=self.action_area
-        self.expand_button=self.action_icon(heading,'展开编辑器 / 返回回复',13,'expand') if self.embedded else None
-        self.popout_button=self.action_icon(heading,'在独立窗口撰写 / 返回邮件',15,'popout') if self.embedded else None
-        self.close_button=self.action_icon(heading,'关闭并保存草稿',-6,'close')
-        self.attachment_button=self.action_icon(footer,'添加附件',3,'attachment')
-        self.template_button=self.action_icon(footer,'模板',4,'template')
-        self.format_button=g.gtk_menu_button_new();g.gtk_button_set_label(self.format_button,b'Aa');g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.format_button),b'composer-icon');g.gtk_widget_set_tooltip_text(self.format_button,'文字格式'.encode());g.gtk_box_pack_start(footer,self.format_button,0,0,0)
-        self.format_popover=self.action_popover(self.format_button,[('加粗',7),('斜体',8),('下划线',9)])
-        self.remind_button=self.action_icon(footer,'未回复提醒',12,'reminder')
-        self.later_button=self.action_icon(footer,'稍后发送',11,'later')
-        self.more_button=g.gtk_menu_button_new();g.gtk_button_set_label(self.more_button,'•••'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.more_button),b'composer-icon');g.gtk_widget_set_tooltip_text(self.more_button,'更多编辑选项'.encode());g.gtk_box_pack_start(footer,self.more_button,0,0,0)
-        self.more_popover=self.action_popover(self.more_button,[('保存草稿',1),('抄送 / 密送',14),('插入签名',5),('移除附件',6),('放弃草稿',10)])
+        self.expand_button=self.action_icon(heading,_tr('展开编辑器 / 返回回复'),13,'expand') if self.embedded else None
+        self.popout_button=self.action_icon(heading,_tr('在独立窗口撰写 / 返回邮件'),15,'popout') if self.embedded else None
+        self.close_button=self.action_icon(heading,_tr('关闭并保存草稿'),-6,'close')
+        self.attachment_button=self.action_icon(footer,_tr('添加附件'),3,'attachment')
+        self.template_button=self.action_icon(footer,_tr('模板'),4,'template')
+        self.format_button=g.gtk_menu_button_new();g.gtk_button_set_label(self.format_button,b'Aa');g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.format_button),b'composer-icon');g.gtk_widget_set_tooltip_text(self.format_button,_tr('文字格式').encode());g.gtk_box_pack_start(footer,self.format_button,0,0,0)
+        self.format_popover=self.action_popover(self.format_button,[(_tr('加粗'),7),(_tr('斜体'),8),(_tr('下划线'),9)])
+        self.remind_button=self.action_icon(footer,_tr('未回复提醒'),12,'reminder')
+        self.later_button=self.action_icon(footer,_tr('稍后发送'),11,'later')
+        self.more_button=g.gtk_menu_button_new();g.gtk_button_set_label(self.more_button,'•••'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.more_button),b'composer-icon');g.gtk_widget_set_tooltip_text(self.more_button,_tr('更多编辑选项').encode());g.gtk_box_pack_start(footer,self.more_button,0,0,0)
+        self.more_popover=self.action_popover(self.more_button,[(_tr('保存草稿'),1),(_tr('抄送 / 密送'),14),(_tr('插入签名'),5),(_tr('移除附件'),6),(_tr('放弃草稿'),10)])
         self.account_button=g.gtk_menu_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.account_button),b'composer-account')
         self.account_label=g.gtk_label_new(b'');g.gtk_label_set_ellipsize(self.account_label,3);g.gtk_label_set_max_width_chars(self.account_label,24)
         g.gtk_container_add(self.account_button,self.account_label);g.gtk_menu_button_set_popover(self.account_button,g.object(self.builder,'account_popover'))
         g.gtk_box_pack_start(footer,self.account_button,1,1,4)
-        self.send_button=self.action_icon(footer,'发送邮件',2,'send');g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.send_button),b'composer-send')
+        self.send_button=self.action_icon(footer,_tr('发送邮件'),2,'send');g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.send_button),b'composer-send')
         self.save_button=self.secondary_buttons[1]
         self.refresh_chips();self.reveal_recipients(False)
 
@@ -155,7 +156,7 @@ class ComposerLayout:
         for index,item in enumerate(self.attachments[:3]):
             label=g.gtk_label_new(('↳ '+item['name']).encode());g.gtk_label_set_xalign(label,0);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,40)
             g.gtk_box_pack_start(host,label,0,1,0)
-        if len(self.attachments)>3:g.gtk_box_pack_start(host,g.gtk_label_new(('另有 '+str(len(self.attachments)-3)+' 个附件 · 更多中管理').encode()),0,1,0)
+        if len(self.attachments)>3:g.gtk_box_pack_start(host,g.gtk_label_new((_tr('另有 ')+str(len(self.attachments)-3)+_tr(' 个附件 · 更多中管理')).encode()),0,1,0)
         g.gtk_widget_set_no_show_all(host,not self.attachments);g.gtk_widget_set_visible(host,bool(self.attachments))
         if self.attachments:g.gtk_widget_show_all(host)
 

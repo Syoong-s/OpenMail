@@ -1,10 +1,11 @@
 """One native settings workspace with flat rows and compact trailing controls."""
+from .i18n import text as _tr
 from pathlib import Path
 import xml.etree.ElementTree as ET
 from .desktop_forms import form_xml
 
 ICONS=Path(__file__).parent/'desktop_assets/icons'
-DESCRIPTIONS={'filters':'全局和账号独立规则：账号优先、首条匹配停止。新邮件只自动执行一次；已有邮件可按任意缓存文件夹预览并手动运行。','conversations':'选择哪些邮箱文件夹参与联系人的邮件对话汇总。','contacts':'管理保存的联系人与最近来信地址。','general':'按你的工作习惯调整客户端行为。','accounts':'管理本机邮箱、连接与登录状态。','composer':'专注撰写，设置默认的发送和回复方式。','templates':'把常用内容保存为可重复使用的邮件模板。','inbox':'调整优先邮件、发件人筛选与自动归类。','notifications':'只接收你需要关注的邮件提醒。','scheduling':'设置本机稍后发送与跟进提醒的时间。','appearance':'选择主题、密度和邮件列表的呈现方式。','reading':'调整阅读体验，同时保护远程内容隐私。','shortcuts':'用键盘快速导航、搜索和回复。','privacy':'掌控本地数据、凭据和外部内容。','storage':'设置过期邮件自动整理、清理缓存并管理本机储存位置。','about':'本地优先的独立桌面邮件客户端。'}
+DESCRIPTIONS={'filters':_tr('全局和账号独立规则：账号优先、首条匹配停止。新邮件只自动执行一次；已有邮件可按任意缓存文件夹预览并手动运行。'),'conversations':_tr('选择哪些邮箱文件夹参与联系人的邮件对话汇总。'),'contacts':_tr('管理保存的联系人与最近来信地址。'),'general':_tr('按你的工作习惯调整客户端行为。'),'accounts':_tr('管理本机邮箱、连接与登录状态。'),'composer':_tr('专注撰写，设置默认的发送和回复方式。'),'templates':_tr('把常用内容保存为可重复使用的邮件模板。'),'inbox':_tr('调整优先邮件、发件人筛选与自动归类。'),'notifications':_tr('只接收你需要关注的邮件提醒。'),'scheduling':_tr('设置本机稍后发送与跟进提醒的时间。'),'appearance':_tr('选择主题、密度和邮件列表的呈现方式。'),'reading':_tr('调整阅读体验，同时保护远程内容隐私。'),'shortcuts':_tr('用键盘快速导航、搜索和回复。'),'privacy':_tr('掌控本地数据、凭据和外部内容。'),'storage':_tr('设置过期邮件自动整理、清理缓存并管理本机储存位置。'),'about':_tr('本地优先的独立桌面邮件客户端。')}
 
 # ==========================================
 # Function: Declare one native property before widget children.
@@ -52,7 +53,7 @@ def settings_xml(fields,pages,page_fields):
     sidebar=child_xml(sidebar_scroll,'GtkBox','settings_sidebar');property_xml(sidebar,'name','settings_sidebar');property_xml(sidebar,'orientation','vertical');property_xml(sidebar,'width-request',170);property_xml(sidebar,'spacing',2);property_xml(sidebar,'margin',10)
     packing=ET.SubElement(workspace.findall('child')[-1],'packing');ET.SubElement(packing,'property',{'name':'expand'}).text='False';ET.SubElement(packing,'property',{'name':'fill'}).text='True'
     property_xml(sidebar,'hexpand','False')
-    title=child_xml(sidebar,'GtkLabel');property_xml(title,'label','设置');property_xml(title,'xalign',0);style_xml(title,'settings-sidebar-title')
+    title=child_xml(sidebar,'GtkLabel');property_xml(title,'label',_tr('设置'));property_xml(title,'xalign',0);style_xml(title,'settings-sidebar-title')
     stack=child_xml(workspace,'GtkStack','settings_stack');property_xml(stack,'homogeneous','False');property_xml(stack,'transition-type','none');property_xml(stack,'transition-duration',0);property_xml(stack,'hexpand','True');property_xml(stack,'vexpand','True')
     mapping={field[0]:field for field in fields}
     for key,title in pages:
@@ -70,7 +71,7 @@ def settings_xml(fields,pages,page_fields):
                 entry_child=row.findall('child')[1];entry=entry_child.find('object');entry_child.remove(entry)
                 line=ET.Element('object',{'class':'GtkBox'});entry_child.insert(0,line);property_xml(line,'spacing',8);property_xml(entry,'hexpand','True')
                 ET.SubElement(line,'child').append(entry)
-                picker=child_xml(line,'GtkButton',field[0]+'_choose');property_xml(picker,'tooltip-text','选择文件夹');property_xml(picker,'valign','center');style_xml(picker,'compact-action')
+                picker=child_xml(line,'GtkButton',field[0]+'_choose');property_xml(picker,'tooltip-text',_tr('选择文件夹'));property_xml(picker,'valign','center');style_xml(picker,'compact-action')
                 image=child_xml(picker,'GtkImage');property_xml(image,'file',str(ICONS/'spark-layout-folder.svg'));property_xml(image,'pixel-size',16)
             if field[0]=='mail_retention_days':
                 entry=row.findall('child')[1].find('object')

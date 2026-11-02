@@ -1,4 +1,5 @@
 """Latest-only local read/projection workers, separate from slow network commands."""
+from .i18n import text as _tr
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -73,6 +74,7 @@ class LocalLoader:
                 state['wanted']=None
                 if pair[0]:success(pair[1])
                 else:
+                    if state['channel']=='activity':self.app.activity.pending=None
                     if state['channel']=='read':self.app.pending_read_identity=''
                     if state['channel']=='chat':
                         self.app.chat_loading=False;self.app.chat_load_error=str(pair[1]);self.app.chat_snapshot_failed()
@@ -143,7 +145,7 @@ class LocalLoader:
         key=(identity,hashlib.sha256((parsed.get('html','')+'\0'+parsed.get('body','')+repr(parsed.get('attachments',[]))).encode()).digest())
         body=self.bodies.pop(key,None)
         if body:self.bodies[key]=body;return body
-        model=split_history(parsed.get('html',''),parsed.get('body','') or '(无文字正文)')
+        model=split_history(parsed.get('html',''),parsed.get('body','') or _tr('(无文字正文)'))
         cids=set().union(*(source_cids(value) for value in history_sources(model)))
         attachments=parsed.get('attachments',[]);has_images=bool(cids) or 'multipart/related' in parsed.get('headers',{}).get('content-type','').lower() or any(item.get('type','').startswith('image/') or str(item.get('name','')).lower().endswith(('.png','.jpg','.jpeg','.gif','.webp','.bmp')) for item in attachments)
         images=message_images(self.app.service.store.get(identity,raw=True)['raw']) if has_images else []

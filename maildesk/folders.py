@@ -1,4 +1,5 @@
 """IMAP mailbox discovery and mutation without executing foreign application code."""
+from .i18n import text as _tr
 import base64
 import re
 
@@ -24,7 +25,7 @@ def decode_mailbox(value):
         try:
             return base64.b64decode(encoded.replace(',','/')+'='*((-len(encoded))%4),validate=True).decode('utf-16be')
         except (ValueError,UnicodeError):
-            raise ValueError('服务器返回无效文件夹编码') from None
+            raise ValueError(_tr('服务器返回无效文件夹编码')) from None
     return re.sub(r'&([^-]*)-',segment,text)
 
 # ==========================================
@@ -37,7 +38,7 @@ def parse_folder(row):
         return None
     match=re.fullmatch(rb'\(([^)]*)\)\s+(NIL|"(?:[^"\\]|\\.)*")\s+(.+)',header,re.I|re.S)
     if not match:
-        raise ValueError('服务器返回无效 LIST 行')
+        raise ValueError(_tr('服务器返回无效 LIST 行'))
     # ==========================================
     # Function: Unescape an IMAP quoted string.
     # Method: Remove only protocol escape prefixes, preserving mailbox bytes.
@@ -64,7 +65,7 @@ def discover(client, account, counts=True, should_yield=None):
     from .transport import checked
     from .sync_batches import checkpoint
     checkpoint(should_yield)
-    raw=checked(client.list('""','"*"'),'获取文件夹')
+    raw=checked(client.list('""','"*"'),_tr('获取文件夹'))
     result=[item for row in raw if row and (item:=parse_folder(row))]
     if not result:
         result=[{'name':path,'delimiter':'/','flags':[],'special':SPECIAL_NAMES.get(path.casefold(),''),'selectable':True,'subscribed':True} for path in account.folders]
@@ -96,7 +97,7 @@ def discover(client, account, counts=True, should_yield=None):
 # ==========================================
 def valid_path(path):
     if not isinstance(path,str) or not path.strip() or len(path)>1000 or path.startswith('@') or any(ord(c)<32 or ord(c)==127 for c in path):
-        raise ValueError('文件夹名称为空、过长或包含控制字符')
+        raise ValueError(_tr('文件夹名称为空、过长或包含控制字符'))
     return path.strip()
 
 # ==========================================
@@ -107,22 +108,22 @@ def mutate_folder(account, operation, path, target=''):
     from .transport import imap_connection,mailbox_name,checked
     path=valid_path(path)
     if operation not in ('create','rename','delete','subscribe','unsubscribe'):
-        raise ValueError('未知文件夹操作')
+        raise ValueError(_tr('未知文件夹操作'))
     if operation in ('delete','rename') and path.upper()=='INBOX':
-        raise ValueError('不能删除或重命名收件箱')
+        raise ValueError(_tr('不能删除或重命名收件箱'))
     if operation=='delete':
         with imap_connection(account) as client:
-            checked(client.select(mailbox_name(path),readonly=True),'检查文件夹')
-            snapshot=checked(client.uid('SEARCH',None,'ALL'),'检查剩余邮件')
+            checked(client.select(mailbox_name(path),readonly=True),_tr('检查文件夹'))
+            snapshot=checked(client.uid('SEARCH',None,'ALL'),_tr('检查剩余邮件'))
             if any(row and row.strip() for row in snapshot):
-                raise ValueError('服务器文件夹仍有邮件，请先移出全部邮件')
+                raise ValueError(_tr('服务器文件夹仍有邮件，请先移出全部邮件'))
         # Reconnect in authenticated state; neither CLOSE nor optional UNSELECT is required.
     with imap_connection(account) as client:
         method=getattr(client,operation)
         args=[mailbox_name(path)]
         if operation=='rename':
             args.append(mailbox_name(valid_path(target)))
-        checked(method(*args),'修改文件夹')
+        checked(method(*args),_tr('修改文件夹'))
         if operation=='create':
             client.subscribe(mailbox_name(path))
         return discover(client,account,counts=False)
@@ -134,10 +135,10 @@ def mutate_folder(account, operation, path, target=''):
 def select_message(client, message):
     from .transport import checked,mailbox_name,uid_validity
     if message['remote_gone'] or not str(message['uid']).isdigit():
-        raise ValueError('邮件已不在原文件夹，请先同步')
-    checked(client.select(mailbox_name(message['folder']),readonly=False),'选择文件夹')
+        raise ValueError(_tr('邮件已不在原文件夹，请先同步'))
+    checked(client.select(mailbox_name(message['folder']),readonly=False),_tr('选择文件夹'))
     if uid_validity(client)!=message['validity']:
-        raise ValueError('邮箱 UID 世代已变化，请先同步后重试')
+        raise ValueError(_tr('邮箱 UID 世代已变化，请先同步后重试'))
 
 # ==========================================
 # Function: Copy or safely move one UID to a destination mailbox.
@@ -147,7 +148,7 @@ def transfer(account, message, destination, copy=False):
     from .transport import imap_connection
     destination=valid_path(destination)
     if destination==message['folder']:
-        raise ValueError('邮件已经在此文件夹中')
+        raise ValueError(_tr('邮件已经在此文件夹中'))
     with imap_connection(account) as client:
         select_message(client,message)
         return transfer_selected(client,message,destination,copy)
@@ -159,17 +160,17 @@ def transfer(account, message, destination, copy=False):
 def transfer_selected(client,message,destination,copy=False):
     from .transport import mailbox_name,checked
     destination=valid_path(destination)
-    if destination==message['folder']:raise ValueError('邮件已经在此文件夹中')
+    if destination==message['folder']:raise ValueError(_tr('邮件已经在此文件夹中'))
     capabilities={v.decode().upper() if isinstance(v,bytes) else v.upper() for v in client.capabilities}
     if not copy and 'MOVE' not in capabilities and 'UIDPLUS' not in capabilities:
-        raise ValueError('服务器不支持 MOVE 或 UIDPLUS；可使用“复制到”，原邮件会保留')
+        raise ValueError(_tr('服务器不支持 MOVE 或 UIDPLUS；可使用“复制到”，原邮件会保留'))
     if not copy and 'MOVE' in capabilities:
-        checked(client.uid('MOVE',message['uid'],mailbox_name(destination)),'移动邮件')
+        checked(client.uid('MOVE',message['uid'],mailbox_name(destination)),_tr('移动邮件'))
     else:
-        checked(client.uid('COPY',message['uid'],mailbox_name(destination)),'复制邮件')
+        checked(client.uid('COPY',message['uid'],mailbox_name(destination)),_tr('复制邮件'))
         if not copy:
-            checked(client.uid('STORE',message['uid'],'+FLAGS.SILENT','(\\Deleted)'),'移除原邮件')
-            checked(client.uid('EXPUNGE',message['uid']),'完成移动')
+            checked(client.uid('STORE',message['uid'],'+FLAGS.SILENT','(\\Deleted)'),_tr('移除原邮件'))
+            checked(client.uid('EXPUNGE',message['uid']),_tr('完成移动'))
     code,data=client.response('COPYUID')
     if data and isinstance(data[0],bytes):
         match=re.fullmatch(rb'(\d+) (\d+) (\d+)',data[0])
@@ -186,31 +187,31 @@ def recover_transfer(account,source,destination,message,confirmed=False):
     from .transport import imap_connection,checked,mailbox_name,uid_validity
     from .mime import MAX_MESSAGE_BYTES
     with imap_connection(account) as client:
-        checked(client.select(mailbox_name(source['folder']),readonly=True),'核对移动来源')
-        if uid_validity(client)!=source['validity']:raise ValueError('移动来源的 UID 世代已变化，需要核对服务器')
-        rows=checked(client.uid('FETCH',source['uid'],'(UID)'),'核对来源 UID')
+        checked(client.select(mailbox_name(source['folder']),readonly=True),_tr('核对移动来源'))
+        if uid_validity(client)!=source['validity']:raise ValueError(_tr('移动来源的 UID 世代已变化，需要核对服务器'))
+        rows=checked(client.uid('FETCH',source['uid'],'(UID)'),_tr('核对来源 UID'))
         exists=any(re.search(rb'\bUID '+source['uid'].encode()+rb'\b',r[0] if isinstance(r,tuple) else r) for r in rows if isinstance(r,(bytes,tuple)))
-        checked(client.select(mailbox_name(destination),readonly=True),'核对移动目标')
+        checked(client.select(mailbox_name(destination),readonly=True),_tr('核对移动目标'))
         validity=uid_validity(client)
         mid=message['message_id']
-        if not mid or any(ord(c)<32 or ord(c)>126 for c in mid):raise ValueError('邮件标识不可用于安全恢复')
+        if not mid or any(ord(c)<32 or ord(c)>126 for c in mid):raise ValueError(_tr('邮件标识不可用于安全恢复'))
         quoted='"'+mid.replace('\\','\\\\').replace('"','\\"')+'"'
-        rows=checked(client.uid('SEARCH',None,'HEADER','Message-ID',quoted),'查找移动结果')
+        rows=checked(client.uid('SEARCH',None,'HEADER','Message-ID',quoted),_tr('查找移动结果'))
         candidates=b' '.join(r for r in rows if isinstance(r,bytes)).split()
-        if len(candidates)>32 or any(not uid.isdigit() for uid in candidates):raise ValueError('移动结果不唯一，需要核对服务器')
+        if len(candidates)>32 or any(not uid.isdigit() for uid in candidates):raise ValueError(_tr('移动结果不唯一，需要核对服务器'))
         digest=hashlib.sha256(message['raw']).digest();matches=[]
         for uid in candidates:
-            sizes=checked(client.uid('FETCH',uid.decode(),'(UID RFC822.SIZE)'),'核对移动内容大小')
+            sizes=checked(client.uid('FETCH',uid.decode(),'(UID RFC822.SIZE)'),_tr('核对移动内容大小'))
             size=next((int(m[1]) for r in sizes if isinstance(r,bytes) and (m:=re.search(rb'RFC822.SIZE (\d+)',r))),None)
             if size is None or size>MAX_MESSAGE_BYTES:continue
-            data=checked(client.uid('FETCH',uid.decode(),'(UID BODY.PEEK[])'),'核对移动内容')
+            data=checked(client.uid('FETCH',uid.decode(),'(UID BODY.PEEK[])'),_tr('核对移动内容'))
             for part in data:
                 if isinstance(part,tuple) and isinstance(part[1],bytes) and re.search(rb'\bUID '+uid+rb'\b',part[0]) and hashlib.sha256(part[1]).digest()==digest:
                     matches.append(uid.decode())
         if len(matches)==1 and (confirmed or not exists):return {'validity':validity,'uid':matches[0]}
         if not matches and exists and not confirmed:return None
         # COPY/STORE/EXPUNGE failures can leave two copies; never delete/re-copy on a guess.
-        raise ValueError('移动结果待确认；已保留本地更改，不会重复移动或删除邮件')
+        raise ValueError(_tr('移动结果待确认；已保留本地更改，不会重复移动或删除邮件'))
 
 # ==========================================
 # Function: Permanently delete only the explicitly selected message UID.
@@ -221,6 +222,6 @@ def delete_message(account, message):
     with imap_connection(account) as client:
         select_message(client,message)
         if b'UIDPLUS' not in client.capabilities and 'UIDPLUS' not in client.capabilities:
-            raise ValueError('服务器不支持定向删除 UIDPLUS，请使用移动到废纸篓')
-        checked(client.uid('STORE',message['uid'],'+FLAGS.SILENT','(\\Deleted)'),'标记删除')
-        checked(client.uid('EXPUNGE',message['uid']),'永久删除')
+            raise ValueError(_tr('服务器不支持定向删除 UIDPLUS，请使用移动到废纸篓'))
+        checked(client.uid('STORE',message['uid'],'+FLAGS.SILENT','(\\Deleted)'),_tr('标记删除'))
+        checked(client.uid('EXPUNGE',message['uid']),_tr('永久删除'))

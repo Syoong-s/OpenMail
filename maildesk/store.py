@@ -1,4 +1,5 @@
 """Transactional SQLite cache, persistent drafts/outbox, and sender corrections."""
+from .i18n import text as _tr
 from contextlib import contextmanager
 import hashlib
 import json
@@ -31,6 +32,7 @@ class Store(OrganizationStore):
         self.rules = rules
         self._preference_scope = threading.local()
         self._transaction_scope = threading.local()
+        self.activity_listeners=set();self.activity_revision=0;self._activity_lock=threading.Lock()
         with self.db() as db:
             db.executescript('''
                 PRAGMA journal_mode=WAL;
@@ -71,6 +73,9 @@ class Store(OrganizationStore):
             initialize_navigation(db)
             from .mail_mutations import initialize as initialize_mutations
             initialize_mutations(db)
+            from .activity_cache import initialize as initialize_activity
+            initialize_activity(db)
+            self.activity_revision=db.execute("SELECT value FROM navigation_revision WHERE topic='activity'").fetchone()[0]
             from .thread_graph import initialize_graph
             initialize_graph(db)
             from .filter_rules import initialize as initialize_filters
@@ -82,7 +87,7 @@ class Store(OrganizationStore):
 
     # ==========================================
     # Function: Scope a SQLite transaction to one operation.
-    # Method: Reuse an explicit bounded ingest transaction on its own thread; otherwise commit/rollback and close normally.
+    # Method: Reuse bounded ingest transactions; publish activity changes only after successful commits, never reads or rollbacks.
     # ==========================================
     @contextmanager
     def db(self):
@@ -95,6 +100,12 @@ class Store(OrganizationStore):
         try:
             with connection:
                 yield connection
+            if connection.total_changes and self.activity_listeners:
+                revision=connection.execute("SELECT value FROM navigation_revision WHERE topic='activity'").fetchone()[0]
+                with self._activity_lock:
+                    listeners=tuple(self.activity_listeners) if revision>self.activity_revision else ()
+                    self.activity_revision=max(revision,self.activity_revision)
+                for callback in listeners:callback(revision)
         finally:
             connection.close()
 
@@ -158,7 +169,7 @@ class Store(OrganizationStore):
     def ingest_many(self,account,folder,validity,sources):
         prepared=[(source,parse_message(source['raw'])) for source in sources]
         with self.db() as db:
-            if getattr(self._transaction_scope,'connection',None) is not None:raise RuntimeError('不能嵌套邮件导入批次')
+            if getattr(self._transaction_scope,'connection',None) is not None:raise RuntimeError(_tr('不能嵌套邮件导入批次'))
             self._transaction_scope.connection=db
             try:
                 return [self.ingest(account,folder,validity,source['uid'],source['raw'],source.get('seen',False),_parsed=parsed,_received_at=source.get('received_at')) for source,parsed in prepared]
@@ -310,7 +321,7 @@ class Store(OrganizationStore):
         columns='*' if raw else self._message_columns
         with self.db() as db:
             row=db.execute('SELECT '+columns+', '+EFFECTIVE_PRIORITY_SQL+" AS effective_priority,(SELECT special FROM folders f WHERE f.account=messages.account AND f.folder=messages.folder) AS folder_special FROM messages WHERE id=?",(identity,)).fetchone()
-            if row is None:raise KeyError('邮件不存在')
+            if row is None:raise KeyError(_tr('邮件不存在'))
             result=dict(row);result['labels']=[]
             domain='@'+result['sender'].rsplit('@',1)[-1]
             rows=db.execute('SELECT label,NULL AS policy FROM message_labels WHERE message=? '
@@ -338,7 +349,7 @@ class Store(OrganizationStore):
                 (m.done=1 OR m.archived=1 OR coalesce(f.special,'')='archive') AS done,
                 (m.archived=1 OR coalesce(f.special,'')='archive') AS archived
                 FROM messages m LEFT JOIN folders f ON f.account=m.account AND f.folder=m.folder WHERE m.id=?''',(identity,)).fetchone()
-        if row is None:raise KeyError('邮件不存在')
+        if row is None:raise KeyError(_tr('邮件不存在'))
         return dict(row)
 
     # ==========================================
@@ -357,19 +368,19 @@ class Store(OrganizationStore):
     # ==========================================
     def update(self, identity, changes):
         if not changes or set(changes) - {'seen', 'pinned', 'priority', 'archived', 'category', 'learn_sender'}:
-            raise ValueError('无效邮件操作')
+            raise ValueError(_tr('无效邮件操作'))
         message = self.get(identity)
         with self.db() as db:
             for flag in ('seen', 'pinned', 'priority', 'archived'):
                 if flag in changes:
                     if not isinstance(changes[flag], bool):
-                        raise ValueError('状态值必须为布尔值')
+                        raise ValueError(_tr('状态值必须为布尔值'))
                     db.execute(f'UPDATE messages SET {flag}=? WHERE id=?', (int(changes[flag]), identity))
                     if flag=='seen':db.execute('DELETE FROM pending_read_flags WHERE message=?',(identity,))
             if 'category' in changes:
                 category = changes['category']
                 if category not in CATEGORIES:
-                    raise ValueError('分类无效')
+                    raise ValueError(_tr('分类无效'))
                 db.execute("UPDATE messages SET category=?,override=?,reason='你手动设置的分类' WHERE id=?", (category, category, identity))
                 if changes.get('learn_sender'):
                     db.execute('INSERT INTO sender_rules VALUES(?,?,?) ON CONFLICT(account,sender) DO UPDATE SET category=excluded.category', (message['account'], message['sender'], category))
@@ -398,7 +409,7 @@ class Store(OrganizationStore):
         with self.db() as db:
             row = db.execute('SELECT state FROM jobs WHERE id=?', (identity,)).fetchone()
             if row and row['state'] != 'draft':
-                raise ValueError('该邮件已进入发送队列，不能覆盖')
+                raise ValueError(_tr('该邮件已进入发送队列，不能覆盖'))
             db.execute('INSERT INTO jobs(id,account,draft,state,due,created) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET account=excluded.account,draft=excluded.draft', (identity, account, json.dumps(draft, ensure_ascii=False), 'draft', 0, time.time()))
         return identity
 
@@ -410,7 +421,7 @@ class Store(OrganizationStore):
         with self.db() as db:
             cursor = db.execute("UPDATE jobs SET raw=?,envelope=?,message_id=?,due=?,state='queued',error='' WHERE id=? AND state='draft'", (raw, json.dumps(envelope), message_id, due, identity))
             if cursor.rowcount != 1:
-                raise ValueError('草稿不存在或已经排队')
+                raise ValueError(_tr('草稿不存在或已经排队'))
 
     # ==========================================
     # Function: Claim one due delivery without double sending.
@@ -523,7 +534,7 @@ class Store(OrganizationStore):
         with self.db() as db:
             row = db.execute('SELECT id,account,draft,state,due,error,copy_status,created,(SELECT count(*) FROM read_receipts r WHERE r.job=jobs.id) AS receipts FROM jobs WHERE id=?', (identity,)).fetchone()
         if row is None:
-            raise KeyError('草稿或发件任务不存在')
+            raise KeyError(_tr('草稿或发件任务不存在'))
         return {**dict(row), 'draft': json.loads(row['draft'])}
 
     # ==========================================
@@ -532,16 +543,16 @@ class Store(OrganizationStore):
     # ==========================================
     def reschedule(self, identity, due):
         if not isinstance(due,(int,float)) or not time.time()-2<=due<=time.time()+366*86400:
-            raise ValueError('发送时间无效')
+            raise ValueError(_tr('发送时间无效'))
         with self.db() as db:
             row=db.execute("SELECT draft FROM jobs WHERE id=? AND state='queued'",(identity,)).fetchone()
-            if not row:raise ValueError('只能修改尚未开始投递的计划')
+            if not row:raise ValueError(_tr('只能修改尚未开始投递的计划'))
             draft=json.loads(row['draft'])
-            if draft.get('remind_at') and due>=draft['remind_at']:raise ValueError('发送时间不能晚于未回复提醒；请取消计划后调整提醒')
+            if draft.get('remind_at') and due>=draft['remind_at']:raise ValueError(_tr('发送时间不能晚于未回复提醒；请取消计划后调整提醒'))
             from datetime import datetime
             draft['scheduled_at']=datetime.fromtimestamp(due).isoformat(timespec='minutes') if due>time.time()+1 else ''
             cursor=db.execute("UPDATE jobs SET due=?,draft=? WHERE id=? AND state='queued'",(due,json.dumps(draft,ensure_ascii=False),identity))
-            if cursor.rowcount!=1:raise ValueError('只能修改尚未开始投递的计划')
+            if cursor.rowcount!=1:raise ValueError(_tr('只能修改尚未开始投递的计划'))
 
     # ==========================================
     # Function: Cancel a queued delivery before it is claimed.
@@ -551,4 +562,4 @@ class Store(OrganizationStore):
         with self.db() as db:
             cursor = db.execute("UPDATE jobs SET state='draft',raw=NULL,envelope=NULL WHERE id=? AND state='queued'", (identity,))
             if cursor.rowcount != 1:
-                raise ValueError('只能撤回尚未开始发送的排队邮件')
+                raise ValueError(_tr('只能撤回尚未开始发送的排队邮件'))

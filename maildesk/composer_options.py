@@ -1,4 +1,5 @@
 """Independent local composer policies shared by native UI and delivery service."""
+from .i18n import text as _tr, join_text as _join_ui
 from email.utils import getaddresses
 from email.headerregistry import Address
 import re
@@ -8,11 +9,11 @@ import re
 # Method: Parse complete comma/semicolon separated lists and reject invalid mailbox syntax.
 # ==========================================
 def validated_addresses(value):
-    if not isinstance(value,str) or any(c in value for c in '\r\n'):raise ValueError('邮件地址无效')
+    if not isinstance(value,str) or any(c in value for c in '\r\n'):raise ValueError(_tr('邮件地址无效'))
     if not value.strip():return []
     parsed=getaddresses([value.replace(';',',')])
     if not parsed or any(not re.fullmatch(r'[^\s@<>;,]+@[^\s@<>;,]+\.[^\s@<>;,]+',address) for _,address in parsed):
-        raise ValueError('请输入有效的邮箱地址，多个地址用逗号分隔')
+        raise ValueError(_tr('请输入有效的邮箱地址，多个地址用逗号分隔'))
     return list(dict.fromkeys(address.casefold() for _,address in parsed))
 
 # ==========================================
@@ -20,16 +21,16 @@ def validated_addresses(value):
 # Method: Parse display names once and reject lists, malformed domains and header controls.
 # ==========================================
 def rule_sender(value):
-    if not isinstance(value,str) or any(c in value for c in '\r\n'):raise ValueError('请输入有效的邮箱或 @域名')
+    if not isinstance(value,str) or any(c in value for c in '\r\n'):raise ValueError(_tr('请输入有效的邮箱或 @域名'))
     value=value.strip().casefold()
     if value.startswith('@'):
         try:domain=value[1:].encode('idna').decode('ascii')
-        except UnicodeError:raise ValueError('请输入有效的 @域名') from None
+        except UnicodeError:raise ValueError(_tr('请输入有效的 @域名')) from None
         label=r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?'
-        if not re.fullmatch(label+r'(?:\.'+label+r')+',domain) or len(domain)>253:raise ValueError('请输入有效的 @域名')
+        if not re.fullmatch(label+r'(?:\.'+label+r')+',domain) or len(domain)>253:raise ValueError(_tr('请输入有效的 @域名'))
         return value
     addresses=validated_addresses(value)
-    if len(addresses)!=1:raise ValueError('请输入一个发件邮箱或 @域名')
+    if len(addresses)!=1:raise ValueError(_tr('请输入一个发件邮箱或 @域名'))
     return addresses[0]
 
 # ==========================================
@@ -56,11 +57,11 @@ def outgoing_options(store, account, draft):
     result=dict(draft);copy=store.preference('auto_copy',{}).get(account.id,{})
     if copy.get('enabled'):
         mode=copy.get('mode','bcc')
-        if mode not in ('cc','bcc'):raise ValueError('自动抄送设置无效')
+        if mode not in ('cc','bcc'):raise ValueError(_tr('自动抄送设置无效'))
         configured=validated_addresses(copy.get('addresses',''))
         existing={address for field in ('to','cc','bcc') for _,address in getaddresses([result.get(field,'')])}
         extra=[address for address in configured if address not in {a.casefold() for a in existing}]
-        if extra:result[mode]=', '.join(filter(None,[result.get(mode,''),', '.join(extra)]))
+        if extra:result[mode]=_join_ui(', ',(filter(None,[result.get(mode,''),', '.join(extra)])))
     result['request_receipt']=bool(draft.get('request_receipt',store.preference('request_receipt',False)))
     if store.preference('composer_tagline',False):
         result['body']=result.get('body','')+'\n\nSent with TeleMail'
@@ -94,7 +95,7 @@ def recipient_suggestions(store):
     names=dict(suggestions(store))
     result=[]
     for address,name in list(names.items())[:300]:
-        try:text=str(Address(display_name=' '.join(str(name).split()),addr_spec=address))
+        try:text=str(Address(display_name=_join_ui(' ',(str(name).split())),addr_spec=address))
         except ValueError:continue
         result.append((address,text))
     return result
