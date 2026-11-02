@@ -116,9 +116,9 @@ class ImageError(C.Structure):
 
 # ==========================================
 # Function: Render the application icon using the build host's SVG loader.
-# Method: Decode and encode through GdkPixbuf, preserving GError details and loader setup guidance.
+# Method: Decode SVG directly at the requested size through GdkPixbuf, preserving GError details and loader setup guidance.
 # ==========================================
-def render_icon(source, destination):
+def render_icon(source, destination, size=128):
     source, destination = Path(source), Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     pixbuf = C.CDLL('libgdk_pixbuf-2.0.so.0')
@@ -147,7 +147,7 @@ def render_icon(source, destination):
         return RuntimeError(f'Cannot {operation} application icon {source}: {detail}.{hint}')
 
     error = C.c_void_p()
-    image = pixbuf.gdk_pixbuf_new_from_file_at_scale(str(source).encode(), 128, 128, 1, C.byref(error))
+    image = pixbuf.gdk_pixbuf_new_from_file_at_scale(str(source).encode(), size, size, 1, C.byref(error))
     if not image:
         raise failure('render', error)
     try:
@@ -159,15 +159,28 @@ def render_icon(source, destination):
     return destination
 
 # ==========================================
-# Function: Embed the existing application icon and standard DPI/compatibility manifest.
-# Method: Render the repository SVG with native diagnostics, then compile a native PE resource.
+# Function: Build a Windows icon covering common taskbar, shortcut and high-DPI sizes.
+# Method: Render each PNG independently from the vector and encode a standard ICO directory with exact payload offsets.
+# ==========================================
+def render_ico(source,destination):
+    destination=Path(destination);frames=[]
+    for size in (16,20,24,32,40,48,64,128,256):
+        png=render_icon(source,destination.with_name(destination.stem+'-'+str(size)+'.png'),size)
+        frames.append((size,png.read_bytes()))
+    offset=6+16*len(frames);entries=[]
+    for size,data in frames:
+        dimension=size if size<256 else 0
+        entries.append(struct.pack('<BBBBHHII',dimension,dimension,0,0,1,32,len(data),offset));offset+=len(data)
+    destination.write_bytes(struct.pack('<HHH',0,1,len(frames))+b''.join(entries)+b''.join(data for size,data in frames))
+    return destination
+
+# ==========================================
+# Function: Embed the application icon and standard DPI/compatibility manifest.
+# Method: Compile all vector-rendered icon sizes into the launcher and Python host PE resources.
 # ==========================================
 def compile_resources():
     sysroot = ROOT / '.runtime/build-windows'
-    render_icon(ROOT / 'maildesk/desktop_assets/icon.svg', sysroot / 'icon.png')
-    png = (sysroot / 'icon.png').read_bytes()
-    (sysroot / 'maildesk.ico').write_bytes(struct.pack('<HHH', 0, 1, 1) +
-        struct.pack('<BBBBHHII', 128, 128, 0, 0, 1, 32, len(png), 22) + png)
+    render_ico(ROOT / 'maildesk/desktop_assets/icon.svg', sysroot / 'maildesk.ico')
     resource = sysroot / 'app.rc'
     resource.write_text('1 ICON "' + str(sysroot / 'maildesk.ico') + '"\n' +
                         '1 24 "' + str(ROOT / 'packaging/windows.manifest') + '"\n')
@@ -262,6 +275,7 @@ def main():
     args = parser.parse_args()
     if args.check_icon:
         icon = render_icon(ROOT / 'maildesk/desktop_assets/icon.svg', ROOT / '.runtime/build-windows/icon.png')
+        render_ico(ROOT / 'maildesk/desktop_assets/icon.svg', ROOT / '.runtime/build-windows/maildesk.ico')
         print('Host SVG/PNG icon rendering verified: ' + str(icon))
         return
     bundle = args.output.resolve()

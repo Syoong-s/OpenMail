@@ -117,7 +117,9 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         from .windows_frame import bind_window_frame
         bind_window_frame(self,self.window)
         self.g.gtk_window_set_title(self.window,b'TeleMail')
-        self.g.gtk_window_set_icon_from_file(self.window, str(ASSETS / 'icon.svg').encode(), None)
+        self.g.window_icon(self.window,ASSETS/'icon.svg')
+        self.brand_image=self.g.image_file(ASSETS/'brand-on-dark.svg',28)
+        self.g.gtk_box_pack_start(self.widget('brand'),self.brand_image,0,0,0)
         self.g.css(ASSETS / 'style.css')
         self.bind_actions()
         from .richtext import NativeRichText

@@ -3,7 +3,7 @@
   <h1>TeleMail</h1>
   <p>本地优先的桌面邮件客户端，支持 Windows 与 Linux。</p>
   <p><a href="README.md">English</a> · <strong>简体中文</strong></p>
-  <p><a href="https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0">下载 0.57.0</a> · <a href="#开始使用">开始使用</a> · <a href="docs/BUILDING.md">从源码构建</a></p>
+  <p><a href="https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.1">下载 0.57.1</a> · <a href="#开始使用">开始使用</a> · <a href="docs/BUILDING.md">从源码构建</a></p>
 </div>
 
 ![TeleMail 中文界面：聚焦收件箱与每日邮件活动](docs/screenshots/main-zh_CN.png)
@@ -27,13 +27,13 @@ TeleMail 将多个邮箱、聚焦收件箱和联系人对话整合到同一个�
 
 ## 开始使用
 
-从 [GitHub Releases](https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0) 下载对应平台的发行包。
+从 [GitHub Releases](https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.1) 下载对应平台的发行包。
 
 | 平台 | 发行包 | 启动方式 |
 | --- | --- | --- |
-| **Windows 11 · x64** | `telemail-0.57.0-windows-amd64.zip` | 完整解压后，打开 `TeleMail-Windows-amd64/TeleMail.exe`。 |
-| **Debian / Ubuntu · amd64** | `telemail-desktop_0.57.0_amd64.deb` | 执行 `sudo apt install ./telemail-desktop_0.57.0_amd64.deb`，随后从应用菜单启动，或运行 `telemail`。 |
-| **Linux 可移动包 · x86-64** | `telemail-0.57.0-linux-amd64.tar.gz` | 解压后运行 `TeleMail-Linux-amd64/TeleMail`；使用 `--install-user` 注册应用菜单入口。 |
+| **Windows 11 · x64** | `telemail-0.57.1-windows-amd64.zip` | 完整解压后，打开 `TeleMail-Windows-amd64/TeleMail.exe`。 |
+| **Debian / Ubuntu · amd64** | `telemail-desktop_0.57.1_amd64.deb` | 执行 `sudo apt install ./telemail-desktop_0.57.1_amd64.deb`，随后从应用菜单启动，或运行 `telemail`。 |
+| **Linux 可移动包 · x86-64** | `telemail-0.57.1-linux-amd64.tar.gz` | 解压后运行 `TeleMail-Linux-amd64/TeleMail`；使用 `--install-user` 注册应用菜单入口。 |
 
 ### 运行依赖
 

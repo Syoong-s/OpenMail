@@ -13,7 +13,6 @@ button.suggested-action:hover { background: #647bc6; }
 #rail button { border: 0; background: transparent; color: #94989f; padding: 10px 5px; font-size: 21px; border-radius: 8px; min-width: 28px; }
 #rail button:hover { background: #26292d; color: #e0e3e7; }
 #rail .rail-active { background: #343842; color: #bcc9f8; }
-.brand { color: #b2c1f4; font-size: 25px; padding: 0 0 12px; }
 .avatar { background: #51492c; border-radius: 16px; min-width: 32px; min-height: 32px; color: #d9c98f; }
 #sidebar { background: #202226; padding: 12px; }
 .workspace-title { font-size: 17px; font-weight: bold; padding: 4px 7px; }
@@ -84,7 +83,7 @@ list row.collapsed-row { padding: 0; min-height: 0; border: 0; }
 #rail { padding: 9px 6px; }
 #rail button { padding: 6px 5px; min-width: 22px; font-size: 16px; border-radius: 7px; }
 #rail button image { min-width: 16px; min-height: 16px; }
-.brand { font-size: 21px; padding: 0 0 7px; }
+.brand { background: transparent; border: 0; box-shadow: none; padding: 0 0 7px; }
 .avatar { min-width: 26px; min-height: 26px; border-radius: 13px; font-size: 11px; }
 list row { padding: 4px 15px; }
 .mail-avatar { min-width: 26px; min-height: 26px; border-radius: 15px; font-size: 12px; }

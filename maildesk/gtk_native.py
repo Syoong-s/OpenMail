@@ -44,6 +44,8 @@ class GtkNative:
                 'gtk_window_set_default_size': (None, P, I, I), 'gtk_window_set_transient_for': (None, P, P),
                 'gtk_window_maximize': (None,P), 'gtk_window_unmaximize': (None,P), 'gtk_window_is_maximized': (I,P),
                 'gtk_window_set_icon_from_file': (I, P, S, P),
+                'gtk_window_set_icon_list': (None,P,P),
+                'gtk_image_set_from_pixbuf': (None,P,P),
                 'gtk_builder_new': (P,), 'gtk_builder_add_from_string': (U, P, S, C.c_size_t, P),
                 'gtk_builder_get_object': (P, P, S), 'gtk_widget_show_all': (None, P), 'gtk_widget_show':(None,P), 'gtk_widget_reparent':(None,P,P), 'gtk_widget_get_parent':(P,P),
                 'gtk_stack_get_transition_running': (I,P), 'gtk_stack_set_visible_child_name': (None,P,S), 'gtk_stack_get_visible_child_name': (S,P), 'gtk_entry_set_width_chars': (None,P,I),'gtk_entry_set_max_length':(None,P,I),'gtk_entry_set_alignment':(None,P,C.c_float),'gtk_entry_set_input_purpose':(None,P,I),
@@ -131,7 +133,7 @@ class GtkNative:
             },
             'gio': {'g_notification_new': (P,S), 'g_notification_set_body': (None,P,S), 'g_application_send_notification': (None,P,S,P), 'g_simple_action_new': (P, S, P), 'g_action_map_add_action': (None, P, P), 'g_application_run': (I, P, I, P), 'g_application_hold':(None,P), 'g_application_release':(None,P), 'g_application_quit': (None, P)},
             'glib': {'g_main_loop_new':(P,P,I), 'g_main_loop_run':(None,P), 'g_main_loop_quit':(None,P), 'g_main_loop_unref':(None,P), 'g_set_prgname': (None, S), 'g_set_application_name': (None, S), 'g_idle_add':(U,P,P), 'g_timeout_add': (U, U, P, P), 'g_source_remove': (I, U),
-                     'g_free': (None, P), 'g_list_free': (None, P), 'g_error_free': (None, P)},
+                     'g_free': (None, P), 'g_list_free': (None, P), 'g_list_append': (P,P,P), 'g_error_free': (None, P)},
             'gdk': {'gdk_event_get_root_coords':(I,P,C.POINTER(C.c_double),C.POINTER(C.c_double)), 'gdk_event_get_time':(U,P), 'gdk_screen_get_default': (P,), 'gdk_event_get_button':(I,P,C.POINTER(U)), 'gdk_event_get_keyval': (I,P,C.POINTER(U)), 'gdk_event_get_state': (I,P,C.POINTER(U)), 'gdk_atom_intern_static_string': (P,S), 'gdk_pixbuf_get_from_window': (P, P, I, I, I, I)},
             'pixbuf': {'gdk_pixbuf_new_from_file_at_scale': (P,S,I,I,I,P), 'gdk_pixbuf_savev': (I, P, S, S, P, P, P)},
         }
@@ -360,10 +362,10 @@ class GtkNative:
         return provider
 
     # ==========================================
-    # Function: Scale a bundled icon to the compact navigation rail size.
-    # Method: Cache immutable decoded pixels while creating an independent GtkImage for each parent.
+    # Function: Decode a bundled vector at the exact requested display size.
+    # Method: Cache owned immutable pixels shared by native window icons and GtkImage widgets.
     # ==========================================
-    def image_file(self,path,size):
+    def icon_pixels(self,path,size):
         cache=getattr(self,'icon_pixbufs',None)
         if cache is None:cache={};self.icon_pixbufs=cache
         key=(str(path),size)
@@ -371,7 +373,25 @@ class GtkNative:
             pixbuf=self.gdk_pixbuf_new_from_file_at_scale(str(path).encode(),size,size,1,None)
             if not pixbuf:raise ValueError(_tr('无法读取应用图标'))
             cache[key]=pixbuf
-        return self.gtk_image_new_from_pixbuf(cache[key])
+        return cache[key]
+
+    # ==========================================
+    # Function: Create an independent image widget from a cached vector rendering.
+    # Method: Let each GtkImage retain its own reference to the shared pixel buffer.
+    # ==========================================
+    def image_file(self,path,size):return self.gtk_image_new_from_pixbuf(self.icon_pixels(path,size))
+
+    # ==========================================
+    # Function: Supply crisp application icons for native taskbars and window switchers.
+    # Method: Render common desktop sizes directly from SVG and pass a temporary GList to GTK, which retains the pixels.
+    # ==========================================
+    def window_icon(self,window,path):
+        icons=None
+        try:
+            for size in (16,20,24,32,40,48,64,128,256):icons=self.g_list_append(icons,self.icon_pixels(path,size))
+            self.gtk_window_set_icon_list(window,icons)
+        finally:
+            if icons:self.g_list_free(icons)
 
     # ==========================================
     # Function: Release application-owned icon pixel references at shutdown.

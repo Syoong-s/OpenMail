@@ -45,6 +45,25 @@ class BuildIconTests(unittest.TestCase):
             self.assertGreater(len(data), 500)
 
     # ==========================================
+    # Function: Verify that the Windows resource contains valid, independently rendered size variants.
+    # Method: Parse the ICO directory, check non-overlapping complete payload coverage and inspect each PNG's actual dimensions.
+    # ==========================================
+    def test_multisize_ico_directory_and_png_payloads(self):
+        from tools.build_windows import render_ico
+        with tempfile.TemporaryDirectory(prefix='telemail-ico-') as folder:
+            data=render_ico(ROOT/'maildesk/desktop_assets/icon.svg',Path(folder)/'application.ico').read_bytes()
+            reserved,kind,count=struct.unpack_from('<HHH',data)
+            self.assertEqual((reserved,kind,count),(0,1,9));expected_offset=6+16*count;dimensions=[]
+            for index in range(count):
+                width,height,colors,reserved,planes,bits,length,offset=struct.unpack_from('<BBBBHHII',data,6+index*16)
+                width,height=width or 256,height or 256;dimensions.append(width)
+                self.assertEqual((colors,reserved,planes,bits),(0,0,1,32));self.assertEqual(offset,expected_offset)
+                payload=data[offset:offset+length];self.assertEqual(len(payload),length)
+                self.assertEqual(payload[:8],b'\x89PNG\r\n\x1a\n');self.assertEqual(struct.unpack_from('>II',payload,16),(width,height))
+                expected_offset+=length
+            self.assertEqual(dimensions,[16,20,24,32,40,48,64,128,256]);self.assertEqual(expected_offset,len(data))
+
+    # ==========================================
     # Function: Preserve the concrete native error when the input cannot be decoded.
     # Method: Submit malformed SVG and require both filename and decoder setup guidance.
     # ==========================================

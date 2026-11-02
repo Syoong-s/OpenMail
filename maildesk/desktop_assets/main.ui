@@ -307,10 +307,10 @@
                     <property name="width-request">40</property>
                     <property name="spacing">9</property>
                     <child>
-                      <object class="GtkLabel" id="brand">
+                      <object class="GtkBox" id="brand">
                         <property name="name">brand</property>
-                        <property name="label">✦</property>
-                        <property name="xalign">0.5</property>
+                        <property name="halign">center</property>
+                        <property name="tooltip-text">TeleMail</property>
                         <style>
                           <class name="brand" />
                         </style>

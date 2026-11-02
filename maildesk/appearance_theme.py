@@ -215,7 +215,7 @@ def borderless_stylesheet(accent='#b6c5ff',text='#f1f1f1'):
 
 # ==========================================
 # Function: Reuse one theme provider and apply an explicitly staged or saved appearance.
-# Method: Reuse palette and font providers, preserve live drag drawing and keep Cancel rollback possible.
+# Method: Reuse palette/font providers and transparent brand variants, preserve live drag drawing and keep Cancel rollback possible.
 # ==========================================
 def apply(app,values=None):
     g=app.g;values=values or preferences(app.service.store);old=getattr(app,'palette_provider',None)
@@ -230,6 +230,11 @@ def apply(app,values=None):
         if not old:g.gtk_style_context_add_provider_for_screen(g.gdk_screen_get_default(),provider,650)
         app.palette_css_source=source
     app.palette_provider=provider;app.message_style_values=bubble_colors(values);colors=effective_palette(values)
+    if getattr(app,'brand_image',None):
+        from pathlib import Path
+        panel=blend(colors['canvas'],colors['panel'],percent(values['panel_opacity'])/100)
+        mark='brand-on-dark.svg' if sum(int(panel[index:index+2],16) for index in (1,3,5))<384 else 'brand-on-light.svg'
+        g.gtk_image_set_from_pixbuf(app.brand_image,g.icon_pixels(Path(__file__).parent/'desktop_assets'/mark,28))
     global_signature=(colors['surface'],colors['text'],colors['border'])
     message_signature=tuple(app.message_style_values.values())
     global_changed=getattr(app,'reader_palette_signature',None)!=global_signature

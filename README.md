@@ -3,7 +3,7 @@
   <h1>TeleMail</h1>
   <p>A local-first desktop email client for Windows and Linux.</p>
   <p><strong>English</strong> · <a href="README-CN.md">简体中文</a></p>
-  <p><a href="https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0">Download 0.57.0</a> · <a href="#get-started">Get started</a> · <a href="docs/BUILDING.md">Build from source</a></p>
+  <p><a href="https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.1">Download 0.57.1</a> · <a href="#get-started">Get started</a> · <a href="docs/BUILDING.md">Build from source</a></p>
 </div>
 
 ![TeleMail in English — focused inbox and daily mail activity](docs/screenshots/main-en.png)
@@ -27,13 +27,13 @@ TeleMail brings multiple accounts, a focused inbox and contact conversations int
 
 ## Get started
 
-Download a package from [GitHub Releases](https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.0).
+Download a package from [GitHub Releases](https://github.com/Syoong-s/OpenMail/releases/tag/v0.57.1).
 
 | Platform | Package | Launch |
 | --- | --- | --- |
-| **Windows 11 · x64** | `telemail-0.57.0-windows-amd64.zip` | Extract the complete archive, then open `TeleMail-Windows-amd64/TeleMail.exe`. |
-| **Debian / Ubuntu · amd64** | `telemail-desktop_0.57.0_amd64.deb` | Install with `sudo apt install ./telemail-desktop_0.57.0_amd64.deb`, then launch TeleMail from the app menu or run `telemail`. |
-| **Linux portable · x86-64** | `telemail-0.57.0-linux-amd64.tar.gz` | Extract, then run `TeleMail-Linux-amd64/TeleMail`. Use `--install-user` to register an app-menu shortcut. |
+| **Windows 11 · x64** | `telemail-0.57.1-windows-amd64.zip` | Extract the complete archive, then open `TeleMail-Windows-amd64/TeleMail.exe`. |
+| **Debian / Ubuntu · amd64** | `telemail-desktop_0.57.1_amd64.deb` | Install with `sudo apt install ./telemail-desktop_0.57.1_amd64.deb`, then launch TeleMail from the app menu or run `telemail`. |
+| **Linux portable · x86-64** | `telemail-0.57.1-linux-amd64.tar.gz` | Extract, then run `TeleMail-Linux-amd64/TeleMail`. Use `--install-user` to register an app-menu shortcut. |
 
 ### Runtime requirements
 

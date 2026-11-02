@@ -41,7 +41,7 @@ class StorageProgress:
         self.window=g.gtk_window_new(0);self.group='storage-progress-'+str(self.window)
         g.gtk_window_set_title(self.window,_tr('TeleMail · 储存空间').encode());g.gtk_window_set_default_size(self.window,580,240)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.window),b'dark')
-        g.gtk_window_set_icon_from_file(self.window,str(Path(__file__).parent/'desktop_assets/icon.svg').encode(),None)
+        g.window_icon(self.window,Path(__file__).parent/'desktop_assets/icon.svg')
         box=g.gtk_box_new(1,16);g.gtk_container_set_border_width(box,24);g.gtk_container_add(self.window,box)
         self.label=g.gtk_label_new((_tr('迁移未开始：')+str(error) if error else _tr('正在准备复制与校验；原目录保留。')).encode())
         g.gtk_label_set_xalign(self.label,0);g.gtk_label_set_line_wrap(self.label,1);g.gtk_label_set_max_width_chars(self.label,64)

@@ -74,6 +74,28 @@ class LocalizationScenario(Scenario):
         self.checks.append(name)
 
     # ==========================================
+    # Function: Verify the native window and navigation rail use the bundled application artwork.
+    # Method: Inspect GTK's retained window icon sizes and the visible background-free sidebar variant.
+    # ==========================================
+    def audit_icons(self):
+        from maildesk.gtk_native import GList
+        from maildesk.desktop import ASSETS
+        g=self.app.g;getter=g.libs['gtk'].gtk_window_get_icon_list;getter.argtypes=[C.c_void_p];getter.restype=C.POINTER(GList)
+        width=g.libs['pixbuf'].gdk_pixbuf_get_width;width.argtypes=[C.c_void_p];width.restype=C.c_int
+        head=getter(self.app.window);cursor=head;sizes=[]
+        try:
+            while cursor:sizes.append(width(cursor.contents.data));cursor=cursor.contents.next
+        finally:g.g_list_free(head)
+        assert sizes==[16,20,24,32,40,48,64,128,256],sizes
+        children=g.gtk_container_get_children(self.app.widget('brand'))
+        try:
+            assert children and g.gtk_widget_get_mapped(children.contents.data)
+            pixels=g.libs['gtk'].gtk_image_get_pixbuf;pixels.argtypes=[C.c_void_p];pixels.restype=C.c_void_p
+            assert pixels(children.contents.data)==g.icon_pixels(ASSETS/'brand-on-dark.svg',28)
+        finally:g.g_list_free(children)
+        self.metrics['application_icon_sizes']=sizes;self.checks.append('application-icons-'+self.lang)
+
+    # ==========================================
     # Function: Visit primary surfaces and every settings route in the chosen language.
     # Method: Wait for completed projections and GTK allocation, save actual screenshots and exercise persisted language selection.
     # ==========================================
@@ -93,6 +115,7 @@ class LocalizationScenario(Scenario):
                 self.until=time.monotonic()+.3;self.step=2
             elif self.step==2:
                 if time.monotonic()<self.until:return 1
+                self.audit_icons()
                 self.audit('main-'+self.lang);self.snapshot('main-'+self.lang+'.png')
                 app.open_navigation('navigation_menu');self.until=time.monotonic()+.2;self.step=3
             elif self.step==3:
@@ -149,6 +172,13 @@ class LocalizationScenario(Scenario):
                 g.gtk_dialog_response(app.active_forms[-1].window,-6);self.step=12
             elif self.step==12:
                 if app.active_forms:return 1
+                store.set_preference('theme','light');app.apply_appearance();self.until=time.monotonic()+.5;self.step=13
+            elif self.step==13:
+                if time.monotonic()<self.until:return 1
+                from maildesk.desktop import ASSETS
+                pixels=g.libs['gtk'].gtk_image_get_pixbuf
+                assert pixels(app.brand_image)==g.icon_pixels(ASSETS/'brand-on-light.svg',28)
+                self.snapshot('main-light-'+self.lang+'.png');self.checks.append('transparent-brand-light-'+self.lang)
                 self.complete=True;app.on_delete(force=True);return 0
         except Exception as error:
             import traceback

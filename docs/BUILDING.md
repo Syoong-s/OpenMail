@@ -28,6 +28,10 @@ python3 tools/build_windows.py --zip
 
 `--check-icon` 无需 Windows SDK 和图形桌面，可先验证主机 SVG 解码/PNG 编码。缺少加载器时会显示原始 GdkPixbuf 错误；工作流在下载 SDK 前执行检查。Ubuntu 24.04 的 PR 检查还会隐藏加载器缓存，验证缺依赖时的诊断。
 
+0.57.1 起，用户提供的原始矢量保存在 `maildesk/desktop_assets/brand-mark.svg`；`icon.svg` 保留同一条路径与黑色填充，只进行等比缩放、居中并添加浅色圆角底衬。窗口、通知和 README 共用此应用图标，Linux 桌面文件也安装同一 SVG。左上角使用同一原始路径的 `brand-on-dark.svg` / `brand-on-light.svg`，两者均为完全透明的无边框矢量，按实际侧栏配色选择浅色或原始黑色填充，实时跟随外观预览与主题变化。Windows 构建分别从 SVG 渲染 16、20、24、32、40、48、64、128、256 px，生成多尺寸 ICO 并嵌入 `TeleMail.exe` 与 Python 宿主；托盘及快捷方式继续读取启动器资源。`--check-icon` 同时验证 ICO 生成。无需新增依赖。
+
+图标专项使用 Linux CPython 3.14.4、GdkPixbuf/librsvg：`python3 -B -m unittest tests.test_build_icons -v` 验证真实 SVG 解码和 ICO 的目录、偏移、尺寸及完整 PNG 载荷。使用现有 Windows CPython 3.14.5 / GTK 3.24 运行 `tools/verify_localization.py --language en --output .runtime/icon-en`（中文改为 `zh_CN`），检查实际窗口的九种图标和左上角图像，并生成对应语言的界面截图。测试资料与邮箱完全隔离；运行和完整构建命令保持本节所示方式。
+
 固定 SDK：llvm-mingw 20261006 / LLVM 23.1.3，WebView2 SDK 1.0.4258.31，嵌入式 CPython 3.14.5。二进制归档哈希见 `third_party/windows/`；PDF.js 来源与资源哈希见 `maildesk/desktop_assets/pdfjs/vendor/SOURCE.json`。可复用现有、已校验的私有 SDK；不得将其个人绝对路径提交到仓库。
 
 ## 测试
