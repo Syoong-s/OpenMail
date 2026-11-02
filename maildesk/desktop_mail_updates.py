@@ -123,10 +123,6 @@ class MailUpdatesUI:
                     buttons=self.quick_buttons.get(identity,{})
                     if buttons and incoming[identity].get('seen')!=old[identity].get('seen'):
                         self.update_quick_buttons(identity,incoming[identity])
-            for key,section in summaries.items():
-                entry=self.summary_rows[key];entry['section']=section
-                self.g.label(entry['title'],section['title']+f"   {len(section['items'])}"+(f" · {section['unread']} 未读" if section['unread'] else '')+'  ›')
-                self.update_summary_senders(entry,section)
             self.items=list(rows);self.total=projection['total']
             if self.focus_group:
                 self.items=next((list(s['items']) for s in sections if s['key']==self.focus_group),[]);self.total=len(self.items)

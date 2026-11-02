@@ -216,7 +216,7 @@ class Scenario:
 # Function: Run the current checkout with existing native runtimes and isolated mailbox storage.
 # Method: Redirect profile roots, forbid provider access and save only synthetic diagnostics.
 # ==========================================
-def main():
+def main(scenario_type=Scenario):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args();args.output.mkdir(parents=True,exist_ok=True)
     if os.name=='nt':os.environ.setdefault('TELEMAIL_WINDOWS_RUNTIME',str(Path(sys.executable).resolve().parent.parent))
@@ -233,7 +233,7 @@ def main():
             if font_path and font_path.is_dir():
                 with patch.object(GtkNative,'fonts',lambda native,path:fonts(native,font_path)):app=DesktopApp(options)
             else:app=DesktopApp(options)
-            scenario=Scenario(app,args.output);app.g.connect(app.application,'activate',scenario.start)
+            scenario=scenario_type(app,args.output);app.g.connect(app.application,'activate',scenario.start)
             app.run();assert not provider.called
         report={'ok':scenario.complete,'error':scenario.error,'checks':scenario.checks,'metrics':scenario.metrics,'python':sys.version.split()[0],'platform':sys.platform,'real_provider_calls':0}
         (args.output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

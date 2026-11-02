@@ -1,5 +1,6 @@
 """Compact sender-composition summaries and stable per-message quick actions."""
 from pathlib import Path
+from .desktop_focus_cache import FocusPreviewUI,summary_title
 
 # ==========================================
 # Function: Bound ordinary row widgets while keeping every category summary reachable.
@@ -19,7 +20,7 @@ def focused_render_items(sections,limit):
 # Function: Add focused summary navigation and stable mail action controls.
 # Method: Render native GTK rows backed by complete scoped membership snapshots.
 # ==========================================
-class FocusUI:
+class FocusUI(FocusPreviewUI):
     # ==========================================
     # Function: Open a complete group as a paginated sublist.
     # Method: Retain the active view and account filters while replacing only list composition.
@@ -42,13 +43,13 @@ class FocusUI:
     def summary_row(self,section):
         g=self.g;row=g.gtk_list_box_row_new();box=g.gtk_box_new(1,6);line=g.gtk_box_new(0,7)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(row),b'focus-summary')
-        button=g.gtk_button_new();title=g.gtk_label_new((section['title']+f"   {len(section['items'])}"+(f" · {section['unread']} 未读" if section['unread'] else '')+'  ›').encode())
+        button=g.gtk_button_new();title=g.gtk_label_new(summary_title(section).encode())
         g.gtk_label_set_xalign(title,0);g.gtk_box_pack_start(box,title,0,1,0)
-        g.connect(button,'clicked',lambda *unused,key=section['key']:self.open_focus_group(key),group='list-headers')
+        g.connect(button,'clicked',lambda *unused,key=section['key']:self.open_focus_group(key),group='focus-summaries')
         self.summary_rows[section['key']]={'row':row,'button':button,'title':title,'line':line,'section':section}
         self.update_summary_senders(self.summary_rows[section['key']],section)
         g.gtk_box_pack_start(box,line,0,1,0)
-        g.gtk_container_add(button,box);g.gtk_container_add(row,button);g.gtk_container_add(self.widget('messages'),row);g.gtk_list_box_row_set_selectable(row,0)
+        g.gtk_container_add(button,box);g.gtk_container_add(row,button);g.gtk_container_add(self.widget('focus_summaries'),row);g.gtk_list_box_row_set_selectable(row,0)
         return row
 
     # ==========================================
@@ -57,12 +58,13 @@ class FocusUI:
     # ==========================================
     def update_summary_senders(self,entry,section):
         senders=[(item['sender'],item.get('sender_name'),item['account']) for item in section['recent_senders']]
-        if entry.get('senders')==senders:return
-        entry['senders']=senders;g=self.g;line=entry['line'];g.clear(line)
+        avatar_state=getattr(self,'focus_avatar_state',None);signature=(senders,repr(avatar_state))
+        if entry.get('senders')==signature:return
+        entry['senders']=signature;g=self.g;line=entry['line'];g.clear(line)
         for item in section['recent_senders']:
             avatar=g.gtk_label_new((item.get('sender_name') or item['sender'])[:1].upper().encode())
             g.gtk_style_context_add_class(g.gtk_widget_get_style_context(avatar),b'summary-avatar')
-            self.apply_avatar(avatar,item['sender'],item['account'],getattr(self,'list_avatar_state',None))
+            self.apply_avatar(avatar,item['sender'],item['account'],avatar_state)
             g.gtk_box_pack_start(line,avatar,0,0,0)
         names='、'.join(item.get('sender_name') or item['sender'].split('@')[0] for item in section['recent_senders'])
         label=g.gtk_label_new(names.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),b'mail-preview');g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,22)

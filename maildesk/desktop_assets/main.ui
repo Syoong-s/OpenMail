@@ -622,10 +622,22 @@
                                 <property name="hscrollbar-policy">never</property>
                                 <property name="vexpand">True</property>
                                 <child>
-                                  <object class="GtkListBox" id="messages">
-                                    <property name="name">messages</property>
-                                    <property name="selection-mode">single</property>
-                                    <property name="activate-on-single-click">True</property>
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <child>
+                                      <object class="GtkListBox" id="focus_summaries">
+                                        <property name="name">focus_summaries</property>
+                                        <property name="selection-mode">none</property>
+                                        <property name="no-show-all">True</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkListBox" id="messages">
+                                        <property name="name">messages</property>
+                                        <property name="selection-mode">single</property>
+                                        <property name="activate-on-single-click">True</property>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
                               </object>

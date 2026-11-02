@@ -10,13 +10,25 @@ class SenderChoice(NativeChoice):
     # Function: Style one sender controller without duplicating its selected account state.
     # Method: Reuse the hidden combo, owned dropdown and programmatic changed signals.
     # ==========================================
-    def __init__(self,app,combo,return_focus=None):
-        self.app=app;self.return_focus=return_focus
+    def __init__(self,app,combo,return_focus=None,compact=False):
+        self.app=app;self.return_focus=return_focus;self.compact=compact
         super().__init__(app.g,combo,'发件邮箱')
-        g=self.g;g.gtk_label_set_max_width_chars(self.label,20)
+        g=self.g;g.gtk_label_set_max_width_chars(self.label,14 if compact else 20)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.button),b'sender-choice')
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.popup),b'sender-menu')
         g.surfaces.states[self.popup]['width']=310;g.surfaces.states[self.popup]['placement']='above'
+
+    # ==========================================
+    # Function: Show a short account identity while retaining the exact sender in its tooltip/menu.
+    # Method: Derive the caption from the live controller; never change the selected account ID.
+    # ==========================================
+    def sync(self):
+        super().sync()
+        if self.closed or not self.compact:return
+        from .chat_composer_visuals import sender_caption
+        identity=(self.g.gtk_combo_box_get_active_id(self.combo) or b'').decode()
+        account=self.app.service.accounts.get(identity)
+        if account:self.g.label(self.label,sender_caption(account,self.app.service.accounts.values()))
 
     # ==========================================
     # Function: Render account identities and an unambiguous selection checkmark.

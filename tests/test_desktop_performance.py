@@ -12,6 +12,42 @@ from maildesk.inbox_views import InboxViews
 # ==========================================
 class PerformanceTests(TestCase):
     # ==========================================
+    # Function: Keep navigation cached across unrelated UI writes without leaking stale mail or scopes.
+    # Method: Run real projections/workers against SQLite, then change gatekeeper, account and read state.
+    # ==========================================
+    def test_projection_cache_tracks_data_policy_and_account_only(self):
+        from queue import Queue
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from maildesk.desktop_loading import LocalLoader,mailbox_projection
+        with TemporaryDirectory() as directory:
+            store=Store(Path(directory)/'mail.db');views=InboxViews(store)
+            identities=[store.ingest(account,'INBOX','1','1',b'From: cache@example.invalid\r\nSubject: cached\r\n\r\nSynthetic') for account in ('one','two')]
+            app=SimpleNamespace(queue=Queue(),closing=False,service=SimpleNamespace(store=store),inboxes=views,focus_group='',show_error=lambda error:self.fail(str(error)))
+            loader=LocalLoader(app);request=('inbox','all','one','','',100,views.active())
+
+            # ==========================================
+            # Function: Wait for one actual latest-only result or synchronous cache hit.
+            # Method: Deliver queued worker callbacks on the caller thread with a bounded timeout.
+            # ==========================================
+            def fetch(scope=request):
+                results=[];loader.request_list(scope,results.append)
+                while not results:
+                    callback,value=app.queue.get(timeout=3);callback(value)
+                return results[0]
+            try:
+                with patch('maildesk.desktop_loading.mailbox_projection',wraps=mailbox_projection) as query:
+                    first=fetch();self.assertEqual([row['id'] for row in first['items']],[identities[0]])
+                    store.set_preference('window_geometry',{'width':1200});store.set_preference('notification_receipts',['receipt'])
+                    self.assertIs(fetch(),first);self.assertEqual(query.call_count,1)
+                    store.set_preference('gatekeeper_mode','explicit');self.assertEqual(fetch()['items'],[]);self.assertEqual(query.call_count,2)
+                    store.set_preference('gatekeeper_mode','off')
+                    other=fetch((*request[:2],'two',*request[3:]));self.assertEqual([row['id'] for row in other['items']],[identities[1]])
+                    store.update(identities[0],{'seen':True});fresh=fetch()
+                    self.assertTrue(fresh['items'][0]['seen']);self.assertIsNot(fresh,first);self.assertEqual(query.call_count,4)
+            finally:loader.close()
+
+    # ==========================================
     # Function: Keep settings reads bounded as focused mailbox membership grows.
     # Method: Compare 500 synthetic summaries against a fixed query budget.
     # ==========================================

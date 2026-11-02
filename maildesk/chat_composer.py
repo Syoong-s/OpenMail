@@ -41,7 +41,13 @@ class ChatComposer:
         chosen=(job['account'] if job else route.get('account',''))
         if chosen not in dict(self.accounts):chosen=LOCAL_ACCOUNT if not app.profile.demo else 'demo'
         g.gtk_combo_box_set_active_id(self.account,chosen.encode())
-        self.summary=g.gtk_label_new(b'');g.gtk_label_set_xalign(self.summary,0);g.gtk_label_set_ellipsize(self.summary,3);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.summary),b'chat-compose-summary');g.gtk_box_pack_start(top,self.summary,1,1,0)
+        self.route_button=g.gtk_button_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.route_button),b'chat-compose-route');g.gtk_box_pack_start(top,self.route_button,1,1,0)
+        route_labels=g.gtk_box_new(1,3);g.gtk_container_add(self.route_button,route_labels)
+        self.summary=g.gtk_label_new(b'');self.subject_summary=g.gtk_label_new(b'')
+        for label,role in ((self.summary,'chat-compose-recipient'),(self.subject_summary,'chat-compose-subject')):
+            g.gtk_label_set_xalign(label,0);g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,45)
+            g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),role.encode());g.gtk_box_pack_start(route_labels,label,0,1,0)
+        g.connect(self.route_button,'clicked',lambda *unused:self.edit_route(),group=self.group)
         self.action(top,'完整编辑器','composer-expand',self.full_editor)
         self.fields={};self.field_rows={}
         for name,title in [('to','收件人'),('cc','抄送'),('subject','主题')]:
@@ -83,13 +89,14 @@ class ChatComposer:
         self.history_view=ReplyHistoryView(self,self.bubble,self.metadata['reply_history']);self.history_view.set_visible(False)
         footer=g.gtk_box_new(0,7);self.footer=footer;g.gtk_widget_set_no_show_all(footer,1);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(footer),b'chat-compose-toolbar');g.gtk_box_pack_start(self.bubble,footer,0,1,0)
         self.action(footer,'添加附件','composer-attachment',self.add_attachment)
-        self.action(footer,'收件人 / 主题','action-down',self.edit_route)
         self.note=g.gtk_label_new(b'');g.gtk_label_set_xalign(self.note,0);g.gtk_label_set_ellipsize(self.note,3);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.note),b'chat-compose-note');g.gtk_box_pack_start(footer,self.note,1,1,0)
         g.gtk_box_pack_start(footer,self.account,0,1,0)
         from .sender_choice import SenderChoice
-        self.account_choice=SenderChoice(app,self.account,self.body)
+        self.account_choice=SenderChoice(app,self.account,self.body,compact=True)
         self.send_button=self.action(footer,'发送邮件 · Ctrl+Enter','composer-send',self.send)
         g.gtk_style_context_add_class(g.gtk_widget_get_style_context(self.send_button),b'chat-compose-send')
+        from .chat_composer_visuals import send_glyph
+        self.send_glyph=send_glyph(g,self.send_button,self.group)
         g.connect(self.send_button,'button-press-event',self.send_press,count=3,group=self.group,returns=True)
         g.connect(self.account,'changed',self.account_changed,group=self.group)
         g.connect(self.body,'key-press-event',self.key_pressed,count=3,group=self.group,returns=True)
@@ -342,13 +349,17 @@ class ChatComposer:
     def update_state(self):
         self.g.gtk_widget_set_visible(self.placeholder,not bool(self.g.text(self.body,view=True)))
         account=(self.g.gtk_combo_box_get_active_id(self.account) or b'').decode();to=self.g.text(self.fields['to']);cc=self.g.text(self.fields['cc'])
-        text='To: '+(to or '未选择')+(' · Cc: '+cc if cc else '')+' · '+self.g.text(self.fields['subject'])
-        self.g.label(self.summary,text);self.g.gtk_widget_set_tooltip_text(self.summary,text.encode())
-        if self.bcc:text+=' · 有密送（完整编辑器核对）';self.g.label(self.summary,text)
+        from .chat_composer_visuals import recipient_caption
+        caption=recipient_caption(to,cc,self.bcc)
+        subject=self.g.text(self.fields['subject']) or '无主题'
+        text='收件人：'+(to or '未选择')+('\n抄送：'+cc if cc else '')+'\n主题：'+subject
+        if self.bcc:text+='\n有密送（完整编辑器核对）'
         planned=bool(self.metadata.get('scheduled_at') or self.metadata.get('remind_at'))
         if planned:
             plan=('计划 '+str(self.metadata['scheduled_at']) if self.metadata.get('scheduled_at') else '')+(' · 有未回复提醒' if self.metadata.get('remind_at') else '')
-            text+=' · '+plan;self.g.label(self.summary,text);self.g.gtk_widget_set_tooltip_text(self.summary,text.encode())
+            text+='\n'+plan
+        self.g.label(self.summary,caption);self.g.label(self.subject_summary,subject)
+        self.g.gtk_widget_set_tooltip_text(self.route_button,(text+'\n点击编辑收件人和主题').encode())
         allowed=self.route.get('safe',False) and not self.bcc and not planned and account in self.app.service.accounts and not self.app.profile.demo and not self.busy
         self.g.gtk_widget_set_sensitive(self.send_button,allowed);self.g.gtk_widget_set_sensitive(self.body,not self.busy or self.saving)
         self.g.label(self.note,self.error or ('已保留发送计划 / 提醒' if planned else '请核对收件人' if not self.route.get('safe') else ''))

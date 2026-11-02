@@ -600,7 +600,8 @@ button:focus { background-color: rgba(160,180,220,.16); }
 .chat-compose-collapsed .chat-compose-bubble { padding: 4px 10px 3px; }
 .chat-compose-collapsed .chat-compose-toolbar { padding-top: 0; }
 .chat-compose-top { min-height: 27px; }
-.chat-compose-summary { font-size: 11px; opacity: .78; }
+.chat-compose-recipient { font-size: 12px; font-weight: 600; }
+.chat-compose-subject { font-size: 11px; font-weight: 400; }
 .chat-compose-note { font-size: 10px; opacity: .68; }
 .chat-compose-scroll, .chat-compose-scroll viewport { border: 0; background: transparent; }
 .chat-compose-body, .chat-compose-body text { background: transparent; border: 0; color: #e8e9eb; font-size: 13px; }
@@ -627,7 +628,6 @@ button:focus { background-color: rgba(160,180,220,.16); }
 .chat-compose-top { min-height: 28px; padding-bottom: 5px; }
 .chat-compose-body, .chat-compose-body text { font-size: 14px; }
 .chat-compose-placeholder { font-size: 14px; }
-.chat-compose-summary { font-size: 11px; }
 .chat-compose-note { font-size: 10px; }
 .chat-compose-toolbar { padding-top: 4px; }
 .chat-compose-mode { font-size: 10px; border-radius: 8px; padding: 3px 7px; }
@@ -664,7 +664,9 @@ button.directory-person { padding: 10px 12px; border-radius: 14px; min-width: 0;
 .chat-compose-toolbar { padding-top: 0; }
 .chat-compose-mode { padding: 2px 5px; }
 .chat-compose-bubble button.chat-compose-action { min-height: 20px; min-width: 20px; padding: 2px; }
-.chat-compose-bubble button.chat-compose-send { min-height: 22px; min-width: 22px; padding: 3px; }
+.chat-compose-bubble button.chat-compose-send { min-height: 34px; min-width: 34px; padding: 0; margin: 0; border: 0; border-radius: 50%; box-shadow: none; }
+.chat-compose-bubble button.chat-compose-route { min-height: 0; min-width: 0; padding: 3px 4px 6px; border: 0; border-radius: 7px; box-shadow: none; }
+.chat-compose-bubble button.sender-choice { padding: 3px 9px; border-radius: 12px; font-size: 11px; }
 .chat-compose-placeholder { opacity: .62; }
 
 /* Windows035: compact person header, adaptive reply body and saved-contact menus. */

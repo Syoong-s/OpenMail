@@ -99,6 +99,9 @@ def rgba(color,opacity):return 'rgba('+','.join(str(int(color[i:i+2],16)) for i 
 # ==========================================
 def stylesheet(values):
     c=effective_palette(values);alpha=percent(values['panel_opacity']);panel=rgba(c['panel'],alpha);surface=rgba(c['surface'],max(75,alpha));accent=c['accent'];text=c['text'];border=c['border']
+    channels=[int(accent[i:i+2],16)/255 for i in (1,3,5)]
+    luminance=sum(weight*(value/12.92 if value<=.04045 else ((value+.055)/1.055)**2.4) for weight,value in zip((.2126,.7152,.0722),channels))
+    send_ink='#19202b' if luminance>.22 else '#ffffff'
     bubbles=''
     for direction,own in [('own',True),('other',False)]:
         colors=bubble_palette(values,own)
@@ -120,6 +123,7 @@ headerbar .title, .light headerbar .title {{ color: {text}; }}
 #rail, .light #rail, #listpane, .light #listpane, #sidebar, .light #sidebar, #navigation_surface, .light #navigation_surface {{ background: {panel}; color: {text}; }}
 #reader, .light #reader, #mail_card, .light #mail_card, .document-panel {{ background: {c['panel']}; color: {text}; }}
 #messages, .light #messages, #messages row, .light #messages row {{ background: transparent; color: {text}; }}
+#focus_summaries {{ background: transparent; color: {text}; }}
 #messages row:hover, #rail button:hover, .light #rail button:hover {{ background: {rgba(accent,12)}; }}
 #messages row:selected, .light #messages row:selected, #rail button.rail-active, .light #rail button.rail-active {{ background: {rgba(accent,22)}; color: {text}; }}
 .surface-editor, .surface-flyout, .light .surface-editor, .light .surface-flyout, .surface-flyout#views_menu, .light .surface-flyout#views_menu, .conversation-card, .quoted-history-card, .light .conversation-card, .light .quoted-history-card {{ background: {surface}; border-color: {border}; color: {text}; }}
@@ -146,9 +150,12 @@ paned > separator {{ background: {border}; }}
 .attachment-card, .attachment-card:hover, .attachment-card:focus, .attachment-card:active, .light .attachment-card, .light .attachment-card:hover, .light .attachment-card:focus, .light .attachment-card:active {{ border: 1px solid {border}; outline-width: 0; box-shadow: none; }}
 #contact_chat button.chat-compose-action, #contact_chat button.chat-compose-action:focus {{ background: transparent; }}
 #contact_chat button.chat-compose-action:hover {{ background: {rgba(text,12)}; }}
-#contact_chat button.chat-compose-send, #contact_chat button.chat-compose-send:focus {{ background: {accent}; }}
+#contact_chat button.chat-compose-send, #contact_chat button.chat-compose-send:focus {{ background: {accent}; color: {send_ink}; }}
 #contact_chat button.chat-compose-send:hover {{ background: {blend(accent,text,.12)}; }}
-#contact_chat button.chat-compose-send:disabled {{ background: {rgba(text,12)}; opacity: .5; }}
+#contact_chat button.chat-compose-send:disabled {{ background: {rgba(text,12)}; color: {text}; opacity: .5; }}
+#contact_chat button.chat-compose-route, #contact_chat button.chat-compose-route:focus {{ background: transparent; }}
+#contact_chat button.chat-compose-route:hover {{ background: {rgba(text,6)}; }}
+#contact_chat label.chat-compose-subject {{ color: {rgba(text,60)}; }}
 #contact_chat .chat-compose-bubble {{ background: {blend(c['surface'],c['panel'],.16)}; border-color: {rgba(text,13)}; }}
 #contact_chat .chat-compose-bubble.compose-active {{ border-color: {rgba(accent,60)}; }}
 .person-header-aliases, .directory-email, .directory-count {{ color: {rgba(text,66)}; }}
@@ -164,7 +171,8 @@ button.directory-person:hover, button.directory-person:focus {{ background: {rgb
 .directory-index button:hover {{ background: {rgba(accent,18)}; color: {accent}; }}
 .directory-badge {{ background: {rgba(accent,10)}; color: {rgba(text,80)}; }}
 .contact-drawer textview, .contact-drawer textview text {{ background: {c['panel']}; color: {text}; }}
-#contact_chat .chat-compose-bubble button.sender-choice, #contact_chat .chat-compose-bubble button.recipient-picker-button {{ background: transparent; border: 0; }}
+#contact_chat .chat-compose-bubble button.sender-choice {{ background: {rgba(text,6)}; border: 0; }}
+#contact_chat .chat-compose-bubble button.recipient-picker-button {{ background: transparent; border: 0; }}
 #contact_chat .chat-compose-bubble button.sender-choice:hover, #contact_chat .chat-compose-bubble button.sender-choice:checked, #contact_chat .chat-compose-bubble button.sender-choice:focus,
 #contact_chat .chat-compose-bubble button.recipient-picker-button:hover, #contact_chat .chat-compose-bubble button.recipient-picker-button:checked, #contact_chat .chat-compose-bubble button.recipient-picker-button:focus {{ background: {rgba(text,12)}; }}
 button.conversation-sender, button.conversation-sender:focus, .light button.conversation-sender:focus {{ background: transparent; }}

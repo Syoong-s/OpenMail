@@ -205,6 +205,7 @@ class ContactChatUI:
             if index%8==7:self.rendering=False;yield;self.rendering=True
         chosen=next((row for row,identity in self.rows.items() if identity=='contact:'+self.selected_chat),None)
         self.release_mail_rows()
+        g.gtk_widget_set_no_show_all(self.widget('messages'),0);g.gtk_widget_show_all(self.widget('messages'))
         if chosen:g.gtk_list_box_select_row(self.widget('messages'),chosen)
         self.rendering=False;self.render_has_more=len(self.items)<self.total;g.gtk_widget_set_visible(self.widget('more'),self.render_has_more);g.label(self.widget('count'),str(self.total)+' 个对话')
         self.contact_progress(projection['indexing'])

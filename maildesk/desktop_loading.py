@@ -26,7 +26,8 @@ class LocalLoader:
         store=self.app.service.store
         with store.db() as db:revision=tuple(db.execute("SELECT topic,value FROM navigation_revision ORDER BY topic").fetchall())
         revision=tuple(tuple(row) for row in revision)
-        focus=self.app.focus_group;key=(repr(request),focus,revision,repr(getattr(store._preference_scope,'values',None)))
+        from .desktop_focus_cache import projection_policy
+        focus=self.app.focus_group;key=(repr(request),focus,revision,projection_policy(store))
         if request[6]['mode']=='conversations':
             self.request('list',lambda:mailbox_projection(self.app,request,focus),success);return
         cached=self.projections.pop(key,None)

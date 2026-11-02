@@ -378,9 +378,13 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             from .desktop_loading import LocalLoader,mailbox_projection
             if not getattr(self,'local_loader',None):self.local_loader=LocalLoader(self)
             request=(self.view,category,scope,self.folder_path,search,self.limit,self.inboxes.active())
+            self.show_focus_preview(request)
             self.local_loader.request_list(request,self.apply_projection)
             return
-        if self.patch_mail_projection(projection):return
+        self.update_focus_preview(projection)
+        if self.patch_mail_projection(projection):
+            self.g.gtk_widget_set_no_show_all(self.widget('messages'),0);self.g.gtk_widget_show_all(self.widget('messages'))
+            return
         self.begin_list_render(projection,category,search)
 
     # ==========================================
@@ -407,7 +411,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         self.rows={}
         self.g.clear(self.widget('messages'))
         self.rows = {}
-        self.summary_rows={};self.quick_buttons={};self.row_status={};self.row_history_badges={}
+        self.quick_buttons={};self.row_status={};self.row_history_badges={}
         self.list_row_signatures={}
         self.row_avatar_styles={}
         self.row_avatars={}
@@ -450,7 +454,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
         show_avatar=self.service.store.preference('avatars_mode','everywhere') in ('everywhere','list')
         batch_started=time.monotonic();smart_layout=self.inboxes.active()['mode']=='smart'
         for index,item in enumerate(render_items):
-            if '_summary' in item:self.summary_row(item['_summary']);continue
+            if '_summary' in item:continue
             identity = ('job:' if self.view == 'drafts' else '') + item['id']
             section=self.inbox_sections.get(identity)
             row_group=section['key'] if section else (item['sender'].rsplit('@',1)[-1] if grouping=='domain' else item['sender']) if grouping in ('sender','domain') and self.view!='drafts' else None
@@ -534,7 +538,7 @@ class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, Conver
             if index%8==7:
                 self.rendering=False;yield
                 self.rendering=True;batch_started=time.monotonic()
-        self.g.gtk_widget_show_all(self.widget('messages'))
+        self.g.gtk_widget_set_no_show_all(self.widget('messages'),0);self.g.gtk_widget_show_all(self.widget('messages'))
         self.release_mail_rows()
         selected_row=next((row for row,identity in self.rows.items() if identity==self.selected),None)
         if selected_row:
