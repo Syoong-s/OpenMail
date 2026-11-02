@@ -196,7 +196,7 @@ def sync_account(account, store, limit=200, should_yield=None):
                     flags.update(flag_rows(data));stars.update(star_rows(data))
                 checkpoint(should_yield);store.reconcile(account.id,folder,validity,all_uids,flags)
                 with store.db() as db:
-                    db.executemany('UPDATE messages SET pinned=? WHERE account=? AND folder=? AND validity=? AND uid=?',
+                    db.executemany('UPDATE messages SET pinned=? WHERE account=? AND folder=? AND validity=? AND uid=? AND id NOT IN (SELECT message FROM pending_pinned_flags)',
                         [(int(star),account.id,folder,validity,uid) for uid,star in stars.items()])
             checkpoint(should_yield)
             from .filter_runner import automatic as run_filters

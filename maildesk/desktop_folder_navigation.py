@@ -192,11 +192,13 @@ class FolderNavigationUI:
         icon={'inbox':'inbox','sent':'send','drafts':'compose','archive':'archive','trash':'trash','spam':'trash'}.get(row['special'],'folder');g.gtk_button_set_image(button,g.image_file(ICONS/('spark-layout-'+icon+'.svg'),14));g.gtk_button_set_always_show_image(button,1);self.shrink_navigation_labels(button)
         context=g.gtk_widget_get_style_context(button);g.gtk_style_context_add_class(context,b'folder-row')
         if row['color']:g.gtk_style_context_add_class(context,('folder-'+row['color']).encode())
-        if not row['subscribed']:g.gtk_style_context_add_class(context,b'folder-muted')
         if self.folder_account==account and self.folder_path==path:
-            g.gtk_style_context_add_class(context,b'active');g.gtk_style_context_add_class(g.gtk_widget_get_style_context(line),b'active')
+            g.gtk_style_context_add_class(g.gtk_widget_get_style_context(line),b'active')
         g.gtk_widget_set_tooltip_text(button,(account+' / '+path).encode());g.gtk_widget_set_sensitive(button,row['selectable']);g.gtk_box_pack_start(line,button,1,1,0)
         g.connect(button,'clicked',lambda *unused:self.open_folder(account,path),group='folders')
+        pin=g.image_file(ICONS/'spark-layout-pin-active.svg',14);g.gtk_box_pack_start(line,pin,0,0,3)
+        pinned=self.navigation_is_pinned({'kind':'folder','account':account,'path':path})
+        g.gtk_widget_set_no_show_all(pin,not pinned);g.gtk_widget_set_visible(pin,pinned);g.gtk_widget_set_tooltip_text(pin,'已固定到左侧栏'.encode())
         tools=g.gtk_box_new(0,0);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(tools),b'folder-inline-tools');g.gtk_box_pack_start(line,tools,0,0,0)
         add=icon_action(g,g.gtk_button_new(),'新建子文件夹','action-add',14);more=g.gtk_menu_button_new();icon_action(g,more,'文件夹操作','spark-layout-more',14)
         for action in (add,more):g.gtk_box_pack_start(tools,action,0,0,0)
@@ -212,10 +214,27 @@ class FolderNavigationUI:
         for signal in ('enter-notify-event','leave-notify-event'):
             g.connect(event,signal,lambda *unused,leave=signal.startswith('leave'):self.folder_row_hover(event,tools,more,leave),count=3,returns=True,group='folders')
         for action in (button,add,more):
+            g.gtk_widget_add_events(action,1<<2)
+            g.connect(action,'motion-notify-event',lambda *unused:self.navigation_hover(event,tools,line),count=3,returns=True,group='folders')
             g.connect(action,'focus-in-event',lambda *unused:self.navigation_hover(event,tools,line,keyboard=True),count=3,returns=True,group='folders')
             g.connect(action,'focus-out-event',lambda *unused:self.folder_row_hover(event,tools,more,True),count=3,returns=True,group='folders')
         self.folder_buttons[(account,path)]=button;self.folder_row_widgets[(account,path)]={'root':host,'line':line,'button':button,'children':children,'revealer':revealer,'row':row,'add':add,'more':more,'popup':popup,'menu':menu,'toggle':toggle,'event':event,'tools':tools}
         g.gtk_box_pack_start(parent,host,0,1,0);return children
+
+    # ==========================================
+    # Function: Update folder selection and counters without destroying the sidebar tree.
+    # Method: Reuse stable account/path controls and put highlighting only on the enclosing row.
+    # ==========================================
+    def update_folder_rows(self,rows):
+        for row in rows:
+            entry=self.folder_row_widgets.get((row['account'],row['folder']))
+            if not entry:continue
+            selected=self.folder_account==row['account'] and self.folder_path==row['folder']
+            context=self.g.gtk_widget_get_style_context(entry['line'])
+            (self.g.gtk_style_context_add_class if selected else self.g.gtk_style_context_remove_class)(context,b'active')
+            name=row['folder'].rsplit(row['delimiter'],1)[-1] if row['delimiter'] else row['folder']
+            label=self.shrink_navigation_labels(entry['button'])
+            if label:self.g.label(label,('★ ' if row['favorite'] else '')+name+(f"  {row['unread']}" if row['unread'] else ''))
 
     # ==========================================
     # Function: Refresh menu state on open and restore hover visibility after dismissal.

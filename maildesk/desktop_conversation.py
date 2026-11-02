@@ -180,8 +180,12 @@ class ConversationUI:
         g.gtk_widget_set_tooltip_text(details,'邮件详情'.encode());g.connect(details,'toggled',lambda *unused,target=origin:self.load_card_details(target),group=group)
         menu=g.gtk_menu_button_new();g.gtk_button_set_image(menu,g.gtk_image_new_from_icon_name(b'view-more-symbolic',1));g.gtk_button_set_always_show_image(menu,1)
         popover=g.gtk_popover_new(menu);options=g.gtk_box_new(1,3);g.gtk_menu_button_set_popover(menu,popover);g.gtk_container_add(popover,options)
-        for action,title in [('done','完成 / 重新打开'),('seen','已读 / 未读'),('trash','移到废纸篓')]:
-            button=g.gtk_button_new_with_label(title.encode());g.connect(button,'clicked',lambda *unused,origin=origin,code=action,popup=popover:(g.gtk_popover_popdown(popup),self.run_action(lambda:self.quick_action(origin,code))),group=group);g.gtk_box_pack_start(options,button,0,1,0)
+        state_buttons={}
+        for action,title in [('done','完成并归档'),('seen','标为已读'),('trash','移到废纸篓')]:
+            if action in ('done','seen'):
+                state_buttons[action]=self.conversation_icon(header,title,'spark-layout-'+action,lambda origin=origin,code=action:self.run_action(lambda:self.quick_action(origin,code)),group)
+            else:
+                button=g.gtk_button_new_with_label(title.encode());g.connect(button,'clicked',lambda *unused,origin=origin,code=action,popup=popover:(g.gtk_popover_popdown(popup),self.run_action(lambda:self.quick_action(origin,code))),group=group);g.gtk_box_pack_start(options,button,0,1,0)
         g.gtk_widget_show_all(options);g.gtk_box_pack_start(header,menu,0,0,0)
         snippet=g.gtk_label_new((' '.join(row.get('preview','').split())[:130] or '(无文字正文)').encode());g.gtk_label_set_xalign(snippet,0);g.gtk_label_set_ellipsize(snippet,3);g.gtk_label_set_max_width_chars(snippet,70)
         message_text(g,snippet);g.gtk_style_context_add_class(g.gtk_widget_get_style_context(snippet),b'conversation-snippet');g.gtk_box_pack_start(root,snippet,0,1,0)
@@ -196,7 +200,19 @@ class ConversationUI:
         g.gtk_box_pack_start(content,actions,0,1,0)
         reply_host=g.gtk_box_new(1,0);draft_host=g.gtk_box_new(1,6);g.gtk_box_pack_start(root,reply_host,0,1,0);g.gtk_box_pack_start(root,draft_host,0,1,0)
         g.connect(toggle,'clicked',lambda *unused,target=origin:self.toggle_conversation_card(target),group=group)
-        return {'root':root,'timeline_host':timeline,'history_host':history_host,'history_button':history_button,'history_visible':False,'header':header,'content':content,'body_host':body,'body_loaded':False,'body_readers':[],'reader':None,'quote_cards':[],'quote_states':{},'reply_host':reply_host,'draft_host':draft_host,'expanded':origin==self.conversation_focus,'actions':action_widgets,'toggle':toggle,'disclosure':disclosure,'origin':origin,'attachments':{},'attachments_host':attachments,'menu':menu,'group':group,'avatar':avatar,'avatar_provider':provider,'labels_widget':labels,'image_count':0,'snippet':snippet,'caption':caption,'details_button':details,'details_popover':popup,'details_text':text,'metadata':row}
+        return {'root':root,'timeline_host':timeline,'history_host':history_host,'history_button':history_button,'history_visible':False,'header':header,'content':content,'body_host':body,'body_loaded':False,'body_readers':[],'reader':None,'quote_cards':[],'quote_states':{},'reply_host':reply_host,'draft_host':draft_host,'expanded':origin==self.conversation_focus,'actions':action_widgets,'toggle':toggle,'disclosure':disclosure,'origin':origin,'attachments':{},'attachments_host':attachments,'menu':menu,'group':group,'avatar':avatar,'avatar_provider':provider,'labels_widget':labels,'image_count':0,'snippet':snippet,'caption':caption,'details_button':details,'details_popover':popup,'details_text':text,'metadata':row,'state_buttons':state_buttons}
+
+    # ==========================================
+    # Function: Reflect live read/archive state with compact icon-only card actions.
+    # Method: Reuse action widgets and shared active assets with accessible state-specific tooltips.
+    # ==========================================
+    def update_card_actions(self,card):
+        from .ui_actions import state_action
+        row=card['metadata']
+        for key,button in card.get('state_buttons',{}).items():
+            active=bool(row.get(key) or key=='done' and row.get('archived'))
+            title=('标为未读' if active else '标为已读') if key=='seen' else ('移回收件箱' if active else '完成并归档')
+            state_action(self.g,button,title,'spark-layout-'+key,active)
 
     # ==========================================
     # Function: Resolve complete source envelope details only when requested.
@@ -369,7 +385,7 @@ class ConversationUI:
         g.gtk_button_set_image(card['disclosure'],g.image_file(Path(__file__).parent/'desktop_assets/icons'/('conversation-close.svg' if state else 'conversation-open.svg'),17))
         g.gtk_widget_set_tooltip_text(card['toggle'],(('收起邮件' if state else '展开邮件')+' · '+card['caption']).encode());g.gtk_widget_set_tooltip_text(card['disclosure'],('收起邮件' if state else '展开邮件').encode())
         self.sync_conversation_reader()
-        if opening and self.service.store.preference('mark_read_on_open',True) and self.service.mark_opened(identity):self.queue.put((lambda result:self.refresh(),None));self.background(self.service.flush_read_flags)
+        if opening and self.service.store.preference('mark_read_on_open',True) and self.service.mark_opened(identity):self.queue.put((lambda result:self.mail_changed([identity]),None))
 
     # ==========================================
     # Function: Refresh card labels and policies using metadata without decoding all cached MIME.
@@ -384,6 +400,7 @@ class ConversationUI:
                 for reader in readers:
                     changed=getattr(reader,'message_own',None)!=(direction=='own');reader.message_own=direction=='own'
                     if changed and not reload:reader.reload()
+            self.update_card_actions(card)
             row=card['metadata'];values=labels.get(origin,[]) if store.preference('labels_reader',True) else []
             if store.preference('labels_system',False):values=values+list(filter(None,['已完成' if row.get('done') else '', '已置顶' if row.get('pinned') else '',row.get('category','')]))
             g.label(card['labels_widget'],' · '.join(values));g.gtk_widget_set_no_show_all(card['labels_widget'],not bool(values));g.gtk_widget_set_visible(card['labels_widget'],bool(values))

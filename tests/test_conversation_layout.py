@@ -118,7 +118,10 @@ class ConversationTests(TestCase):
         self.store.update(b,{'pinned':True});self.store.set_preference('main_action_policy','next')
         pending=[]
         app=SimpleNamespace(service=SimpleNamespace(store=self.store,update=self.store.update),items=[{'id':a},{'id':b},{'id':c}],selected=b,close_document=lambda:True,refresh=lambda:None)
-        app.background=lambda operation,success:pending.append((operation,success))
+        app.local_loader=SimpleNamespace(action=lambda operation,success,failure:pending.append((operation,success)))
+        app.show_error=lambda error:None;app.mail_changed=lambda ids:app.refresh();app.clear_reader=lambda:None
+        app.read=lambda identity:setattr(app,'selected',identity)
+        app.service.move_message=lambda identity,special:self.store.organize(identity,done=special=='archive')
         FocusUI.quick_action(app,b,'done');operation,success=pending.pop();app.selected=a;success(operation())
         self.assertTrue(self.store.get(b)['done']);self.assertFalse(self.store.get(b)['pinned']);self.assertEqual(app.selected,a)
         self.store.organize(b,done=False);app.selected=b;FocusUI.quick_action(app,b,'done');operation,success=pending.pop();success(operation())
@@ -153,6 +156,7 @@ class ConversationTests(TestCase):
         reader=SimpleNamespace(reload=lambda:reloads.append(True),widget='html',message_own=False)
         card={'root':'card-root','labels_widget':'labels','avatar':'avatar','avatar_provider':'provider','reader':reader,'body_readers':[reader],'quote_cards':[],'metadata':self.store.thread(identity)[0]}
         app=SimpleNamespace(service=SimpleNamespace(store=self.store,accounts={}),profile=SimpleNamespace(demo=False),g=native,identity_colors=colors,conversation_cards={identity:card})
+        app.update_card_actions=lambda card:ConversationUI.update_card_actions(app,card)
         ConversationUI.update_conversation_metadata(app);self.assertTrue(visible['avatar']);self.assertFalse(visible['labels'])
         self.store.organize(identity,labels=['研究'],done=True);self.store.update(identity,{'pinned':True})
         self.store.set_preference('labels_system',True);self.store.set_preference('avatars_mode','none')
@@ -191,6 +195,8 @@ class ConversationTests(TestCase):
         app=SimpleNamespace(service=SimpleNamespace(store=self.store,update=self.store.update),items=[{'id':a},{'id':b}],selected=a,close_document=lambda:True)
         app.refresh=lambda:setattr(app,'selected','')
         app.read=lambda identity:(reads.append(identity),setattr(app,'selected',identity))
-        app.background=lambda operation,success:success(operation())
+        app.local_loader=SimpleNamespace(action=lambda operation,success,failure:success(operation()))
+        app.show_error=lambda error:None;app.mail_changed=lambda ids:app.refresh();app.clear_reader=lambda:None
+        app.service.move_message=lambda identity,special:self.store.organize(identity,done=special=='archive')
         FocusUI.quick_action(app,a,'done')
         self.assertEqual(reads,[b]);self.assertEqual(app.selected,b);self.assertIsNone(app.layout_override)

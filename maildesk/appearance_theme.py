@@ -198,7 +198,8 @@ def borderless_stylesheet(accent='#b6c5ff',text='#f1f1f1'):
     focus=', '.join(selector+state for selector in selectors for state in (':focus',':active',':checked','.active'))
     quiet=', '.join(selector+':focus:not(:hover):not(:checked):not(.active):not(.rail-active):not(.current-letter)' for selector in selectors)
     keyboard=', '.join('.keyboard-navigation '+selector+':focus' for selector in selectors)
-    return all_states+' { border-style: none; border-width: 0; border-color: transparent; outline-style: none; outline-width: 0; outline-offset: 0; box-shadow: none; background-image: none; }\n'+focus+' { background-color: '+rgba(accent,18)+'; }\n'+quiet+' { background-color: transparent; }\n'+keyboard+' { outline-style: solid; outline-width: 1px; outline-color: '+rgba(text,45)+'; outline-offset: -1px; }\n'
+    navigation=', '.join('.floating-navigation '+row+' button'+state for row in ('.folder-item-row','.mailbox-item-row') for state in ('',':hover',':focus',':active',':checked','.active'))
+    return all_states+' { border-style: none; border-width: 0; border-color: transparent; outline-style: none; outline-width: 0; outline-offset: 0; box-shadow: none; background-image: none; }\n'+focus+' { background-color: '+rgba(accent,18)+'; }\n'+quiet+' { background-color: transparent; }\n'+keyboard+' { outline-style: solid; outline-width: 1px; outline-color: '+rgba(text,45)+'; outline-offset: -1px; }\n' + navigation+' { background-color: transparent; background-image: none; color: '+text+'; transition: none; }\n'
 
 # ==========================================
 # Function: Reuse one theme provider and apply an explicitly staged or saved appearance.

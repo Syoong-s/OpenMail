@@ -6,7 +6,6 @@ import time
 from email.utils import make_msgid
 from pathlib import Path
 import json
-from contextlib import nullcontext
 from .operation_gate import OperationGate
 
 from . import transport
@@ -99,7 +98,7 @@ class MailService(OrganizationService):
             self.status['syncing'] = True
             interrupted=False
             try:
-                self.flush_read_flags(locked=True,should_yield=self.sync_should_yield)
+                self.flush_mutations(locked=True,should_yield=self.sync_should_yield)
                 for account in tuple(self.accounts.values()):
                     if self.sync_should_yield():interrupted=True;break
                     if account.id in self.store.preference('paused_accounts',[]):continue
@@ -131,7 +130,7 @@ class MailService(OrganizationService):
     # Method: Save locally and queue provider synchronization without blocking GTK rendering.
     # ==========================================
     def mark_opened(self,identity):
-        message=self.store.get(identity)
+        message=self.store.state(identity)
         remote=not self.demo and not is_local_message(message)
         return self.store.mark_opened(identity,remote=remote)
 
@@ -140,40 +139,25 @@ class MailService(OrganizationService):
     # Method: Serialize provider access and acknowledge exact generations only after IMAP succeeds.
     # ==========================================
     def flush_read_flags(self,locked=False,should_yield=None):
+        self.flush_mutations(locked=locked,should_yield=should_yield)
+        return len(self.store.pending_read_flags())
+
+    # ==========================================
+    # Function: Drain persisted local changes on the configured background sync interval.
+    # Method: Share the provider gate and keep GUI actions independent of remote latency.
+    # ==========================================
+    def flush_mutations(self,locked=False,should_yield=None):
+        from .mail_mutations import flush
         if not locked:
-            if not self._read_flush_lock.acquire(blocking=False):return len(self.store.pending_read_flags())
+            if not self._read_flush_lock.acquire(blocking=False):return self.status.get('mutations_pending',0)
             try:
-                with self.lock:return self.flush_read_flags(locked=True,should_yield=should_yield)
+                with self.lock:return self.flush_mutations(locked=True,should_yield=should_yield)
             finally:self._read_flush_lock.release()
-        from collections import defaultdict
-        with self.store.db() as db:
-            pending=[dict(row) for row in db.execute('''SELECT p.message,p.seen,p.generation,m.id,m.account,m.folder,m.validity,m.uid,m.remote_gone
-                FROM pending_read_flags p LEFT JOIN messages m ON m.id=p.message''')]
-        groups=defaultdict(list);acknowledged=[];paused=self.store.preference('paused_accounts',[])
-        for row in pending:
-            if row['id'] is None or self.demo or is_local_message(row):acknowledged.append(row);continue
-            if row['account'] not in self.accounts or row['remote_gone'] or row['account'] in paused:continue
-            groups[(row['account'],row['folder'],row['validity'],bool(row['seen']))].append(row)
-        should_yield=should_yield or self.sync_should_yield
-        for (account,folder,validity,seen),rows in groups.items():
-            if should_yield():break
-            for start in range(0,len(rows),100):
-                if should_yield():break
-                page=rows[start:start+100]
-                try:
-                    if len(page)==1:transport.set_seen(self.accounts[account],page[0],seen)
-                    else:transport.set_seen_many(self.accounts[account],page,seen)
-                except Exception:break
-                acknowledged.extend(page)
-        with self.store.db() as db:
-            db.executemany('DELETE FROM pending_read_flags WHERE message=? AND generation=?',[(row['message'],row['generation']) for row in acknowledged])
-        pending=len(self.store.pending_read_flags());self.status['read_flags_pending']=pending
-        if pending and should_yield() and not self.stop_event.is_set():self.sync_event.set()
-        return pending
+        return flush(self,should_yield or self.sync_should_yield)
 
     # ==========================================
     # Function: Change mailbox state with account and UID safety checks.
-    # Method: Commit local read state only after a successful remote flag update.
+    # Method: Persist flag intents immediately and leave remote work to the background worker.
     # ==========================================
     def update(self, identity, changes):
         if not changes or set(changes) - {'seen', 'pinned', 'priority', 'archived', 'category', 'learn_sender'}:
@@ -182,15 +166,12 @@ class MailService(OrganizationService):
             raise ValueError('分类无效')
         if any(key in changes and not isinstance(changes[key], bool) for key in ('seen','pinned','priority','archived','learn_sender')):
             raise ValueError('状态值必须为布尔值')
-        with (self.lock if {'seen','pinned'} & changes.keys() else nullcontext()):
-            message = self.store.get(identity)
-            if ('seen' in changes or 'pinned' in changes) and not self.demo and not is_local_message(message):
-                if message['account'] not in self.accounts or message['remote_gone']:
-                    raise ValueError('邮件无法对应到当前账户，请先同步')
-                for key,flag in (('seen','\\Seen'),('pinned','\\Flagged')):
-                    if key in changes:
-                        transport.set_seen(self.accounts[message['account']],message,changes[key],flag)
-            return self.store.update(identity, changes)
+        from .mail_mutations import flags
+        for key in ('seen','pinned','priority'):
+            if key in changes:flags(self,[identity],key,changes[key])
+        if 'archived' in changes:self.move_message(identity,special='archive' if changes['archived'] else 'inbox')
+        local={key:value for key,value in changes.items() if key in ('category','learn_sender')}
+        return self.store.update(identity,local) if local else self.store.get(identity)
 
     # ==========================================
     # Function: Save or enqueue a composed message.
@@ -291,8 +272,8 @@ class MailService(OrganizationService):
                 original=self.store.get(source)
                 if original['account']==account.id:
                     members=self.store.thread(source)
-                    with self.store.db() as db:
-                        db.executemany('UPDATE messages SET done=1 WHERE account=? AND message_id=?',[(account.id,row['message_id']) for row in members])
+                    for row in members:
+                        if row['folder']!='@sent':self.move_message(row['id'],special='archive')
             copy_status = transport.append_sent(account, job['raw'])
         except Exception:
             copy_status = '邮件已投递，但副本保存失败；请核对服务商已发送文件夹'

@@ -1,6 +1,7 @@
 """Host-owned Linux mail fitting with isolated scripts and inert document markup."""
 import ctypes as C
 import json
+import time
 from .gtk_native import P, I, S
 from .reader_fit import MEASURE_MAIL, fitted_height
 
@@ -33,6 +34,7 @@ class WebKitMailFit:
         self.lib.webkit_settings_set_enable_javascript_markup(settings, 0)
         self.lib.webkit_settings_set_enable_javascript(settings, 1)
         self.pending, self.height, self.timer = False, None, 0
+        self.generation=-1;self.started=0;self.next_poll=0
         self.callback = C.CFUNCTYPE(I, P)(self.poll)
 
     # ==========================================
@@ -41,7 +43,7 @@ class WebKitMailFit:
     # ==========================================
     def start(self):
         if not self.timer:
-            self.timer = self.g.g_timeout_add(350, C.cast(self.callback, P), None)
+            self.timer = self.g.g_timeout_add(80, C.cast(self.callback, P), None)
 
     # ==========================================
     # Function: Read one trusted expression without sharing the document's script world.
@@ -82,11 +84,17 @@ class WebKitMailFit:
     # ==========================================
     def poll(self, *unused):
         reader, g = self.reader, self.g
+        now=time.monotonic()
         if reader.closed:
             self.timer = 0
             return 0
-        if self.pending or not reader.document_ready or not g.gtk_widget_get_mapped(reader.widget):
+        if not reader.document_ready or not g.gtk_widget_get_mapped(reader.widget):
             return 1
+        if self.generation!=reader.load_generation:
+            self.generation=reader.load_generation;self.height=None;self.started=now;self.next_poll=0
+        if now-self.started>2:reader.layout_ready=True;g.gtk_widget_set_opacity(reader.widget,1)
+        if self.pending or now<self.next_poll:return 1
+        self.next_poll=now+(.5 if reader.layout_ready else 0)
         if g.gtk_widget_get_allocated_height(reader.widget) < 8:
             return 1
         generation = reader.load_generation
@@ -110,6 +118,8 @@ class WebKitMailFit:
             if height and (self.height is None or abs(height - self.height) > 2):
                 self.height = height
                 g.gtk_widget_set_size_request(reader.widget, -1, height)
+            elif height:
+                reader.layout_ready=True;g.gtk_widget_set_opacity(reader.widget,1)
         allocated = g.gtk_widget_get_allocated_height(reader.widget)
         self.query('(()=>{if(document.title!==' + json.dumps(reader.expected_title) + ')return null;const result=' + MEASURE_MAIL + ';if(result)document.documentElement.style.overflowY='
                    "result.height*" + str(allocated) + "/result.viewport<4998?'hidden':'auto';return result})()", measured)

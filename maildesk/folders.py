@@ -178,6 +178,41 @@ def transfer_selected(client,message,destination,copy=False):
     return None
 
 # ==========================================
+# Function: Recover a MOVE whose connection closed before its UID mapping arrived.
+# Method: Verify source generation and compare destination MIME bytes before acknowledging or retrying.
+# ==========================================
+def recover_transfer(account,source,destination,message,confirmed=False):
+    import hashlib
+    from .transport import imap_connection,checked,mailbox_name,uid_validity
+    from .mime import MAX_MESSAGE_BYTES
+    with imap_connection(account) as client:
+        checked(client.select(mailbox_name(source['folder']),readonly=True),'核对移动来源')
+        if uid_validity(client)!=source['validity']:raise ValueError('移动来源的 UID 世代已变化，需要核对服务器')
+        rows=checked(client.uid('FETCH',source['uid'],'(UID)'),'核对来源 UID')
+        exists=any(re.search(rb'\bUID '+source['uid'].encode()+rb'\b',r[0] if isinstance(r,tuple) else r) for r in rows if isinstance(r,(bytes,tuple)))
+        checked(client.select(mailbox_name(destination),readonly=True),'核对移动目标')
+        validity=uid_validity(client)
+        mid=message['message_id']
+        if not mid or any(ord(c)<32 or ord(c)>126 for c in mid):raise ValueError('邮件标识不可用于安全恢复')
+        quoted='"'+mid.replace('\\','\\\\').replace('"','\\"')+'"'
+        rows=checked(client.uid('SEARCH',None,'HEADER','Message-ID',quoted),'查找移动结果')
+        candidates=b' '.join(r for r in rows if isinstance(r,bytes)).split()
+        if len(candidates)>32 or any(not uid.isdigit() for uid in candidates):raise ValueError('移动结果不唯一，需要核对服务器')
+        digest=hashlib.sha256(message['raw']).digest();matches=[]
+        for uid in candidates:
+            sizes=checked(client.uid('FETCH',uid.decode(),'(UID RFC822.SIZE)'),'核对移动内容大小')
+            size=next((int(m[1]) for r in sizes if isinstance(r,bytes) and (m:=re.search(rb'RFC822.SIZE (\d+)',r))),None)
+            if size is None or size>MAX_MESSAGE_BYTES:continue
+            data=checked(client.uid('FETCH',uid.decode(),'(UID BODY.PEEK[])'),'核对移动内容')
+            for part in data:
+                if isinstance(part,tuple) and isinstance(part[1],bytes) and re.search(rb'\bUID '+uid+rb'\b',part[0]) and hashlib.sha256(part[1]).digest()==digest:
+                    matches.append(uid.decode())
+        if len(matches)==1 and (confirmed or not exists):return {'validity':validity,'uid':matches[0]}
+        if not matches and exists and not confirmed:return None
+        # COPY/STORE/EXPUNGE failures can leave two copies; never delete/re-copy on a guess.
+        raise ValueError('移动结果待确认；已保留本地更改，不会重复移动或删除邮件')
+
+# ==========================================
 # Function: Permanently delete only the explicitly selected message UID.
 # Method: Require UIDPLUS and never issue mailbox-wide EXPUNGE or CLOSE.
 # ==========================================

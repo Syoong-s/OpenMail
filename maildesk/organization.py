@@ -4,7 +4,7 @@ from .local_mail import LOCAL_ACCOUNT,is_local_message
 
 # ==========================================
 # Function: Extend the mail service with serialized folder and organization operations.
-# Method: Keep remote confirmation before local state changes and request normal resync.
+# Method: Queue message mutations locally while retaining confirmed folder-management operations.
 # ==========================================
 class OrganizationService:
     # ==========================================
@@ -31,6 +31,9 @@ class OrganizationService:
             if operation in ('rename','delete') and current and current['special']:
                 raise ValueError('系统文件夹不能重命名或删除')
             if operation=='delete':
+                with self.store.db() as db:
+                    pending=db.execute('SELECT 1 FROM pending_moves WHERE account=? AND (source_folder=? OR destination=? OR attempted_destination=?) LIMIT 1',(account_id,path,path,path)).fetchone()
+                if pending:raise ValueError('文件夹有尚未同步的邮件移动，请先完成后台同步')
                 delimiter=current['delimiter']
                 if any(r['folder']!=path and delimiter and r['folder'].startswith(path+delimiter) for r in rows):
                     raise ValueError('请先处理子文件夹，再删除父文件夹')
@@ -77,35 +80,28 @@ class OrganizationService:
 
     # ==========================================
     # Function: Move/copy a selected message or send it to a special-use folder.
-    # Method: Resolve account destination before performing a UID-safe server operation.
+    # Method: Persist moves locally; keep explicit copies provider-confirmed and UID-safe.
     # ==========================================
     def move_message(self, identity, destination='', copy=False, special=''):
+        message=self.store.get(identity)
+        if special:
+            destination=self.store.special_folder(message['account'],special)
+            if not destination:raise ValueError('服务器未提供对应文件夹，请在“文件夹管理”中设置 '+special+' 映射')
+        if not copy:
+            from .mail_mutations import move
+            return move(self,identity,destination)
         with self.lock:
             message=self.store.get(identity)
-            if special:
-                destination=self.store.special_folder(message['account'],special)
-                if not destination:
-                    raise ValueError('服务器未提供对应文件夹，请在“文件夹管理”中设置 '+special+' 映射')
-            if special=='inbox' and destination==message['folder']:
-                self.store.update(identity,{'archived':False})
-                return self.store.organize(identity,done=False,aside=False,snoozed_until=0,trashed=False,spam=False)['id']
+            if message['validity']=='pending':raise ValueError('此邮件正在移动，请等待后台同步后再复制')
             row=next((r for r in self.store.list_folders(message['account']) if r['folder']==destination and r['selectable']),None)
-            if not row:
-                raise ValueError('目标文件夹不存在或不可选择')
-            mapping=None
+            if not row:raise ValueError('目标文件夹不存在或不可选择')
             local=self.demo or is_local_message(message)
             if not local:
                 account=self.accounts.get(message['account'])
-                if not account:
-                    raise ValueError('账户已移除')
-                mapping=folders.transfer(account,message,destination,copy)
-            elif not self.demo and message['account']!=LOCAL_ACCOUNT:
-                raise ValueError('旧版账户本地副本不能直接移动到服务器；可导出 EML 后导入“本地文件夹”')
-            result=self.store.transfer_local(identity,destination,copy,local,mapping)
-            if not copy:
-                with self.store.db() as db:db.execute("UPDATE mail_filter_seen SET state='manual',error='' WHERE account=? AND message_id=? AND state='uncertain'",(message['account'],message['message_id']))
-            self.request_sync()
-            return result
+                if not account:raise ValueError('账户已移除')
+                mapping=folders.transfer(account,message,destination,True)
+            else:mapping=None
+            return self.store.transfer_local(identity,destination,True,local,mapping)
 
     # ==========================================
     # Function: Permanently delete selected mail only after explicit UI confirmation.
@@ -133,8 +129,8 @@ class OrganizationService:
         completed=[]
         for identity in dict.fromkeys(identities):
             try:
-                if action in ('archive','trash','spam','inbox'):
-                    self.move_message(identity,special=action)
+                if action in ('archive','trash','spam','inbox','done'):
+                    self.move_message(identity,special=('archive' if value is not False else 'inbox') if action=='done' else action)
                 elif action in ('move','copy'):
                     self.move_message(identity,destination=value,copy=action=='copy')
                 elif action=='delete':
@@ -147,33 +143,9 @@ class OrganizationService:
         return completed
 
     # ==========================================
-    # Function: Confirm bulk flags using one authenticated UID-set operation per bounded mailbox generation.
-    # Method: Read compact identities, preserve partial completion on errors and commit only confirmed groups without MIME hydration.
+    # Function: Save bulk flags immediately and defer bounded UID-set operations to background sync.
+    # Method: Atomically save compact flags and coalesced provider intents without MIME hydration.
     # ==========================================
     def bulk_flags(self,identities,key,value):
-        from collections import defaultdict
-        from contextlib import nullcontext
-        from . import transport
-        identities=list(dict.fromkeys(identities));completed=[]
-        if key not in ('seen','pinned','priority') or not isinstance(value,bool):raise ValueError('无效批量状态')
-        with (self.lock if key!='priority' else nullcontext()):
-            try:
-                for start in range(0,len(identities),100):
-                    page=identities[start:start+100];marks=','.join('?' for _ in page)
-                    with self.store.db() as db:
-                        sources={row['id']:dict(row) for row in db.execute('SELECT id,account,folder,validity,uid,remote_gone FROM messages WHERE id IN ('+marks+')',page)}
-                    if len(sources)!=len(page):raise ValueError('所选邮件已变更，请刷新后重试')
-                    groups=defaultdict(list)
-                    for identity in page:
-                        row=sources[identity];local=key=='priority' or self.demo or is_local_message(row)
-                        groups[(local,row['account'],row['folder'],row['validity'])].append(row)
-                    for (local,account,folder,validity),rows in groups.items():
-                        if not local:
-                            if account not in self.accounts or any(row['remote_gone'] for row in rows):raise ValueError('邮件无法对应到当前账户，请先同步')
-                            transport.set_seen_many(self.accounts[account],rows,value,'\\Seen' if key=='seen' else '\\Flagged')
-                        with self.store.db() as db:
-                            db.executemany('UPDATE messages SET '+key+'=? WHERE id=?',[(int(value),row['id']) for row in rows])
-                            if key=='seen':db.executemany('DELETE FROM pending_read_flags WHERE message=?',[(row['id'],) for row in rows])
-                        completed.extend(row['id'] for row in rows)
-            except Exception as error:raise ValueError(f'已完成 {len(completed)} / {len(identities)} 项：{error}') from None
-        return completed
+        from .mail_mutations import flags
+        return flags(self,identities,key,value)

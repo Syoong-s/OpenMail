@@ -2,6 +2,8 @@
 
 所有命令从仓库根目录运行。构建缓存位于 `.runtime/`，产物位于 `dist/`。不要在真实邮箱配置下运行开发验收。
 
+本地即时操作、同步队列与邮件切换的验收说明见 [LOCAL_FIRST_SYNC.md](LOCAL_FIRST_SYNC.md)。
+
 ## Linux
 
 应用运行要求 Python 3.12+、GTK 3.24+、Fontconfig、OpenSSL 3、WebKitGTK 4.1 和 SVG 图像加载器（Debian/Ubuntu：`librsvg2-common`）。构建需要 Linux x86-64、GCC 兼容编译器、binutils、dpkg-deb。

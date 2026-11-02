@@ -60,6 +60,8 @@ class PinnedNavigationUI:
             g.gtk_widget_add_events(event,(1<<12)|(1<<13))
             for signal in ('enter-notify-event','leave-notify-event'):g.connect(event,signal,lambda *unused,e=event,t=pin,r=line,leave=signal.startswith('leave'):self.navigation_hover(e,t,r,leave=leave),count=3,returns=True)
             for widget in (button,pin):
+                g.gtk_widget_add_events(widget,1<<2)
+                g.connect(widget,'motion-notify-event',lambda *unused,e=event,t=pin,r=line:self.navigation_hover(e,t,r),count=3,returns=True)
                 g.connect(widget,'focus-in-event',lambda *unused,e=event,t=pin,r=line:self.navigation_hover(e,t,r,keyboard=True),count=3,returns=True)
                 g.connect(widget,'focus-out-event',lambda *unused,e=event,t=pin,r=line:self.navigation_hover(e,t,r,leave=True),count=3,returns=True)
         if self.service:self.refresh_pinned_navigation(force=True)
@@ -103,6 +105,11 @@ class PinnedNavigationUI:
             row_context=g.gtk_widget_get_style_context(self.view_pin_rows[view]);(g.gtk_style_context_add_class if self.view==view else g.gtk_style_context_remove_class)(row_context,b'active')
             pinned={'kind':'view','view':view} in pins;context=g.gtk_widget_get_style_context(button)
             (g.gtk_style_context_add_class if pinned else g.gtk_style_context_remove_class)(context,b'pinned');g.gtk_widget_set_tooltip_text(button,('取消固定' if pinned else '固定到左侧栏').encode())
+            if not hasattr(self,'navigation_persistent_tools'):self.navigation_persistent_tools=set()
+            if pinned:self.navigation_persistent_tools.add(button)
+            else:self.navigation_persistent_tools.discard(button)
+            owner=getattr(self,'navigation_hover_owner',None)
+            g.gtk_widget_set_opacity(button,1 if pinned or owner and owner['tools']==button else 0)
         for item,button in getattr(self,'rail_pin_buttons',[]):
             active=self.view==item.get('view') if item['kind']=='view' else (self.view=='folder' and self.folder_account==item['account'] and self.folder_path==item['path'])
             (g.gtk_style_context_add_class if active else g.gtk_style_context_remove_class)(g.gtk_widget_get_style_context(button),b'rail-active')

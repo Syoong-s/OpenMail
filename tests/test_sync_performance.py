@@ -218,7 +218,7 @@ class SyncPerformanceTests(unittest.TestCase):
         self.assertEqual(len(self.store.ingest_many('test','INBOX','77',sources)),2)
     # ==========================================
     # Function: Let a state, move or folder command finish before the rest of a hundred-mail sync.
-    # Method: Block a real body response, queue an actual service mutation, then release exactly that in-flight command.
+    # Method: Require local flags/moves to finish during a blocked body response while folder CRUD retains provider priority.
     # ==========================================
     def test_interactive_operations_preempt_large_sync(self):
         for operation in ('state','move','folder'):
@@ -238,12 +238,18 @@ class SyncPerformanceTests(unittest.TestCase):
                     finally:finished.set()
                 with patch('maildesk.transport.imap_connection',provider.connection):
                     sync=threading.Thread(target=service.sync);sync.start();self.assertTrue(provider.entered.wait(2));worker=threading.Thread(target=action);worker.start()
-                    deadline=time.monotonic()+2
-                    while not service.lock.interrupted() and time.monotonic()<deadline:time.sleep(.001)
-                    self.assertTrue(service.lock.interrupted());provider.release.set();self.assertTrue(finished.wait(3));sync.join(3);worker.join(3)
-                self.assertFalse(sync.is_alive());self.assertFalse(errors,errors);self.assertTrue(service.sync_event.is_set())
-                self.assertLess(service.store.list_messages(view='all')['total'],120)
-                self.assertTrue(service.status['accounts']['test'].get('interrupted'));service.close()
+                    try:
+                        if operation=='folder':
+                            deadline=time.monotonic()+2
+                            while not service.lock.interrupted() and time.monotonic()<deadline:time.sleep(.001)
+                            self.assertTrue(service.lock.interrupted())
+                        else:
+                            self.assertTrue(finished.wait(1),'Local mail actions waited for the provider')
+                            self.assertFalse(service.lock.interrupted())
+                    finally:provider.release.set();sync.join(5);worker.join(5)
+                self.assertFalse(sync.is_alive());self.assertFalse(errors,errors)
+                if operation=='folder':self.assertTrue(service.status['accounts']['test'].get('interrupted'))
+                service.close()
     # ==========================================
     # Function: Keep purely local priority changes independent of an in-flight provider response.
     # Method: Hold synchronization inside BODY FETCH and require local state to commit before releasing it.
@@ -281,24 +287,29 @@ class SyncPerformanceTests(unittest.TestCase):
 
     # ==========================================
     # Function: Set explicit bulk states without one login or body lookup per message.
-    # Method: Apply101 pinned changes against the real service and require exactly two bounded UID STORE sessions.
+    # Method: Commit101 local changes without network I/O, then require two bounded UID STORE sessions on flush.
     # ==========================================
     def test_explicit_bulk_flags_use_uid_sets(self):
         provider=Provider(101);service=MailService(self.root/'bulk',[self.account]);identities=service.store.ingest_many('test','INBOX','77',[{'uid':uid,**row} for uid,row in provider.boxes['INBOX'].items()])
-        with patch('maildesk.transport.imap_connection',provider.connection):self.assertEqual(len(service.bulk_action(identities,'pinned',True)),101)
+        with patch('maildesk.transport.imap_connection',provider.connection):
+            self.assertEqual(len(service.bulk_action(identities,'pinned',True)),101)
+            self.assertEqual(provider.commands,[])
+            service.flush_mutations()
         self.assertEqual(sum(row[0]=='LOGIN' for row in provider.commands),2);self.assertEqual(sum(row[0]=='STORE' for row in provider.commands),2)
         self.assertTrue(all(b'\\Flagged' in row['flags'] for row in provider.boxes['INBOX'].values()))
         with service.store.db() as db:self.assertEqual(db.execute('SELECT count(*) FROM messages WHERE pinned=1').fetchone()[0],101)
         service.close()
 
     # ==========================================
-    # Function: Keep failed bulk remote operations from claiming unconfirmed local state.
-    # Method: Fail the second100-source provider group and verify exact partial progress in both error and cache.
+    # Function: Preserve all local edits and retry only unacknowledged provider groups.
+    # Method: Fail the last provider group and verify all local flags remain read with one durable retry.
     # ==========================================
     def test_bulk_flags_partial_failure_preserves_confirmed_groups(self):
         provider=Provider(101);service=MailService(self.root/'partial',[self.account]);identities=service.store.ingest_many('test','INBOX','77',[{'uid':uid,**row} for uid,row in provider.boxes['INBOX'].items()])
-        with patch('maildesk.transport.set_seen_many',side_effect=[None,OSError('fixture offline')]),self.assertRaisesRegex(ValueError,'100 / 101'):service.bulk_action(identities,'seen',True)
-        with service.store.db() as db:self.assertEqual(db.execute('SELECT count(*) FROM messages WHERE seen=1').fetchone()[0],100)
+        service.bulk_action(identities,'seen',True)
+        with patch('maildesk.transport.set_seen_many'),patch('maildesk.transport.set_seen',side_effect=OSError('fixture offline')):service.flush_mutations()
+        with service.store.db() as db:self.assertEqual(db.execute('SELECT count(*) FROM messages WHERE seen=1').fetchone()[0],101)
+        self.assertEqual(len(service.store.pending_read_flags()),1)
         service.close()
 
     # ==========================================

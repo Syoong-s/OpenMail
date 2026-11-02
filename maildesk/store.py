@@ -69,6 +69,8 @@ class Store(OrganizationStore):
             projection.initialize_schema(db)
             from .navigation_index import initialize as initialize_navigation
             initialize_navigation(db)
+            from .mail_mutations import initialize as initialize_mutations
+            initialize_mutations(db)
             from .thread_graph import initialize_graph
             initialize_graph(db)
             from .filter_rules import initialize as initialize_filters
@@ -115,6 +117,14 @@ class Store(OrganizationStore):
         thread = hashlib.sha256((account + '\0' + root).encode()).hexdigest()[:24]
         category, reason = classify(message, self.sender_rules(account), self.rules,self.preference('recognition_enabled',True))
         with self.db() as db:
+            pending=db.execute('SELECT message FROM pending_moves WHERE account=? AND source_folder=? AND source_validity=? AND source_uid=?',(account,folder,str(validity),str(uid))).fetchone()
+            if pending:return pending['message']
+            # Observe other new mail normally while an ambiguous move is being recovered.
+            candidates=db.execute('''SELECT m.id,m.raw FROM pending_moves p JOIN messages m ON m.id=p.message
+                WHERE p.account=? AND (p.destination=? OR p.attempted_destination=?) AND m.message_id=?''',
+                (account,folder,folder,message['message_id']))
+            for candidate in candidates:
+                if candidate['raw']==raw:return candidate['id']
             existing=db.execute('SELECT id FROM messages WHERE account=? AND folder=? AND validity=? AND uid=?',(account,folder,str(validity),str(uid))).fetchone()
             if existing:
                 identity=existing['id']
@@ -160,9 +170,11 @@ class Store(OrganizationStore):
     # ==========================================
     def mailbox(self, account, folder, validity):
         with self.db() as db:
-            db.execute('UPDATE messages SET remote_gone=1 WHERE account=? AND folder=? AND validity<>?', (account, folder, validity))
+            db.execute('UPDATE messages SET remote_gone=1 WHERE account=? AND folder=? AND validity<>? AND id NOT IN (SELECT message FROM pending_moves)', (account, folder, validity))
             db.execute('INSERT INTO folders(account,folder,validity) VALUES(?,?,?) ON CONFLICT(account,folder) DO UPDATE SET validity=excluded.validity', (account, folder, validity))
-            return {r['uid'] for r in db.execute('SELECT uid FROM messages WHERE account=? AND folder=? AND validity=? AND remote_gone=0', (account, folder, validity))}
+            known={r['uid'] for r in db.execute('SELECT uid FROM messages WHERE account=? AND folder=? AND validity=? AND remote_gone=0', (account, folder, validity))}
+            known.update(r[0] for r in db.execute('SELECT source_uid FROM pending_moves WHERE account=? AND source_folder=? AND source_validity=?',(account,folder,validity)))
+            return known
 
     # ==========================================
     # Function: Reconcile cached UIDs against a complete server snapshot.
@@ -246,7 +258,7 @@ class Store(OrganizationStore):
         elif view=='aside':
             where.append('aside=1')
         elif view=='done':
-            where.append('done=1')
+            where.append(f"(done=1 OR archived=1 OR {special}='archive')")
         elif view=='blocked':
             where.append(policy+"='blocked'")
         elif view=='new_senders':
@@ -274,7 +286,7 @@ class Store(OrganizationStore):
             total=db.execute('SELECT count(*) FROM messages WHERE '+predicate,values).fetchone()[0]
             page='' if all_items else ' LIMIT ? OFFSET ?'
             parameters=values if all_items else values+[min(max(limit,1),200),max(offset,0)]
-            rows=db.execute("SELECT id,account,folder,thread_id,sender,json_extract(parsed,'$.sender_name') AS sender_name,coalesce(json_array_length(parsed,'$.attachments'),0) AS attachments_count,subject,substr(body,1,160) AS preview,timestamp,category,reason,seen,pinned,"+effective_priority+" AS priority,archived,snoozed_until,reminder,aside,done,(SELECT count(*) FROM read_receipts r JOIN jobs j ON j.id=r.job WHERE j.account=messages.account AND j.message_id=messages.message_id) AS receipts FROM messages WHERE "+predicate+' ORDER BY timestamp DESC'+page,parameters).fetchall()
+            rows=db.execute("SELECT id,account,folder,thread_id,sender,json_extract(parsed,'$.sender_name') AS sender_name,coalesce(json_array_length(parsed,'$.attachments'),0) AS attachments_count,subject,substr(body,1,160) AS preview,timestamp,category,reason,seen,pinned,"+effective_priority+" AS priority,(archived=1 OR "+special+"='archive') AS archived,snoozed_until,reminder,aside,(done=1 OR archived=1 OR "+special+"='archive') AS done,(SELECT count(*) FROM read_receipts r JOIN jobs j ON j.id=r.job WHERE j.account=messages.account AND j.message_id=messages.message_id) AS receipts FROM messages WHERE "+predicate+' ORDER BY timestamp DESC'+page,parameters).fetchall()
         return {'items':[dict(r) for r in rows],'total':total}
 
     # ==========================================
@@ -297,7 +309,7 @@ class Store(OrganizationStore):
     def get(self, identity, raw=False):
         columns='*' if raw else self._message_columns
         with self.db() as db:
-            row=db.execute('SELECT '+columns+', '+EFFECTIVE_PRIORITY_SQL+' AS effective_priority FROM messages WHERE id=?',(identity,)).fetchone()
+            row=db.execute('SELECT '+columns+', '+EFFECTIVE_PRIORITY_SQL+" AS effective_priority,(SELECT special FROM folders f WHERE f.account=messages.account AND f.folder=messages.folder) AS folder_special FROM messages WHERE id=?",(identity,)).fetchone()
             if row is None:raise KeyError('邮件不存在')
             result=dict(row);result['labels']=[]
             domain='@'+result['sender'].rsplit('@',1)[-1]
@@ -309,7 +321,23 @@ class Store(OrganizationStore):
                 if item['label'] is None:result['sender_policy']=item['policy']
                 else:result['labels'].append(item['label'])
         result['parsed']=json.loads(result['parsed'])
+        if result.get('folder_special')=='archive':result['archived']=result['done']=1
+        elif result['archived']:result['done']=1
         return result
+
+    # ==========================================
+    # Function: Read mutable mail state without parsing MIME or loading body strings.
+    # Method: Use a small indexed projection for native actions and read-flag commits.
+    # ==========================================
+    def state(self,identity):
+        with self.db() as db:
+            row=db.execute('''SELECT m.id,m.account,m.folder,m.validity,m.uid,m.remote_gone,m.seen,m.pinned,m.priority,
+                m.category,m.aside,m.snoozed_until,m.trashed,m.spam,
+                (m.done=1 OR m.archived=1 OR coalesce(f.special,'')='archive') AS done,
+                (m.archived=1 OR coalesce(f.special,'')='archive') AS archived
+                FROM messages m LEFT JOIN folders f ON f.account=m.account AND f.folder=m.folder WHERE m.id=?''',(identity,)).fetchone()
+        if row is None:raise KeyError('邮件不存在')
+        return dict(row)
 
     # ==========================================
     # Function: Show cached members of the same RFC conversation.

@@ -241,7 +241,8 @@ class FilterTests(unittest.TestCase):
     # ==========================================
     def test_ordinary_confirmed_move_resolves_uncertain_filter_guard(self):
         identity=self.mail(uid='1');message=runner.source(self.store,identity);self.rule(destinations={'test':'Other'});runner.finish(self.store,message,{'rule':'rule','destination':'Archive'},'uncertain','lost reply');provider=Provider(0);provider.boxes['INBOX']['1']={'raw':self.store.get(identity,raw=True)['raw'],'flags':set()}
-        with patch('maildesk.transport.imap_connection',provider.connection):self.service.move_message(identity,'Archive')
+        with patch('maildesk.transport.imap_connection',provider.connection):
+            self.service.move_message(identity,'Archive');self.service.flush_mutations()
         with self.store.db() as db:self.assertEqual(db.execute('SELECT state FROM mail_filter_seen WHERE account=? AND message_id=?',('test',message['message_id'])).fetchone()[0],'manual')
         self.assertEqual(len(self.service.preview_filters('test')['entries']),1);self.assertEqual(runner.automatic(self.account,self.store,None)['processed'],0)
 

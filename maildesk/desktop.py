@@ -29,6 +29,7 @@ from .desktop_conversation import ConversationUI
 from .desktop_accounts import AccountScopeUI
 from .desktop_list_render import ListRenderUI
 from .desktop_chat import ContactChatUI
+from .desktop_mail_updates import MailUpdatesUI
 
 ASSETS = Path(__file__).parent / 'desktop_assets'
 VIEWS = {'inbox':'收件箱','unread':'未读邮件','priority':'优先处理','pinned':'置顶邮件','sent':'已发送','drafts':'草稿与发件箱','archive':'归档','snoozed':'稍后','reminders':'跟进提醒','aside':'暂存','done':'已完成','trash':'废纸篓','spam':'垃圾邮件','all':'所有邮件','new_senders':'新发件人','blocked':'已屏蔽'}
@@ -39,7 +40,7 @@ STATES = {'draft':'草稿','queued':'等待发送','sending':'正在发送','sen
 # Function: Run native windows and coordinate mailbox operations.
 # Method: GTK callbacks remain on the main thread; slow work returns through a queue.
 # ==========================================
-class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, FocusUI, InboxUI, OrganizationUI, GeneralUI):
+class DesktopApp(MailUpdatesUI,ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, FocusUI, InboxUI, OrganizationUI, GeneralUI):
     # ==========================================
     # Function: Initialize the native application without touching a live mailbox yet.
     # Method: Let GtkApplication route second activations before acquiring storage locks.
@@ -159,6 +160,11 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
         self.set_reader_state(False)
         self.g.gtk_widget_set_visible(self.widget('more'), int(getattr(self,'render_has_more',False) or len(self.items)<self.total))
         self.apply_layout()
+        if os.name=='nt':
+            try:
+                from .windows_reader import warm_reader
+                warm_reader(self)
+            except (OSError,RuntimeError):pass  # Opening a message reports any actual reader failure.
         if getattr(self.options,'background',False) and self.tray_available():self.g.gtk_widget_hide(self.window)
         self.g.label(self.widget('banner'), '演示邮箱 · 合成邮件，外发已关闭' if self.profile.demo else '你的邮件，你的节奏')
         from .desktop_forms import ask_credential
@@ -279,7 +285,7 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
                         self.refresh()
                 if time.monotonic() >= self.notice_until:
                     failures = [key for key,value in status['accounts'].items() if not value.get('ok')]
-                    text = status.get('worker_error') or ('同步失败：' + '、'.join(failures) if failures else '正在同步邮件…' if status['syncing'] else '最近同步 ' + datetime.fromtimestamp(status['last_sync']).strftime('%H:%M:%S') if status['last_sync'] else '本地邮件核心已就绪')
+                    text = status.get('worker_error') or status.get('mutation_error') or ('同步失败：' + '、'.join(failures) if failures else '正在同步邮件…' if status['syncing'] else '最近同步 ' + datetime.fromtimestamp(status['last_sync']).strftime('%H:%M:%S') if status['last_sync'] else '本地邮件核心已就绪')
                     self.g.gtk_widget_set_tooltip_text(self.widget('sync'),text.encode())
                     self.g.gtk_revealer_set_reveal_child(self.widget('toast_revealer'),0)
         except Exception as error:
@@ -372,8 +378,9 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
             from .desktop_loading import LocalLoader,mailbox_projection
             if not getattr(self,'local_loader',None):self.local_loader=LocalLoader(self)
             request=(self.view,category,scope,self.folder_path,search,self.limit,self.inboxes.active())
-            self.local_loader.request('list',lambda:mailbox_projection(self,request),lambda result:self.apply_projection(result))
+            self.local_loader.request_list(request,self.apply_projection)
             return
+        if self.patch_mail_projection(projection):return
         self.begin_list_render(projection,category,search)
 
     # ==========================================
@@ -392,12 +399,16 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
             context=self.g.gtk_widget_get_style_context(self.widget('nav_'+key))
             (self.g.gtk_style_context_add_class if key==self.view else self.g.gtk_style_context_remove_class)(context,b'active')
         self.rendering = True
+        self.retain_mail_rows()
         self.g.disconnect('list-headers')
+        for identity in self.quick_buttons:
+            if identity not in self.list_reusable_rows:self.g.disconnect('list-row-'+identity)
         self.row_groups={}
         self.rows={}
         self.g.clear(self.widget('messages'))
         self.rows = {}
         self.summary_rows={};self.quick_buttons={};self.row_status={};self.row_history_badges={}
+        self.list_row_signatures={}
         self.row_avatar_styles={}
         self.row_avatars={}
         selected_row = None
@@ -437,8 +448,18 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
         self.list_avatar_state=avatar_state
         labels_by_id=projection['labels']
         show_avatar=self.service.store.preference('avatars_mode','everywhere') in ('everywhere','list')
+        batch_started=time.monotonic();smart_layout=self.inboxes.active()['mode']=='smart'
         for index,item in enumerate(render_items):
             if '_summary' in item:self.summary_row(item['_summary']);continue
+            identity = ('job:' if self.view == 'drafts' else '') + item['id']
+            section=self.inbox_sections.get(identity)
+            row_group=section['key'] if section else (item['sender'].rsplit('@',1)[-1] if grouping=='domain' else item['sender']) if grouping in ('sender','domain') and self.view!='drafts' else None
+            signature=(dict(item),labels_by_id.get(identity,[]),repr(presentation),show_avatar,repr(avatar_state),grouping,
+                       row_group,(section['collapsed'],section['shown'][-1]['id']==identity) if section and smart_layout else None)
+            self.list_row_signatures[identity]=signature
+            if self.reuse_mail_row(identity,signature):
+                if time.monotonic()-batch_started>=.012:self.rendering=False;yield;self.rendering=True;batch_started=time.monotonic()
+                continue
             row = self.g.gtk_list_box_row_new()
             if self.view!='drafts':self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(row),b'mail-item-row')
             self.g.gtk_widget_set_size_request(row,-1,presentation['row_height'])
@@ -512,8 +533,9 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
             self.g.gtk_widget_show_all(row)
             if index%8==7:
                 self.rendering=False;yield
-                self.rendering=True
+                self.rendering=True;batch_started=time.monotonic()
         self.g.gtk_widget_show_all(self.widget('messages'))
+        self.release_mail_rows()
         selected_row=next((row for row,identity in self.rows.items() if identity==self.selected),None)
         if selected_row:
             self.g.gtk_list_box_select_row(self.widget('messages'), selected_row)
@@ -522,10 +544,11 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
         self.render_has_more=render_has_more
         self.g.gtk_widget_set_visible(self.widget('more'), int(render_has_more or (len(render_items) if self.focus_group else len(self.items)) < self.total))
         if self.selected and (selected_row or (not self.selected.startswith('job:') and self.current and self.selected==self.current.get('id'))):
-            if not getattr(self,'pending_read_identity',''):self.read(self.selected)
+            if not getattr(self,'pending_read_identity','') and (not self.current or self.current.get('id')!=self.selected):self.read(self.selected)
         elif not getattr(self,'pending_read_identity',''):
             self.clear_reader()
         self.apply_layout()
+        self.rendered_mail_context=self.mail_list_context()
 
     # ==========================================
     # Function: Apply the newest local mailbox snapshot with coherent native preferences.
@@ -698,8 +721,7 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
         if changed and not message['seen'] and self.service.store.preference('mark_read_on_open',True):
             if self.service.mark_opened(identity):
                 message={**message,'seen':1}
-                self.queue.put((lambda result:self.refresh(),None))
-                self.background(self.service.flush_read_flags)
+                self.queue.put((lambda result:self.mail_changed([identity]),None))
         self.current = message
         parsed = message['parsed']
         prepared=getattr(self,'read_prepared',None)
@@ -768,13 +790,13 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
 
     # ==========================================
     # Function: Apply an incoming-mail state update off the GTK thread.
-    # Method: Wait for server read-state confirmation before reloading local state.
+    # Method: Commit local intent on the foreground worker and patch native state on completion.
     # ==========================================
     def update(self, changes):
         if not self.selected or self.selected.startswith('job:'):
             return
         identity = self.selected
-        self.background(lambda:self.service.update(identity, changes), lambda result:self.refresh())
+        self.local_loader.action(lambda:self.service.update(identity, changes),lambda result:self.mail_changed([identity]),self.show_error)
 
     # ==========================================
     # Function: Toggle a message display/read flag.
@@ -1002,6 +1024,9 @@ class DesktopApp(ContactChatUI,ListRenderUI,AccountScopeUI, ConversationUI, Focu
         if getattr(self,'chat_root',None):
             self.leave_chat();self.g.disconnect('chat-static')
         self.closing = True
+        self.cancel_list_render();self.release_mail_rows(discard=True)
+        for hwnd,handle in getattr(self,'windows_reader_idle',[]):self.windows_webview_bridge.md_webview_close(handle)
+        self.windows_reader_idle=[]
         if getattr(self,"reader_handoff",None):self.reader_handoff.close()
         if getattr(self,'workspace_geometry',None):self.workspace_geometry.close()
         self.g.surfaces.shutdown()

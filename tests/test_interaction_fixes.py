@@ -122,12 +122,15 @@ class AutomaticReadTests(unittest.TestCase):
 
     # ==========================================
     # Function: Honor a later manual unread command instead of replaying an older automatic read.
-    # Method: Commit a successful explicit provider update and verify the pending intent is removed.
+    # Method: Commit unread locally, verify no immediate provider call, then acknowledge its queued generation.
     # ==========================================
     def test_explicit_unread_supersedes_pending_read(self):
         self.service.mark_opened(self.identity)
         with patch('maildesk.transport.set_seen') as remote:self.service.update(self.identity,{'seen':False})
-        self.assertFalse(self.store.get(self.identity)['seen']);self.assertEqual(self.store.pending_read_flags(),[])
+        self.assertFalse(self.store.get(self.identity)['seen']);self.assertEqual(self.store.pending_read_flags()[0]['seen'],0)
+        remote.assert_not_called()
+        with patch('maildesk.transport.set_seen') as remote:self.service.flush_mutations()
+        self.assertEqual(self.store.pending_read_flags(),[])
         self.assertFalse(remote.call_args.args[2])
 
     # ==========================================

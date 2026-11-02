@@ -169,7 +169,7 @@ class ChatRichSurface(ConversationUI):
         for leaf in self.leaves:
             if leaf['reader'] and getattr(leaf['reader'],'failed',False) and not leaf['fallback']:
                 leaf['fallback']=True;g.gtk_widget_set_no_show_all(leaf['preview'],0);g.clear(leaf['preview']);g.gtk_box_pack_start(leaf['preview'],self.text_label(fragment_text(leaf['source']) or '(无文字正文)',None),0,1,0);g.gtk_widget_show_all(leaf['preview'])
-            if leaf['reader'] and leaf['reader'].document_ready:
+            if leaf['reader'] and leaf['reader'].document_ready and getattr(leaf['reader'],'layout_ready',True):
                 g.gtk_widget_set_no_show_all(leaf['preview'],1);g.gtk_widget_hide(leaf['preview'])
             if not g.gtk_widget_get_mapped(leaf['host']):continue
             x,y=C.c_int(),C.c_int();g.gtk_widget_translate_coordinates(leaf['host'],app.chat_timeline,0,0,C.byref(x),C.byref(y))

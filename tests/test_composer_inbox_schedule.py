@@ -107,6 +107,7 @@ class ComposerInboxTests(unittest.TestCase):
     # Method: Compare successful versus uncertain outcomes using the same service path.
     # ==========================================
     def test_done_after_reply_only_on_success(self):
+        self.store.save_folders('test',[{'name':'INBOX','special':'inbox'},{'name':'Archive','special':'archive'}])
         source=self.mail('original');self.store.set_preference('done_after_reply',True)
         self.service.compose({'account':'test','to':'friend@example.com','body':'reply','reply_source':source},True)
         from maildesk.transport import DeliveryError
@@ -116,7 +117,7 @@ class ComposerInboxTests(unittest.TestCase):
         self.service.compose({'account':'test','to':'friend@example.com','body':'reply again','reply_source':source},True)
         with patch('maildesk.transport.deliver',return_value={}),patch('maildesk.transport.append_sent',return_value='local'):
             self.service.process_one()
-        self.assertTrue(self.store.get(source)['done'])
+        self.assertTrue(self.store.get(source)['done']);self.assertEqual(self.store.get(source)['folder'],'Archive')
 
     # ==========================================
     # Function: Stop an outgoing follow-up reminder after a real reply references the sent mail.

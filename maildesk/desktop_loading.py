@@ -15,6 +15,33 @@ class LocalLoader:
     # ==========================================
     def __init__(self,app):
         self.app=app;self.executor=ThreadPoolExecutor(max_workers=2,thread_name_prefix='maildesk-local');self.foreground=ThreadPoolExecutor(max_workers=2,thread_name_prefix='maildesk-read');self.channels={};self.serial=0;self.closed=False;self.bodies=OrderedDict();self.body_bytes=0;self.body_lock=threading.RLock();self.address_due=time.monotonic()+.1;self.address_running=False;self.classification_policy=None;self.classification_due=0;self.classification_changed=False;self.classification_refresh=0
+        self.projections=OrderedDict()
+        self.actions=ThreadPoolExecutor(max_workers=1,thread_name_prefix='maildesk-actions')
+
+    # ==========================================
+    # Function: Restore recently visited folders without repeating full focused-list queries.
+    # Method: Key a bounded cache by transactional revision, preferences and exact navigation scope.
+    # ==========================================
+    def request_list(self,request,success):
+        store=self.app.service.store
+        with store.db() as db:revision=tuple(db.execute("SELECT topic,value FROM navigation_revision ORDER BY topic").fetchall())
+        revision=tuple(tuple(row) for row in revision)
+        focus=self.app.focus_group;key=(repr(request),focus,revision,repr(getattr(store._preference_scope,'values',None)))
+        if request[6]['mode']=='conversations':
+            self.request('list',lambda:mailbox_projection(self.app,request,focus),success);return
+        cached=self.projections.pop(key,None)
+        if cached and time.monotonic()-cached[0]<30:
+            self.projections[key]=cached;self.cancel('list');success(cached[1]);return
+        # ==========================================
+        # Function: Admit only the latest complete local result into the navigation cache.
+        # Method: Bound total row references and count, allowing ordinary navigation to reuse metadata.
+        # ==========================================
+        def ready(result):
+            self.projections[key]=(time.monotonic(),result)
+            while len(self.projections)>8 or sum(len(v[1]['items']) for v in self.projections.values())>20000:
+                self.projections.popitem(last=False)
+            success(result)
+        self.request('list',lambda:mailbox_projection(self.app,request,focus),ready)
 
     # ==========================================
     # Function: Replace a pending request without touching GTK from a worker.
@@ -59,11 +86,11 @@ class LocalLoader:
                 with self.app.service.store.preference_snapshot():result=(True,operation())
             except Exception as error:result=(False,error)
             self.app.queue.put((finish,result))
-        (self.foreground if state['channel'] in ('chat','read') else self.executor).submit(run)
+        (self.foreground if state['channel'] in ('chat','read','list') else self.executor).submit(run)
 
     # ==========================================
     # Function: Prioritize finite local user actions independently of network and indexing queues.
-    # Method: Commit on the foreground pool and deliver success or failure through GTK's normal completion queue.
+    # Method: Preserve click order on a dedicated local lane and deliver results through GTK's completion queue.
     # ==========================================
     def action(self,operation,success,failure):
         # ==========================================
@@ -74,7 +101,7 @@ class LocalLoader:
             try:result=operation()
             except Exception as error:self.app.queue.put((failure,error))
             else:self.app.queue.put((success,result))
-        if not self.closed:self.foreground.submit(run)
+        if not self.closed:self.actions.submit(run)
 
     # ==========================================
     # Function: Invalidate local work when an explicit destination is cleared.
@@ -183,15 +210,17 @@ class LocalLoader:
     def close(self):
         self.closed=True
         for state in self.channels.values():state['wanted']=None
+        self.actions.shutdown(wait=True,cancel_futures=False)
         self.foreground.shutdown(wait=True,cancel_futures=True);self.executor.shutdown(wait=True,cancel_futures=True);self.bodies.clear();self.body_bytes=0
 
 # ==========================================
 # Function: Query one immutable mailbox projection without native controls.
 # Method: Batch complete focus groups, folder metadata and visible labels within one worker preference snapshot.
 # ==========================================
-def mailbox_projection(app,request):
+def mailbox_projection(app,request,focus=None):
     store=app.service.store;view,category,scope,folder,search,limit,definition=request;started=time.monotonic()
-    if view=='inbox' and not folder and definition['mode']=='conversations' and not app.focus_group:
+    focus=app.focus_group if focus is None else focus
+    if view=='inbox' and not folder and definition['mode']=='conversations' and not focus:
         core=app.contacts;rows=[];offset=0;result=None;indexing=None
         while offset<limit:
             result=core.list_conversations(account=scope,search=search,limit=min(100,limit-offset),offset=offset,backfill_limit=256 if not offset else 0,verification_limit=8 if not offset else 0,verification_bytes=getattr(app,'chat_verify_budget',32*1024*1024))
@@ -217,8 +246,8 @@ def mailbox_projection(app,request):
         admitted=rows
         if sections is not None:
             from .desktop_focus import focused_render_items
-            admitted=next((section['items'][:limit] for section in sections if section['key']==app.focus_group),[]) if app.focus_group else [row for row in focused_render_items(sections,limit)[0] if '_summary' not in row]
+            admitted=next((section['items'][:limit] for section in sections if section['key']==focus),[]) if focus else [row for row in focused_render_items(sections,limit)[0] if '_summary' not in row]
         counts=history_counts(store,[row['id'] for row in admitted])
         for row in admitted:row['history_count']=counts.get(row['id'],1)
-    labels=store.labels_for([row['id'] for row in rows]) if view!='drafts' and store.preference('labels_list',True) else {}
+    labels=store.labels_for([row['id'] for row in admitted]) if view!='drafts' and store.preference('labels_list',True) else {}
     return {'items':rows,'total':total,'sections':sections,'folders':store.list_folders(),'smart':store.smart_folders(),'labels':labels,'new_count':store.list_messages(view='new_senders')['total'] if view=='inbox' and store.preference('gatekeeper_mode','off')=='explicit' else 0,'prepare_seconds':time.monotonic()-started}

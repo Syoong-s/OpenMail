@@ -44,7 +44,7 @@ def chat_pending(store,key):
 # Function: Prepare complete ordinary-mail rich bodies and durable contact jobs off GTK.
 # Method: Query exactly five eligible sources with no selection-time index backfill.
 # ==========================================
-def chat_snapshot(app,core,key,scope,before=None,window=5):
+def chat_snapshot(app,core,key,scope,before=None,window=5,retained=()):
     started=time.monotonic()
     result=core.conversation_messages(key,account=scope,before=before,limit=5,backfill_limit=0,verification_limit=0,content_bytes=8*1024*1024)
     prepared=time.monotonic()
@@ -53,6 +53,11 @@ def chat_snapshot(app,core,key,scope,before=None,window=5):
     with app.service.store.db() as db:
         db.execute('BEGIN')
         result['draft'],result['pending']=contact_jobs(db,key,include_draft=True)
+        result['retained']={}
+        if retained:
+            sql,values=core._ctes(scope,key)
+            for row in db.execute(sql+' SELECT id,copy_seen AS seen,copy_pinned AS pinned,done,archived FROM unique_mail WHERE id IN ('+','.join('?' for _ in retained)+')',values+list(retained)):
+                result['retained'][row['id']]=dict(row)
     from .address_book import sender_detail
     peer=key.removeprefix('contact:person:') if key.startswith('contact:person:') else ''
     latest=result['items'][-1] if result['items'] else {}
@@ -156,6 +161,7 @@ class ContactChatUI:
     # Method: Reserve a left unread gutter, retain contact identities and suppress bulk mail actions.
     # ==========================================
     def render_contacts(self,projection):
+        self.rendering=True;self.retain_mail_rows();self.list_row_signatures={}
         g=self.g;self.items=projection['items'];self.total=projection['total']
         previous_scope=self.chat_scope;self.chat_scope=projection['scope'];self.rendering=True
         if getattr(self,'chat_source_return',None) and previous_scope!=self.chat_scope:
@@ -172,6 +178,11 @@ class ContactChatUI:
         avatar_state=self.identity_colors.snapshot([row['account'] for row in self.items])
         has_pinned=any(item.get('contact_pinned') for item in self.items);self.chat_contact_avatars={}
         for index,item in enumerate(self.items):
+            identity='contact:'+item['key'];signature=(dict(item),repr(avatar_state),has_pinned)
+            self.list_row_signatures[identity]=signature
+            if self.reuse_mail_row(identity,signature):
+                if index%16==15:self.rendering=False;yield;self.rendering=True
+                continue
             row=g.gtk_list_box_row_new();g.gtk_style_context_add_class(g.gtk_widget_get_style_context(row),b'contact-item-row');box=g.gtk_box_new(0,7);g.gtk_widget_set_margin_top(box,13);g.gtk_widget_set_margin_bottom(box,13);g.gtk_widget_set_margin_start(box,0);g.gtk_widget_set_margin_end(box,8)
             pin=bool(item.get('contact_pinned'));unread=item['unread_count'];visible_unread=bool(unread and not item.get('muted'))
             if has_pinned:self.row_groups[row]='置顶联系人' if pin else '联系人'
@@ -182,7 +193,7 @@ class ContactChatUI:
             from .mail_list_visuals import avatar_bubble
             avatar_host,marker=avatar_bubble(g,avatar,unread if visible_unread else 0,unread=True,title='将当前对话范围内的邮件设为已读 · '+str(unread)+' 封未读')
             g.gtk_style_context_add_class(g.gtk_widget_get_style_context(marker),b'chat-unread-marker');g.gtk_widget_set_sensitive(marker,bool(visible_unread and item['key'] not in self.chat_read_pending));g.gtk_box_pack_start(identity_box,avatar_host,0,0,0);self.chat_unread_markers[item['key']]=marker
-            g.connect(marker,'clicked',lambda *unused,key=item['key']:self.chat_mark_all_read(key),group='list-headers')
+            g.connect(marker,'clicked',lambda *unused,key=item['key']:self.chat_mark_all_read(key),group='list-row-'+identity)
             text=g.gtk_box_new(1,5);g.gtk_box_pack_start(box,text,1,1,0)
             title=item['title']+('  ·  免打扰' if item.get('muted') else '  ·  '+str(unread)+' 未读' if unread else '')
             latest=item['latest_author']+'：'+(item['preview'] or '(无文字正文)')
@@ -193,6 +204,7 @@ class ContactChatUI:
             g.gtk_widget_set_tooltip_text(box,tooltip.encode());g.gtk_container_add(row,box);self.rows[row]='contact:'+item['key'];g.gtk_container_add(self.widget('messages'),row);g.gtk_widget_show_all(row)
             if index%8==7:self.rendering=False;yield;self.rendering=True
         chosen=next((row for row,identity in self.rows.items() if identity=='contact:'+self.selected_chat),None)
+        self.release_mail_rows()
         if chosen:g.gtk_list_box_select_row(self.widget('messages'),chosen)
         self.rendering=False;self.render_has_more=len(self.items)<self.total;g.gtk_widget_set_visible(self.widget('more'),self.render_has_more);g.label(self.widget('count'),str(self.total)+' 个对话')
         self.contact_progress(projection['indexing'])
@@ -200,6 +212,7 @@ class ContactChatUI:
         elif self.selected_chat:self.leave_chat()
         if not self.selected_chat and not self.selected and not (self.composer and not self.composer.closed):self.show_chat_page()
         self.apply_layout()
+        self.rendered_mail_context=self.mail_list_context()
 
     # ==========================================
     # Function: Continue useful bounded backfill while exposing terminal unresolved verification.
@@ -302,9 +315,11 @@ class ContactChatUI:
                     self.chat_loading=False;self.chat_refresh_pending=False;self.read_chat(key,refresh=True,older=older);return
                 self.chat_loading=False;self.chat_load_error='';self.contact_progress(result['indexing']);old=self.chat_items
                 incoming=result['items'];old_ids={entry['id'] for entry in old}
-                if older:self.chat_items=incoming+old
-                elif old and any(entry['id'] in old_ids for entry in incoming):
-                    replacements={entry['id']:entry for entry in incoming};merged={entry['id']:replacements.get(entry['id'],entry) for entry in old};merged.update(replacements)
+                if old:
+                    replacements={entry['id']:entry for entry in incoming}
+                    live=result.get('retained',{})
+                    merged={entry['id']:replacements.get(entry['id'],{**entry,**live[entry['id']]}) for entry in old if entry['id'] in live}
+                    merged.update(replacements)
                     self.chat_items=sorted(merged.values(),key=lambda entry:(entry['timestamp'],entry['id']))
                 else:self.chat_items=incoming
                 retained=0;cut=len(self.chat_items)
@@ -329,9 +344,10 @@ class ContactChatUI:
                 self.chat_pending_items=result['pending'];self.chat_jobs_due=time.monotonic()+2
                 self.render_chat_timeline(result['pending'],older)
                 ids=[identity for message in result['items'] for identity in message['copy_ids'] if any(not location['seen'] for location in message['locations'])]
-                if ids and self.service.store.preference('mark_read_on_open',True):self.background(lambda:[self.service.mark_opened(identity) for identity in ids])
+                if ids and self.service.store.preference('mark_read_on_open',True):self.local_loader.action(lambda:[self.service.mark_opened(identity) for identity in ids],lambda result:self.mail_changed(ids) if any(result) else None,self.show_error)
                 self.apply_layout()
-        self.local_loader.request('chat',lambda:chat_snapshot(self,core,key,scope,before,window),ready)
+        retained=tuple(entry['id'] for entry in self.chat_items)
+        self.local_loader.request('chat',lambda:chat_snapshot(self,core,key,scope,before,window,retained),ready)
 
     # ==========================================
     # Function: Consume one coalesced refresh after its earlier local snapshot fails.
@@ -427,8 +443,9 @@ class ContactChatUI:
         for index,item in enumerate(self.chat_items):
             entry=existing.get(item['id'])
             if entry:
-                entry['item']=item;surface.conversation_cards[item['id']]['metadata'].update(seen=item['seen'])
+                entry['item']=item;surface.conversation_cards[item['id']]['metadata'].update({key:item.get(key,False) for key in ('seen','done','archived','pinned')})
             else:entry=self.chat_bubble(item)
+            surface.update_card_actions(surface.conversation_cards[item['id']])
             self.chat_bubbles.append(entry);g.gtk_box_reorder_child(self.chat_messages_host,entry['root'],index)
         self.render_chat_pending(pending);self.chat_width=0;self.chat_resize();g.gtk_widget_show_all(self.chat_messages_host)
         for card in surface.conversation_cards.values():
@@ -623,7 +640,7 @@ class ContactChatUI:
                 for copy in item.get('locations',[]):
                     if copy['id'] in identities:copy['seen']=True
                 if item.get('copy_ids') and set(item['copy_ids'])<=identities:item['seen']=True
-            self.chat_due=time.monotonic()+.5;self.message('已将 '+str(count)+' 封邮件设为已读')
+            self.mail_changed(identities);self.message('已将 '+str(count)+' 封邮件设为已读')
         # ==========================================
         # Function: Restore a retryable read marker after a local write failure.
         # Method: Leave cached unread state untouched and report through the existing application boundary.

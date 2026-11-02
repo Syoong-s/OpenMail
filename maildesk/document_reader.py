@@ -100,7 +100,7 @@ class WebKitHTMLReader:
         self.lib.webkit_web_view_set_zoom_level(self.view,1)
         self.g.gtk_widget_set_size_request(self.widget,-1,-1)
         self.background()
-        self.compact_mail=False;self.content_fit=None
+        self.compact_mail=False;self.content_fit=None;self.layout_ready=False
 
     # ==========================================
     # Function: Fit Linux conversation bubbles to actual browser layout rather than text estimates.
@@ -171,7 +171,9 @@ class WebKitHTMLReader:
         if event==0:
             self.started_generation=self.load_generation;self.g.gtk_widget_set_opacity(self.widget,0)
         elif event==3 and self.source:
-            self.document_ready=True;self.g.gtk_widget_set_opacity(self.widget,1)
+            self.document_ready=True
+            if getattr(self,'compact_mail',False):self.content_fit.poll()
+            else:self.layout_ready=True;self.g.gtk_widget_set_opacity(self.widget,1)
             pending=getattr(self,'pending_image',None)
             if pending is not None:self.pending_image=None;self.jump_to_image(pending)
 
@@ -231,7 +233,7 @@ class WebKitHTMLReader:
             adapt_dark=False if getattr(self,'preserve_document_style',False) else store.preference('adapt_dark_html',True),font_size=store.preference('reader_font_size',14),remote_images=store.preference('load_remote_images',False),appearance=reader_appearance(self))
         if not force and prepared==self.source:return
         if self.content_fit:self.content_fit.height=None
-        self.source=prepared;self.load_generation+=1;self.started_generation=-1;self.document_ready=False;self.pending_image=None;self.image_navigation=False
+        self.source=prepared;self.load_generation+=1;self.started_generation=-1;self.document_ready=False;self.layout_ready=False;self.pending_image=None;self.image_navigation=False
         self.expected_title='TeleMail reader '+uuid.uuid4().hex
         rendered=self.source.replace('<head>','<head><title>'+self.expected_title+'</title>',1)
         self.g.gtk_widget_set_opacity(self.widget,0)

@@ -26,11 +26,14 @@ class ListRenderUI:
         try:
             with self.service.store.preference_snapshot():next(self.list_renderer)
         except StopIteration:
+            self.restore_mail_headers()
             self.list_render_active_seconds+=time.perf_counter()-started
             self.list_render_max_batch=max(self.list_render_max_batch,time.perf_counter()-started)
             self.last_projection_timing={'max_batch':self.list_render_max_batch,'query':self.list_render_query,'render':self.list_render_active_seconds,'elapsed':time.perf_counter()-self.list_render_started,'rows':len(self.rows)}
             self.list_render_source=0;self.list_renderer=None;self.rendering=False;return 0
         except Exception as error:
+            self.release_mail_rows();self.rendered_mail_context=None
+            self.restore_mail_headers()
             self.list_render_source=0;self.list_renderer=None;self.rendering=False;self.show_error(error);return 0
         self.list_render_active_seconds+=time.perf_counter()-started;self.list_render_max_batch=max(self.list_render_max_batch,time.perf_counter()-started);self.rendering=False;return 1
 
@@ -41,5 +44,7 @@ class ListRenderUI:
     def cancel_list_render(self):
         if getattr(self,'list_render_source',0):self.g.g_source_remove(self.list_render_source);self.list_render_source=0
         renderer=getattr(self,'list_renderer',None);self.list_renderer=None
-        if renderer:renderer.close()
+        if renderer:
+            renderer.close();self.release_mail_rows();self.rendered_mail_context=None
+            self.restore_mail_headers()
         self.rendering=False

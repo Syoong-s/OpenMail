@@ -111,3 +111,21 @@ class ContactPerformanceTests(TestCase):
             for index in range(2):loader.executor.submit(occupy,index)
             self.assertTrue(all(event.wait(1) for event in started));loader.action(lambda:42,results.append,lambda error:results.append(error));callback,value=app.queue.get(timeout=1);callback(value);self.assertEqual(results,[42])
         finally:release.set();loader.close()
+
+    # ==========================================
+    # Function: Preserve click order and persist already accepted local work during shutdown.
+    # Method: Block the first action, enqueue a successor, then close after releasing the first.
+    # ==========================================
+    def test_local_actions_keep_order_and_finish_on_close(self):
+        app=SimpleNamespace(queue=Queue(),closing=False);loader=LocalLoader(app);started=Event();release=Event();committed=[]
+        # ==========================================
+        # Function: Hold a local commit long enough to expose accidental parallel execution.
+        # Method: Wait on a deterministic event before recording the first accepted action.
+        # ==========================================
+        def first():started.set();release.wait(2);committed.append(1)
+        try:
+            loader.action(first,lambda result:None,lambda error:None);self.assertTrue(started.wait(1))
+            loader.action(lambda:committed.append(2),lambda result:None,lambda error:None)
+            self.assertEqual(committed,[])
+        finally:release.set();loader.close()
+        self.assertEqual(committed,[1,2])

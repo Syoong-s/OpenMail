@@ -74,8 +74,9 @@ class OrganizationUI(NavigationUI):
         if getattr(self,'folder_edit',None):self.folder_refresh_pending=True;return
         g=self.g;account=(g.gtk_combo_box_get_active_id(self.widget('account_filter')) or b'all').decode();rows=self.service.store.list_folders() if rows is None else rows;smart=self.service.store.smart_folders() if smart is None else smart
         accounts=sorted({row['account'] for row in rows}|set(self.service.accounts));colors=self.identity_colors.snapshot(accounts)['colors']
-        signature=repr((rows,smart,account,self.folder_account,self.folder_path,colors,getattr(self,'motion',True),[(a.id,a.title,a.email) for a in self.service.accounts.values()]))
-        if signature==getattr(self,'folder_tree_signature',None):self.refresh_pinned_navigation();return
+        structure=[{key:value for key,value in row.items() if key not in ('total','unread','remote_total','remote_unread','validity')} for row in rows]
+        signature=repr((structure,smart,account,self.navigation_pins(),colors,getattr(self,'motion',True),[(a.id,a.title,a.email) for a in self.service.accounts.values()]))
+        if signature==getattr(self,'folder_tree_signature',None):self.update_folder_rows(rows);self.refresh_pinned_navigation();return
         self.clear_navigation_hover();self.folder_buttons={};self.folder_row_widgets={};self.folder_account_headings={};self.folder_account_styles={};self.folder_account_sections={}
         for group in getattr(self,'folder_popup_groups',set()):g.disconnect(group)
         self.folder_popup_groups=set();g.disconnect('folders');g.clear(self.widget('folder_tree'));g.clear(self.widget('smart_tree'))
@@ -215,7 +216,7 @@ class OrganizationUI(NavigationUI):
         identities=self.selected_ids()
         if not identities:self.message('请先选择邮件');return
         self.g.gtk_popover_popdown(self.widget('mail_menu'))
-        self.background(lambda:self.service.bulk_action(identities,action,value),lambda result:(self.refresh(),self.message(f'已处理 {len(result)} 封邮件')))
+        self.local_loader.action(lambda:self.service.bulk_action(identities,action,value),lambda result:(self.mail_changed(identities),self.message(f'已处理 {len(result)} 封邮件')),self.show_error)
 
     # ==========================================
     # Function: Move selected messages to a configured system folder.
@@ -465,10 +466,10 @@ class OrganizationUI(NavigationUI):
                 if visible:self.notify('收到阅读回执',f'{visible} 位收件人返回了显示回执')
             if count!=known_receipts:store.set_preference('notified_receipt_count',count)
         with store.db() as db:
-            rows=db.execute('SELECT m.id,m.subject,m.snoozed_until,m.reminder,coalesce(d.raw_from,m.sender) AS raw_from FROM messages m LEFT JOIN message_display d ON d.message=m.id WHERE m.remote_gone=0').fetchall()
-        known={r['id'] for r in rows}
+            rows=db.execute('SELECT m.id,m.account,m.message_id,m.folder,m.seen,m.remote_gone,m.subject,m.snoozed_until,m.reminder,coalesce(d.raw_from,m.sender) AS raw_from FROM messages m LEFT JOIN message_display d ON d.message=m.id').fetchall()
+        known={(r['account'],r['message_id'] or r['id']) for r in rows}
         if self.known_messages is not None:
-            new={row['id'] for row in rows if row['id'] not in self.known_messages and allows_message_notice(store,row,quiet,own)}
+            new={row['id'] for row in rows if (row['account'],row['message_id'] or row['id']) not in self.known_messages and not row['remote_gone'] and not row['seen'] and row['folder'].upper()=='INBOX' and row['account']!='@local' and allows_message_notice(store,row,quiet,own)}
             if store.preference('notify_priority_only',False):
                 new={identity for identity in new if store.get(identity)['effective_priority']}
             if new:self.notify('收到新邮件',f'{len(new)} 封新邮件已同步')
@@ -477,6 +478,7 @@ class OrganizationUI(NavigationUI):
         changed=False
         now=time.time()
         for row in rows:
+            if row['remote_gone']:continue
             for key in ('snoozed_until','reminder'):
                 deadline=row[key];identity=row['id']+':'+key
                 if deadline and deadline<=now and acknowledged.get(identity)!=deadline:
@@ -558,21 +560,21 @@ class OrganizationUI(NavigationUI):
                 title=('▸ ' if section['collapsed'] else '▾ ')+section['title']+f"   {len(section['items'])}"+(f" · {unread} 未读" if unread else '')
                 button=self.g.gtk_button_new_with_label(title.encode())
                 self.g.gtk_button_set_alignment(button,0,0.5)
-                self.g.connect(button,'clicked',lambda *unused,key=group:self.toggle_inbox_group(key),group='list-headers')
+                self.g.connect(button,'clicked',lambda *unused,key=group:self.toggle_inbox_group(key),group='list-section-headers')
                 self.g.gtk_box_pack_start(header,button,1,1,0)
                 definition=self.inboxes.active()
                 if definition['mode']=='smart' and section['action']!='none':
                     action=self.g.gtk_button_new_with_label({'seen':'全部已读','done':'全部完成','trash':'移到废纸篓'}[section['action']].encode())
-                    self.g.connect(action,'clicked',lambda *unused,key=group:self.inbox_group_action(key),group='list-headers')
+                    self.g.connect(action,'clicked',lambda *unused,key=group:self.inbox_group_action(key),group='list-section-headers')
                     self.g.gtk_box_pack_start(header,action,0,0,0)
                 if definition['mode']=='smart':
                     self.g.gtk_style_context_add_class(self.g.gtk_widget_get_style_context(header),b'card-heading')
                     settings=self.g.gtk_button_new_with_label('⋯'.encode())
-                    self.g.connect(settings,'clicked',lambda *unused,key=group:self.inbox_card_dialog(key),group='list-headers')
+                    self.g.connect(settings,'clicked',lambda *unused,key=group:self.inbox_card_dialog(key),group='list-section-headers')
                     self.g.gtk_box_pack_start(header,settings,0,0,0)
                 if len(section['shown'])<len(section['items']):
                     more=self.g.gtk_button_new_with_label('全部'.encode())
-                    self.g.connect(more,'clicked',lambda *unused,key=group:self.show_all_cards(key),group='list-headers')
+                    self.g.connect(more,'clicked',lambda *unused,key=group:self.show_all_cards(key),group='list-section-headers')
                     self.g.gtk_box_pack_start(header,more,0,0,0)
             else:
                 header=self.g.gtk_label_new(group.encode());self.g.gtk_label_set_xalign(header,0)

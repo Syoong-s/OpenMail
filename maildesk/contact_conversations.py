@@ -381,6 +381,8 @@ class ContactConversations:
             values.append(key)
         sql = '''WITH member_rows AS (
             SELECT m.id,m.account,m.folder,m.subject,m.timestamp,m.seen,m.pinned,m.priority,
+                (m.archived=1 OR f.special='archive') AS archived,
+                (m.archived=1 OR f.special='archive') AS done,
                 m.category,m.message_id,'''+PERSON_KEY+''' AS conversation,ap.name AS person_name,ap.id AS person_id,cm.value AS contact_meta,
                 coalesce(cp.muted,0) AS contact_muted,coalesce(cp.pinned,0) AS contact_pinned,coalesce(cp.blocked,0) AS contact_blocked,
                 coalesce((SELECT min(address) FROM address_mailboxes WHERE person=ap.id AND suppressed=0),json_extract(cm.value,'$.address')) AS contact_address,
@@ -534,6 +536,7 @@ class ContactConversations:
                 'id': row['id'], 'latest_id': row['id'], 'account': row['account'], 'folder': row['folder'],
                 'subject': row['subject'], 'preview': row['preview'], 'timestamp': row['timestamp'],
                 'seen': bool(row['copy_seen']), 'pinned': bool(row['copy_pinned']),
+                'done':bool(row['done']), 'archived':bool(row['archived']),
                 'outgoing': envelope['outgoing'], 'own_direction': 'outgoing' if envelope['outgoing'] else 'incoming',
                 'sender': sender, 'latest_author': author_name, 'latest_author_address': author['address'],
                 'count': row['count'] if 'count' in row.keys() else 1,

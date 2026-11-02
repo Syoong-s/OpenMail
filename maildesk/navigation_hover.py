@@ -21,7 +21,7 @@ class NavigationHoverUI:
     def clear_navigation_hover(self):
         owner=getattr(self,'navigation_hover_owner',None);self.navigation_hover_owner=None
         if owner:
-            self.g.gtk_widget_set_opacity(owner['tools'],0);self.g.gtk_style_context_remove_class(self.g.gtk_widget_get_style_context(owner['line']),b'hover')
+            self.g.gtk_widget_set_opacity(owner['tools'],1 if owner['tools'] in getattr(self,'navigation_persistent_tools',set()) else 0);self.g.gtk_style_context_remove_class(self.g.gtk_widget_get_style_context(owner['line']),b'hover')
 
     # ==========================================
     # Function: Reveal controls inside the same outer row as their label.
@@ -31,7 +31,7 @@ class NavigationHoverUI:
         inside=self.navigation_pointer_inside(event);show=inside or keyboard or not leave
         if not show:
             if getattr(self,'navigation_hover_owner',None) and self.navigation_hover_owner['event']==event:self.clear_navigation_hover()
-            else:self.g.gtk_widget_set_opacity(tools,0)
+            else:self.g.gtk_widget_set_opacity(tools,1 if tools in getattr(self,'navigation_persistent_tools',set()) else 0)
             return False
         owner=getattr(self,'navigation_hover_owner',None)
         if owner and owner['event']!=event:self.clear_navigation_hover()

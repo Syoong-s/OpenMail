@@ -7,7 +7,7 @@ from pathlib import Path
 # ==========================================
 def focused_render_items(sections,limit):
     result=[];remaining=limit;more=False
-    for section in sections:
+    for section in sorted(sections,key=lambda section:not section.get('summary',False)):
         if section.get('summary'):
             result.append({'_summary':section,'account':''});continue
         values=section['shown'][:1] if section['collapsed'] else section['shown']
@@ -45,6 +45,20 @@ class FocusUI:
         button=g.gtk_button_new();title=g.gtk_label_new((section['title']+f"   {len(section['items'])}"+(f" · {section['unread']} 未读" if section['unread'] else '')+'  ›').encode())
         g.gtk_label_set_xalign(title,0);g.gtk_box_pack_start(box,title,0,1,0)
         g.connect(button,'clicked',lambda *unused,key=section['key']:self.open_focus_group(key),group='list-headers')
+        self.summary_rows[section['key']]={'row':row,'button':button,'title':title,'line':line,'section':section}
+        self.update_summary_senders(self.summary_rows[section['key']],section)
+        g.gtk_box_pack_start(box,line,0,1,0)
+        g.gtk_container_add(button,box);g.gtk_container_add(row,button);g.gtk_container_add(self.widget('messages'),row);g.gtk_list_box_row_set_selectable(row,0)
+        return row
+
+    # ==========================================
+    # Function: Update a focused card's sender strip after its membership changes.
+    # Method: Rebuild only the small avatar strip when its displayed senders actually differ.
+    # ==========================================
+    def update_summary_senders(self,entry,section):
+        senders=[(item['sender'],item.get('sender_name'),item['account']) for item in section['recent_senders']]
+        if entry.get('senders')==senders:return
+        entry['senders']=senders;g=self.g;line=entry['line'];g.clear(line)
         for item in section['recent_senders']:
             avatar=g.gtk_label_new((item.get('sender_name') or item['sender'])[:1].upper().encode())
             g.gtk_style_context_add_class(g.gtk_widget_get_style_context(avatar),b'summary-avatar')
@@ -52,10 +66,7 @@ class FocusUI:
             g.gtk_box_pack_start(line,avatar,0,0,0)
         names='、'.join(item.get('sender_name') or item['sender'].split('@')[0] for item in section['recent_senders'])
         label=g.gtk_label_new(names.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(label),b'mail-preview');g.gtk_label_set_ellipsize(label,3);g.gtk_label_set_max_width_chars(label,22)
-        g.gtk_box_pack_start(line,label,1,1,0);g.gtk_box_pack_start(box,line,0,1,0)
-        g.gtk_container_add(button,box);g.gtk_container_add(row,button);g.gtk_container_add(self.widget('messages'),row);g.gtk_list_box_row_set_selectable(row,0)
-        self.summary_rows[section['key']]={'row':row,'button':button,'section':section}
-        return row
+        g.gtk_box_pack_start(line,label,1,1,0);g.gtk_widget_show_all(line)
 
     # ==========================================
     # Function: Construct the three compact left-side actions for one message.
@@ -70,9 +81,10 @@ class FocusUI:
             g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'row-quick-action')
             if action=='seen' and not item.get('seen',True):
                 g.gtk_button_set_image(button,None);g.gtk_button_set_label(button,'●'.encode());g.gtk_style_context_add_class(g.gtk_widget_get_style_context(button),b'unread-action');g.gtk_widget_set_tooltip_text(button,'标为已读'.encode())
-            g.connect(button,'clicked',lambda *unused,target=identity,code=action:self.run_action(lambda:self.quick_action(target,code)),group='list-headers')
+            g.connect(button,'clicked',lambda *unused,target=identity,code=action:self.run_action(lambda:self.quick_action(target,code)),group='list-row-'+identity)
             g.gtk_box_pack_start(box,button,0,0,0);buttons[action]=button
         self.quick_buttons[identity]=buttons
+        self.update_quick_buttons(identity,item)
         return box
 
     # ==========================================
@@ -81,7 +93,7 @@ class FocusUI:
     # ==========================================
     def quick_action(self,identity,action):
         if not identity or identity.startswith('job:'):return
-        message=self.service.store.get(identity);ids=[item['id'] for item in self.items]
+        message=self.service.store.state(identity);ids=[item['id'] for item in self.items]
         policy=self.service.store.preference('main_action_policy','close');target=''
         if identity in ids:
             index=ids.index(identity);offset=1 if policy=='next' else -1
@@ -92,10 +104,11 @@ class FocusUI:
         # Method: Delegate read/trash/provider archive to shared services and retain ordinary safe trash.
         # ==========================================
         def operation():
+            message=self.service.store.state(identity)
             unpin=finishing and bool(message['pinned']) and self.service.store.preference('main_action_unpin',True)
             if unpin and action in ('trash','archive'):self.service.update(identity,{'pinned':False})
             if action=='seen':result=self.service.update(identity,{'seen':not bool(message['seen'])})
-            elif action=='done':result=self.service.store.organize(identity,done=not bool(message['done']))
+            elif action=='done':result=self.service.move_message(identity,special='inbox' if message['done'] or message['archived'] else 'archive')
             else:result=self.service.bulk_action([identity],action)
             if unpin and action=='done':self.service.update(identity,{'pinned':False})
             return result
@@ -108,7 +121,8 @@ class FocusUI:
             if finishing and self.selected==identity and selected==identity:
                 if not self.close_document():self.refresh();return
                 self.selected=target;following=bool(target)
-            self.refresh()
-            if following and self.selected!=target:
+            self.mail_changed([identity])
+            if finishing and not target and not getattr(self,'selected_chat',''):self.clear_reader()
+            if following:
                 self.layout_override=None;self.read(target)
-        self.background(operation,success)
+        self.local_loader.action(operation,success,self.show_error)

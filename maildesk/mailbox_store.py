@@ -82,6 +82,7 @@ class OrganizationStore:
                     (account,item['name'],item.get('delimiter','/'),json.dumps(item.get('flags',[])),item.get('special',''),int(item.get('subscribed',True)),int(item.get('selectable',True))))
                 db.execute('UPDATE folders SET remote_total=?,remote_unread=? WHERE account=? AND folder=?',(item.get('remote_total'),item.get('remote_unread'),account,item['name']))
             db.execute('''UPDATE messages SET remote_gone=1 WHERE account=? AND folder NOT LIKE '@%'
+                AND id NOT IN (SELECT message FROM pending_moves)
                 AND folder IN (SELECT folder FROM folders WHERE account=? AND present=0)''', (account,account))
 
     # ==========================================
@@ -105,7 +106,8 @@ class OrganizationStore:
         rows = self.list_folders(account)
         if configured and any(r['folder']==configured and r['selectable'] for r in rows):
             return configured
-        return next((r['folder'] for r in rows if r['special']==special and r['selectable']), '')
+        found=next((r['folder'] for r in rows if r['special']==special and r['selectable']), '')
+        return found
 
     # ==========================================
     # Function: Save personal folder favorites, colors and subscription metadata.
@@ -135,6 +137,8 @@ class OrganizationStore:
                     target=new+path[len(old):]
                     db.execute('UPDATE folders SET folder=? WHERE account=? AND folder=?',(target,account,path))
                     db.execute('UPDATE messages SET folder=? WHERE account=? AND folder=?',(target,account,path))
+                    for field in ('source_folder','destination','attempted_destination'):
+                        db.execute('UPDATE pending_moves SET '+field+'=? WHERE account=? AND '+field+'=?',(target,account,path))
         mapping=self.preference('folder_mapping',{})
         for key,value in mapping.get(account,{}).items():
             if value==old or (delimiter and value.startswith(old+delimiter)):

@@ -38,9 +38,13 @@ def conversation(db,message):
       FROM thread_links l JOIN component c ON (l.source=c.mid OR l.target=c.mid) WHERE l.account=? LIMIT 10000)
       SELECT m.id,m.message_id,m.sender,coalesce(d.sender_name,json_extract(m.parsed,'$.sender_name')) AS sender_name,
       coalesce(d.recipients,json_extract(m.parsed,'$.recipients')) AS recipients,substr(m.body,1,160) AS preview,
-      m.subject,m.timestamp,m.folder,m.account,m.seen,m.pinned,m.done,m.category FROM messages m
-      JOIN component c ON c.mid=m.message_id LEFT JOIN message_display d ON d.message=m.id WHERE m.account=? AND m.remote_gone=0
-      ORDER BY m.timestamp,m.id''',(message['message_id'],message['account'],message['account'])).fetchall()
+      m.subject,m.timestamp,m.folder,m.account,m.seen,m.pinned,
+      (m.done=1 OR m.archived=1 OR coalesce(f.special,'')='archive') AS done,
+      (m.archived=1 OR coalesce(f.special,'')='archive') AS archived,m.category FROM messages m
+      JOIN component c ON c.mid=m.message_id LEFT JOIN message_display d ON d.message=m.id
+      LEFT JOIN folders f ON f.account=m.account AND f.folder=m.folder WHERE m.account=? AND m.remote_gone=0
+      AND (m.id=? OR (m.trashed=0 AND m.spam=0 AND NOT EXISTS(SELECT 1 FROM folders f WHERE f.account=m.account AND f.folder=m.folder AND f.special IN ('trash','spam'))))
+      ORDER BY m.timestamp,m.id''',(message['message_id'],message['account'],message['account'],message['id'])).fetchall()
     unique={};selected=message['id']
     for row in rows:
         value=dict(row);key=value['message_id'] or value['id']

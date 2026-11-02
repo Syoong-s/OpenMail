@@ -33,6 +33,25 @@ def bridge():
     return library
 
 # ==========================================
+# Function: Prepare one inert browser while the initial mailbox is being drawn.
+# Method: Share the bounded controller pool, using an empty native clip and no message data.
+# ==========================================
+def warm_reader(app):
+    if getattr(app,'windows_reader_idle',None):return
+    g=app.g;window=g.gtk_widget_get_window(app.window)
+    if not window:return
+    native=g.libs['gdk'].gdk_win32_window_get_handle;native.argtypes=[P];native.restype=P;hwnd=native(window)
+    from .storage_paths import active_cache
+    profile=active_cache()/'webview2';profile.mkdir(parents=True,exist_ok=True)
+    library=getattr(app,'windows_webview_bridge',None) or bridge();app.windows_webview_bridge=library
+    handle=library.md_webview_create(hwnd,str(profile),str(runtime_root()/'bin/WebView2Loader.dll'))
+    if not handle:return
+    app.windows_reader_idle=[(hwnd,handle)]
+    library.md_webview_position(handle,0,0,300,150,g.gtk_widget_get_allocated_width(app.window),g.gtk_widget_get_allocated_height(app.window))
+    library.md_webview_viewport(handle,0,0,0,0,300,150,1)
+    library.md_webview_load(handle,'<!doctype html><html><head><title>idle</title></head><body></body></html>',0)
+
+# ==========================================
 # Function: Keep the complete Linux reader public contract on native Windows.
 # Method: Align an owned child HWND with a virtual GTK drawing area without competing for GTK clipping.
 # ==========================================
@@ -46,7 +65,7 @@ class HTMLReader:
         self.lib=getattr(app,'windows_webview_bridge',None)
         if not self.lib:self.lib=app.windows_webview_bridge=bridge()
         self.widget=self.g.gtk_drawing_area_new();self.source='';self.original=('',False,None)
-        self.zoom=1;self.document_ready=False;self.pending_image=None;self.detached_ref=False
+        self.zoom=1;self.document_ready=False;self.layout_ready=False;self.pending_image=None;self.detached_ref=False
         self.load_generation=0;self.started_generation=-1;self.expected_title='';self.expected_uri='about:blank';self.image_navigation=False
         self.g.gtk_widget_set_hexpand(self.widget,1);self.g.gtk_widget_set_vexpand(self.widget,1)
         self.g.connect(self.widget,'realize',self.realized,group=group)
@@ -76,7 +95,12 @@ class HTMLReader:
         profile=active_cache()/'webview2'
         # Controllers are required to use Edge InPrivate mode; no mail cookies/history are persisted.
         profile.mkdir(parents=True,exist_ok=True)
-        self.handle=self.lib.md_webview_create(hwnd,str(profile),str(runtime_root()/'bin/WebView2Loader.dll'))
+        self.owner_hwnd=hwnd
+        idle=getattr(self.app,'windows_reader_idle',[])
+        candidate=next((item for item in idle if item[0]==hwnd),None)
+        if candidate:
+            idle.remove(candidate);self.handle=candidate[1];self.app.reader_pool_reused=getattr(self.app,'reader_pool_reused',0)+1
+        else:self.handle=self.lib.md_webview_create(hwnd,str(profile),str(runtime_root()/'bin/WebView2Loader.dll'))
         if not self.handle:raise RuntimeError('无法初始化 Windows WebView2 阅读器')
         self.lib.md_webview_zoom(self.handle,self.zoom)
         if self.source:self.lib.md_webview_load(self.handle,self.rendered_document(),int(self.remote))
@@ -147,7 +171,11 @@ class HTMLReader:
                 left=max(0,-x.value);top=max(0,-y.value)
                 right=min(width,g.gtk_widget_get_allocated_width(scroller)-x.value)
                 bottom=min(height,g.gtk_widget_get_allocated_height(scroller)-y.value)
-        self.lib.md_webview_viewport(self.handle,left,top,right,bottom,width,height,int(bool(g.gtk_widget_get_mapped(self.widget))))
+        visible=bool(g.gtk_widget_get_mapped(self.widget))
+        # WebView2 needs IsVisible=true to apply a recycled controller's viewport.
+        # An empty native clipping region hides first layout without suspending it.
+        if getattr(self,'compact_mail',False) and not getattr(self,'layout_ready',False):right=left;bottom=top
+        self.lib.md_webview_viewport(self.handle,left,top,right,bottom,width,height,int(visible))
 
     # ==========================================
     # Function: Synchronize native mail surfaces before GTK paints the surrounding card.
@@ -198,6 +226,8 @@ class HTMLReader:
     # ==========================================
     def poll_content_fit(self):
         now=time.monotonic()
+        if not getattr(self,'fit_started',0):self.fit_started=now
+        if now-self.fit_started>2:self.layout_ready=True
         if self.fit_query:
             result=C.create_unicode_buffer(2048);status=self.lib.md_webview_result(self.handle,self.fit_query,result,len(result))
             if not status:return
@@ -206,12 +236,15 @@ class HTMLReader:
                 try:measurement=json.loads(result.value)
                 except (ValueError,TypeError):measurement=None
                 if isinstance(measurement,dict) and measurement.get('title')==self.expected_title:
+                    if self.fit_width!=self.g.gtk_widget_get_allocated_width(self.widget):return
                     height=fitted_height(measurement,self.g.gtk_widget_get_allocated_height(self.widget))
                     if height and (self.fit_height is None or abs(height-self.fit_height)>2):
                         self.fit_height=height;self.g.gtk_widget_set_size_request(self.widget,-1,height)
                         self.lib.md_webview_script(self.handle,"document.documentElement.style.overflowY='"+('hidden' if height<5000 else 'auto')+"'")
-            self.fit_next=now+.5
+                    elif height:self.layout_ready=True
+            self.fit_next=now+(.5 if self.layout_ready else 0)
         elif now>=self.fit_next and self.g.gtk_widget_get_allocated_height(self.widget)>=8:
+            self.fit_width=self.g.gtk_widget_get_allocated_width(self.widget)
             self.fit_generation=self.load_generation;self.fit_query=self.lib.md_webview_query(self.handle,MEASURE_MAIL)
             if not self.fit_query:self.fit_next=now+1
 
@@ -267,8 +300,8 @@ class HTMLReader:
         prepared=reader_document(source,markdown,resolved_theme(self.app)=='dark',images,
             adapt_dark=False if getattr(self,'preserve_document_style',False) else store.preference('adapt_dark_html',True),font_size=store.preference('reader_font_size',14),remote_images=self.remote,appearance=reader_appearance(self))
         if not force and prepared==self.source:return
-        self.source=prepared;self.load_generation+=1;self.document_ready=False;self.failed=False;self.pending_image=None
-        self.fit_query=0;self.fit_next=0;self.fit_height=None
+        self.source=prepared;self.load_generation+=1;self.document_ready=False;self.layout_ready=False;self.failed=False;self.pending_image=None
+        self.fit_query=0;self.fit_next=0;self.fit_height=None;self.fit_started=0
         self.expected_title='TeleMail reader '+uuid.uuid4().hex
         if self.handle:self.lib.md_webview_load(self.handle,self.rendered_document(),int(self.remote))
         elif self.g.gtk_widget_get_window(self.widget):self.realized()
@@ -325,13 +358,22 @@ class HTMLReader:
 
     # ==========================================
     # Function: Close the native controller and every retained GTK callback exactly once.
-    # Method: Remove polling, native ownership and weak layer registration before releasing the widget callbacks.
+    # Method: Retain at most two hidden main-window controllers with inert documents; close all others normally.
     # ==========================================
     def close(self):
         if self.closed:return
         self.closed=True;self.document_ready=False
         if self.timer:self.g.g_source_remove(self.timer);self.timer=0
-        if self.handle:self.lib.md_webview_close(self.handle);self.handle=None
+        if self.handle:
+            idle=getattr(self.app,'windows_reader_idle',None)
+            if idle is None:idle=self.app.windows_reader_idle=[]
+            reusable=(not self.app.closing and self.compact_mail and len(idle)<2 and self.lib.md_webview_status(self.handle)==1 and self.g.gtk_widget_get_toplevel(self.widget)==self.app.window)
+            if reusable:
+                self.lib.md_webview_resize(self.handle,0)
+                self.lib.md_webview_load(self.handle,'<!doctype html><html><head><title>idle</title></head><body></body></html>',0)
+                idle.append((self.owner_hwnd,self.handle))
+            else:self.lib.md_webview_close(self.handle)
+            self.handle=None
         self.g.disconnect(self.group);self.source='';self.original=('',False,None)
         layers=getattr(getattr(self.g,'surfaces',None),'reader_layers',None)
         if layers:layers.readers.discard(self)
